@@ -1,0 +1,316 @@
+﻿code,nameTh,nameEn,clinicalOrGeneral,simpleCategory
+CPS101,ผ่าตัดผิดตำแหน่ง ผิดข้าง (Surgery or other invasive procedure performed on the wrong body part),,Clinical,S1.1
+CPS102,ผ่าตัดผิดคน (Surgery or other invasive procedure performed on the wrong patient),,Clinical,S1.1
+CPS103,ผ่าตัดผิดชนิด (Wrong surgical or other invasive procedure performed on a patient),,Clinical,S1.1
+CPS104,Wrong implant/prosthetic,,Clinical,S1.1
+CPS105,บาดเจ็บอวัยวะข้างเคียงระหว่างผ่าตัด (Internal organ injury or Accidental puncture or laceration),,Clinical,S1.1
+CPS106,Perioperative hemorrhage or hematoma,,Clinical,S1.1
+CPS107,ภาวะแทรกซ้อนอื่น ๆ ของผู้ป่วยระหว่างการผ่าตัดที่ป้องกันได้,,Clinical,S1.1
+CPS108,ผ่าตัดซ้ำโดยไม่ได้วางแผน,,Clinical,S1.1
+CPS109,ความคาดเคลื่อนของการส่งผลชิ้นเนื้อ หรือสิ่งส่งตรวจอื่นในกระบวนการผ่าตัด,,Clinical,S1.1
+CPS110,Intraoperative or immediately postoperative/post procedure death in an ASA PS I patient,,Clinical,S1.1
+CPS111,SSI: Surgical Site Infection,,Clinical,S1.2
+CPS112,Postoperative Acute Kidney Injury Requiring Dialysis,,Clinical,S1.3
+CPS113,Postoperative Hip Fracture,,Clinical,S1.3
+CPS114,Postoperative Respiratory failure,,Clinical,S1.3
+CPS115,Postoperative Sepsis,,Clinical,S1.3
+CPS116,Postoperative Wound dehiscence,,Clinical,S1.3
+CPS117,ภาวะแทรกซ้อนอื่น ๆ ของผู้ป่วยหลังผ่าตัดที่ป้องกันได้,,Clinical,S1.3
+CPS118,เกิดภาวะ Venous Thromboembolism (VTE) หลังผ่าตัด,,Clinical,S1.4
+CPS201,เกิดภาวะแทรกซ้อนที่เกี่ยวข้องกับการระงับความรู้สึก,,Clinical,S2
+CPS202,"ภาวะหัวใจหยุดเต้นระหว่างผ่าตัดในผู้ป่วย ASA PS I, II",,Clinical,S2
+CPS203,ใส่ท่อหายใจซ้ำภายใน 2 ชั่วโมงหลังการถอดท่อหายใจ (re-intubation within 2 hrs. after ex-tubation),,Clinical,S2
+CPS301,สิ่งแวดล้อมในห้องผ่าตัดไม่ปลอดภัย,,Clinical,S3.1
+CPS302,ไฟฟ้าสำรองไม่ทำงานภายในระยะเวลาที่กำหนดเมื่อไฟดับระหว่างผ่าตัด,,Clinical,S3.1
+CPS303,เครื่องมือ-อุปกรณ์สำหรับผ่าตัดไม่พร้อมใช้งาน,,Clinical,S3.2
+CPS304,ภาวะแทรกซ้อนจากเครื่องมือ/อุปกรณ์เกี่ยวกับการผ่าตัด,,Clinical,S3.2
+CPS305,เหตุการณ์ไม่พึงประสงค์ จากการไม่ปฏิบัติตามขั้นตอนกระบวนการดูแลผู้ป่วยที่มา รับการผ่าตัด,,Clinical,S3.3
+CPS306,การเลื่อนการผ่าตัดที่ไม่เร่งด่วนจากความไม่พร้อมหรือการประเมินไม่ครบถ้วน,,Clinical,S3.3
+CPS307,การมีอุปกรณ์หรือสิ่งตกค้างอื่นใดในร่างกายผู้ป่วย (Unintended retention of foreign object in a patient after surgery or other procedure),,Clinical,S3.3
+CPS308,การปฏิบัติโดยไม่คำนึงถึงศักดิ์ศรีความเป็นมนุษย์และสิทธิผู้ป่วย,,Clinical,S3.3
+CPI101,ไม่ล้างมือ/ล้างไม่เหมาะสมตามข้อบ่งชี้ของการทำความสะอาดมือ (5 moments for hand hygiene),,Clinical,I1
+CPI201,CAUTI: Catheter Associated Urinary Tract Infection,,Clinical,I2.1
+CPI202,VAP: Ventilator-Associated Pneumonia,,Clinical,I2.2
+CPI203,CLABSI: Central Line-Associated Bloodstream Infection,,Clinical,I2.3
+CPI204,การไม่ปฏิบัติตามแนวทางป้องกันการแพร่กระจายเชื้อก่อโรคในสถานพยาบาล Standard Precautions (ยกเว้นการล้างมือ),,Clinical,I2
+CPI301,การเกิดระบาดโรคอุบัติใหม่ อุบัติซ้ำ,,Clinical,I3
+CPI302,เกิดการระบาดของโรคที่ป้องกันได้ด้วยวัคซีน (Vaccine Preventable Disease) ภายในโรงพยาบาล,,Clinical,I3
+CPI303,เกิดการระบาดของโรคติดต่ออื่น ๆ (Other Communication Disease) ภายใน โรงพยาบาล,,Clinical,I3
+CPI401,การเกิดการติดเชื้อดื้อยา,,Clinical,I4
+CPM101,แพ้ยาซ้ำ,,Clinical,M1
+CPM102,ไม่มี/ไม่ปฏิบัติตาม Guideline ของการใช้ High Alert Drug,,Clinical,M1.1
+CPM103,ผู้ป่วยมีภาวะแทรกซ้อนที่ป้องกันได้จากการได้รับยาความเสี่ยงสูง,,Clinical,M1.1
+CPM104,Mis selection of a strong potassium containing solution,,Clinical,M1.1
+CPM105,แพ้ยา (ยกเว้น แพ้ยาซ้ำ)/ADE: Adverse Drug Events ที่มีความรุนแรงระดับ E ขึ้นไป,,Clinical,M1.2
+CPM106,ไม่มี/ไม่ปฏิบัติตาม Guideline ของการใช้ Fatal Drug,,Clinical,M1.3
+CPM107,ผู้ป่วยได้รับยาที่มีคู่ยาปฏิกิริยารุนแรง,,Clinical,M1.3
+CPM201,Medication error : Prescribing (เกิดข้อผิดพลาด/อุบัติการณ์ในขั้นตอนการสั่ง ใช้ยา),,Clinical,M2
+CPM202,Medication error : Transcribing (เกิดข้อผิดพลาด/อุบัติการณ์ในขั้นตอนการ คัดลอกยา),,Clinical,M2
+CPM203,Medication error : Pre-dispensing (เกิดข้อผิดพลาด/อุบัติการณ์ในขั้นตอน การจัดเตรียมจ่ายยา),,Clinical,M2
+CPM204,Medication error : Dispensing (เกิดข้อผิดพลาด/อุบัติการณ์ในขั้นตอนการจ่าย ยา),,Clinical,M2
+CPM205,Medication error : Administration (เกิดข้อผิดพลาด/อุบัติการณ์ในขั้นตอน การให้ยา),,Clinical,M2
+CPM206,ไม่มี/ไม่ปฏิบัติตาม Guideline เกี่ยวกับ Look-Alike Sound-Alike Medication Names,,Clinical,M2.1
+CPM207,ผู้ป่วยได้รับยา ในกลุ่ม Look-Alike Sound-Alike Medication Names,,Clinical,M2.1
+CPM208,"ไม่มี/ไม่ปฏิบัติตามมาตรฐาน หรือ Guideline ของการใช้ยา ยกเว้น HAD, Fatal drug, Look-Alike Sound-Alike, Antibiotics",,Clinical,M2.2
+CPM301,ไม่มี/ไม่ปฏิบัติตาม Guideline เกี่ยวกับ Medication Reconciliation,,Clinical,M3
+CPM302,ผู้ป่วยไม่ได้รับยาเดิมต่อเนื่องจากไม่ได้ทำ Medication Reconciliation,,Clinical,M3
+CPM303,ผู้ป่วยได้รับยาซ้ำซ้อนจากไม่ได้ทำ Medication Reconciliation,,Clinical,M3
+CPM304,ผู้ป่วยได้รับยาที่มีปฏิกิริยากันโดยไม่ได้ทำ Medication Reconciliation,,Clinical,M3
+CPM401,ไม่มี/ไม่ปฏิบัติตาม Guideline เกี่ยวกับ Rational Drug Use,,Clinical,M4
+CPM402,การใช้ยาปฏิชีวนะในโรคติดเชื้อที่ระบบการหายใจช่วงบนและหลอดลมอักเสบ เฉียบพลันในผู้ป่วยนอก,,Clinical,M4
+CPM403,การใช้ยาปฏิชีวนะในโรคอุจจาระร่วงเฉียบพลัน,,Clinical,M4
+CPM404,การใช้ยาอย่างไม่สมเหตุผล (ยกเว้นยาปฏิชีวนะ),,Clinical,M4
+CPM501,"การให้เลือดผิด (Incorrect blood component transfused, IBCT หรือ Wrong blood transfused)",,Clinical,M5
+CPM502,การมีปฏิกิริยาจากการได้รับเลือด (Transfusion reaction),,Clinical,M5
+CPM503,"การไม่ปฏิบัติตามข้อกำหนด (Specific requirements not met, SRNM) ซึ่งเป็น เหตุให้ผู้ป่วยได้รับส่วนประกอบของเลือดที่ไม่เป็นไปตามที่กำหนด",,Clinical,M5
+CPM504,การให้เลือดที่ไม่เหมาะสม (Inappropriate transfusion),,Clinical,M5
+CPM505,"เกิดความผิดพลาดในการนำส่งและจัดเก็บส่วนประกอบของเลือด (Handling and storage errors, HSE)",,Clinical,M5
+CPM506,"กระบวนการปฏิบัติงาน/ขั้นตอนการดำเนินงานในการให้เลือดผู้ป่วยคลาดเคลื่อน จากข้อกำหนด (Right blood right patient, RBRP)",,Clinical,M5
+CPP101,Patient Identification,,Clinical,P1
+CPP201,การรายงานอาการ หรือสื่อสารข้อมูลเกี่ยวกับผู้ป่วยไม่เหมาะสม/ไม่ครบถ้วน,,Clinical,P2.1
+CPP202,การสื่อสารเพื่อการส่งตรวจหรือการรักษาทางรังสีวิทยาผิดพลาด/ไม่ครบถ้วน,,Clinical,P2.2
+CPP203,การสื่อสารเพื่อการส่งตรวจทางห้องปฏิบัติการผิดพลาด/ไม่ครบถ้วน,,Clinical,P2.2
+CPP204,การสื่อสารหรือส่งต่อข้อมูลการรักษาพยาบาลผู้ป่วยผิดพลาด เช่น ไม่สื่อสาร/ สื่อสารผิด/สื่อสารไม่ครบถ้วน/สื่อสารล่าช้า,,Clinical,P2.2
+CPP205,ไม่รายงาน Critical Test Results หรือรายงานล่าช้า,,Clinical,P2.3
+CPP206,เกิดความผิดพลาดในการรักษาพยาบาลซึ่งมีสาเหตุมาจาก Verbal or Telephone Order/Communication,,Clinical,P2.4
+CPP207,เกิดความผิดพลาดจากการใช้สื่อในกระบวนการรักษาพยาบาล เช่น ใช้คำย่อ/ ชื่อย่อ/สัญลักษณ์ที่ไม่เป็นสากล,,Clinical,P2.5
+CPP301,Misdiagnosis or delay diagnosis,,Clinical,P3
+CPP302,(Access & Entry) ผู้ป่วยเข้าถึงหรือได้รับบริการ ผิด/ล่าช้าไปจากเกณฑ์ หรือ โรคที่เป็น,,Clinical,P3
+CPP303,(Patient Assessment) ผู้ป่วยไม่ได้รับการประเมิน/ประเมินผิด/ประเมินไม่ ครบถ้วน ตามเกณฑ์ อาการหรือการดำเนินโรค,,Clinical,P3
+CPP304,(Planning of Care) ผู้ป่วยไม่ได้รับการวางแผนดูแล/วางแผนไม่ครอบคลุม หรือวางแผนผิดไปจากพยาธิสภาพ/สภาวะของโรค,,Clinical,P3
+CPP305,(Discharge Planning) ผู้ป่วยกลุ่มโรคจำเป็นไม่ได้รับการวางแผนจำหน่าย/ วางแผนไม่ครอบคลุม ตามเกณฑ์ หรือประเด็น,,Clinical,P3
+CPP306,(Patient Care Delivery) ผู้ป่วยได้รับการดูแลไม่ครอบคลุม/ ไม่เชื่อมโยง/ไม่ สอดคล้อง ตามเกณฑ์ อาการ หรือโรค,,Clinical,P3
+CPP307,(Patient Care Delivery) ผู้ป่วยได้รับการทำหัตถการที่มีความเสี่ยงใน สถานการณ์ หรือสถานที่ไม่เหมาะสม,,Clinical,P3
+CPP308,(Patient Care Delivery) ผู้ป่วยได้รับอาหารไม่เหมาะสมตามความต้องการ พื้นฐาน หรือข้อบ่งชี้ของโรค/การเจ็บป่วย,,Clinical,P3
+CPP309,(Information and Empowerment) ผู้ป่วย/ครอบครัวไม่ได้รับข้อมูลเพื่อ เสริมพลัง หรือได้รับไม่ชัดเจน/ ไม่ต่อเนื่อง/ไม่เหมาะสม กับการรับรู้หรือมี ส่วนร่วม,,Clinical,P3
+CPP310,(Information and Empowerment) ข้อมูลการวินิจฉัย/การดูแลรักษาของ ผู้ป่วยไม่ได้รับการบันทึกหรือได้รับการบันทึกไม่ครบถ้วน ไม่ชัดเจน ไม่เชื่อมโยง ต่อเนื่อง,,Clinical,P3
+CPP311,(Continuity of Care) ผู้ป่วยได้รับการดูแลไม่ต่อเนื่อง/ไม่เชื่อมโยง/ไม่ สอดคล้อง กับบริบทและสภาวะของโรค,,Clinical,P3
+CPP401,"ผู้ป่วยเกิดภาวะแทรกซ้อนจากกระบวนการดูแลรักษาพยาบาลซึ่งป้องกันได้ (ยกเว้น เกิดแผลกดทับ, ตกเตียง/fall)",,Clinical,P4
+CPP402,ผู้ป่วยพยายามฆ่าตัวตาย/ฆ่าตัวตาย,,Clinical,P4
+CPP403,ผู้ป่วยถูกลักพาตัว สลับ หรือสูญหาย หรือพลัดหลง หรือหลบหนี,,Clinical,P4
+CPP404,เกิดแผลกดทับ,,Clinical,P4.1
+CPP405,ตกเตียง/fall,,Clinical,P4.2
+CPP406,ผู้ป่วยอาละวาดก้าวร้าว,,Clinical,P4
+CPP501,ผู้ป่วยไม่ได้รับ หรือได้รับการบรรเทาอาการปวดไม่เหมาะสมกับสภาพอาการ,,Clinical,P5.1
+CPP502,ผู้ป่วยมีภาวะแทรกซ้อนหรือเหตุการณ์ไม่พึงประสงค์จากการจัดการความปวด,,Clinical,P5.1
+CPP503,ผู้ป่วย Acute Pain ไม่ได้รับ หรือได้รับการบรรเทาอาการปวดไม่เหมาะสม,,Clinical,P5.2
+CPP504,Chronic Non-Cancer Patients ได้รับการสั่งใช้ Opioids ไม่เหมาะสม,,Clinical,P5.3
+CPP505,ผู้ป่วยมีภาวะแทรกซ้อนหรือเหตุการณ์ไม่พึงประสงค์จากการใช้ opioids ใน การระงับปวดเรื้อรังที่มิใช่มะเร็ง,,Clinical,P5.3
+CPP506,Management for Cancer Pain and Palliative Care ไม่เหมาะสม,,Clinical,P5.4
+CPP601,ผู้ป่วยที่จำเป็นต้องส่งต่อเพื่อการรักษา ไม่ได้รับการส่งต่อหรือส่งต่อได้ใน ช่วงเวลาไม่เหมาะสม,,Clinical,P6
+CPP602,มีภาวะแทรกซ้อนหรือเหตุการณ์ไม่พึงประสงค์ที่ป้องกันได้ระหว่างส่งต่อ,,Clinical,P6
+CPL101,ท่อ เลื่อนหลุดเกิด re-intubation,,Clinical,L1
+CPL102,"Mis-connect, Dis-connect",,Clinical,L1
+CPL103,ความคลาดเคลื่อนการให้สารน้ำจากการใช้ Infusion pump,,Clinical,L1
+CPL201,ผลการตรวจวิเคราะห์ทางห้องปฏิบัติการผิดพลาด ล่าช้า หรือไม่สามารถ ปฏิบัติการตรวจวิเคราะห์ได้,,Clinical,L2
+CPL202,สิ่งส่งตรวจไม่ถูกต้อง ไม่เหมาะสม หรือไม่มีสิ่งส่งตรวจ,,Clinical,L2
+CPL203,เตรียมตรวจ/ตรวจทางรังสีผิดพลาด (เช่น ผิดประเภท/ผิดคำสั่ง/ผิดตำแหน่ง/ ผิดข้าง/ผิดเทคนิคการตรวจ),,Clinical,L2
+CPE101,Un-planed Cardiopulmonary Resuscitation (CPR),,Clinical,E1
+CPE201,Sepsis with death,,Clinical,E2.1
+CPE202,ผู้ป่วย Acute Coronary Syndrome ไม่ได้รับการตรวจรักษาในช่วงเวลา golden period,,Clinical,E2.2
+CPE203,Acute Ischemic Stroke ที่ให้การรักษาไม่ทัน golden period,,Clinical,E2.3
+CPE204,เกิดภาวะแทรกซ้อนจากการทำ Cardiopulmonary Resuscitation (CPR),,Clinical,E2.4
+CPE301,PPH with Complicate,,Clinical,E3.1
+CPE302,มารดาเสียชีวิตจากการคลอด,,Clinical,E3.2
+CPE303,ทารกเสียชีวิตจากการคลอด,,Clinical,E3.2
+CPE304,ภาวะแทรกซ้อนจากการคลอดที่ป้องกันได้เกิดขึ้นกับมารดา,,Clinical,E3.2
+CPE305,ภาวะแทรกซ้อนจากการคลอดที่ป้องกันได้เกิดขึ้นกับทารก (Birth injury),,Clinical,E3.2
+CPE306,Severe Birth Asphyxia,,Clinical,E3.3
+CPE401,ผู้ป่วยฉุกเฉินไม่ได้รับการตรวจรักษาภายในระยะเวลา 30 นาที,,Clinical,E4.1
+CPE402,Under triage,,Clinical,E4.1
+CPE403,Over triage,,Clinical,E4.1
+CPE404,ผู้ป่วยไม่รอตรวจ ไม่พึงพอใจ ร้องเรียน,,Clinical,E4.1
+CPE405,Delay Diagnosis and Delay treatment ในผู้ป่วย ฉุกเฉิน และผู้ป่วย Fast Track,,Clinical,E4.1
+CPE406,ผู้ป่วยเสียชีวิตที่ห้องฉุกเฉินระหว่างรอการตรวจรักษา,,Clinical,E4.2
+CPE407,Missed Diagnosis,,Clinical,E4.2
+CPE408,Un-planed ICU ในผู้ป่วยฉุกเฉิน/ ผู้ป่วยวิกฤติ,,Clinical,E4.3
+CPE409,ผู้ป่วยได้รับการตรวจรักษาในห้องฉุกเฉินนานมากกว่า 2 ชั่วโมงก่อน Admit หรือนานมากกว่า 4 ชั่วโมงก่อนการจำหน่ายกลับบ้าน,,Clinical,E4.4
+CPE410,เกิดอุบัติภัยหมู่ที่ให้ความช่วยเหลือได้ไม่ทันเวลา,,Clinical,E4.5
+CPE411,เกิด disaster หรือภาวะฉุกเฉินที่ไม่พึงประสงค์ต่าง ๆ ที่ ER,,Clinical,E4.5
+CPO101,เรื่องอื่น ๆ ที่ไม่ใช่ SIMPLE โปรดระบุ ..............................................................,,Clinical,-
+CSG101,เกิดปัญหา in VBAC เช่น Uterine rupture/ตกเลือด ตอนที่ III /,,Clinical,G1
+CSG102,เกิดปัญหาใน Preclampsia (เช่น Eclampsia/HELLP Syndrome/Severe eclampsia/Abruption/SE from MgSO4) ตอนที่ III /,,Clinical,G1
+CSG103,เกิดปัญหาใน Pregnancy with GDM (เช่น Polyhydramneos/PIH/Macrosomia/DFIU) ตอนที่ III /,,Clinical,G1
+CSG104,เกิดปัญหาใน Pregnancy with HIV เช่น M-F transmission ตอนที่ III/,,Clinical,G1
+CSG105,เกิดภาวะวิกฤติใน Placenta Previa (เช่น APH/PPH) ตอนที่ III /,,Clinical,G1
+CSG106,เกิดภาวะแทรกซ้อนใน Amniocentisis (เช่น Haemorrhage/Sepsis/Fetal loss/Abort/Uterine contraction) ตอนที่ III /,,Clinical,G1
+CSG107,เกิดปัญหาใน Premature Contraction (เช่น Preterm labour/SE from Inhibit) ตอนที่ III /,,Clinical,G1
+CSG201,เกิดปัญหาใน Twin (เช่น Preterm labour/PROM/PPH/Birth asphysia/PIH/Discordant twin) ตอนที่ III /,,Clinical,G2
+CSG301,เกิด TOA ใน PID ตอนที่ III /,,Clinical,G3
+CSG302,เกิดภาวะวิกฤติ ใน Abort (เช่น Embolism/Shock) ตอนที่ III /,,Clinical,G3
+CSG303,เกิดภาวะวิกฤติใน Ectopic pregnancy (เช่น Rupture/Shock) ตอนที่ III /,,Clinical,G3
+CSG304,เกิดภาวะวิกฤติใน Ovarian tumor (เช่น Rupture/Twist) ตอนที่ III /,,Clinical,G3
+CSG305,เกิดภาวะแทรกซ้อนใน CIN (เช่น Persistence/Recurrent/CA Cervix) ตอนที่ III /,,Clinical,G3
+CSG306,เกิดภาวะแทรกซ้อนใน Myoma uteri (เช่น Hypermenorrhea/Infertile/Urinary Incontenence) ตอนที่ III /,,Clinical,G3
+CSS101,ทำ Perm-cath insertion แล้วเกิด Bleeding/Pneumothorax ตอนที่ III /,,Clinical,S1
+CSS102,เกิด Bleeding with shock ในโรค Blunt abdominal injury ตอนที่ III /,,Clinical,S1
+CSS103,เกิด Bowel gangrene ในโรค Hernia ตอนที่ III /,,Clinical,S1
+CSS104,เกิด Gut obstruction ในโรค Carcinoma of colon ตอนที่ III /,,Clinical,S1
+CSS105,เกิด Intracranial hemorrhage ในโรค Head injury ตอนที่ III /,,Clinical,S1
+CSS106,เกิด Rupture ในโรค Acute appendicitis ตอนที่ III /,,Clinical,S1
+CSS107,เกิด Sepsis ในโรค Acute cholecystitis ตอนที่ III /,,Clinical,S1
+CSS108,เกิด Sepsis ในโรค Cellulitis ตอนที่ III /,,Clinical,S1
+CSS201,เกิด Bleeding ใน PCNC (Percutaneous Nephrocystostomy catheter) ตอนที่ III /,,Clinical,S2
+CSS202,เกิด Hydro-pneumothorax ใน PCNC (Percutaneous Nephrocystostomy catheter) ตอนที่ III /,,Clinical,S2
+CSS203,เกิด Renal pelvis perforation ใน PCNC (Percutaneous Nephrocystostomy catheter) ตอนที่ III /,,Clinical,S2
+CSM101,เกิด Hypoxemia/Respiratory failure ใน Exacerbation of COPD ตอนที่ III /,,Clinical,M1
+CSM102,เกิด Hypoxemia/Respiratory failure ใน Severe asthma ตอนที่ III /,,Clinical,M1
+CSM103,เกิด Hypoxemia/Respiratory failure ในโรค Avain influenza ตอนที่ III /,,Clinical,M1
+CSM104,เกิด Hypoxemia/Respiratory failure ในโรค H1N1 influenza ตอนที่ III /,,Clinical,M1
+CSM105,เกิด Hypoxemia/Respiratory failure ในโรค SARS ตอนที่ III /,,Clinical,M1
+CSM106,เกิดภาวะ Hypoxemia/Pneumothorax ในโรค PCP ตอนที่ III /,,Clinical,M1
+CSM107,เกิดภาวะ Hypoxemia/Respiratory failure ในโรค TB Lung ตอนที่ III /,,Clinical,M1
+CSM201,เกิด CHF/Arrhythmia/Cardiogenic shock ใน AMI ตอนที่ III /,,Clinical,M2
+CSM301,เกิดภาวะ Hypokalemia ในโรค Acute/Chronic Diarrhea ตอนที่ III /,,Clinical,M3
+CSM302,เกิดภาวะ Hypovolumic Shock ในโรค Acute/Chronic Diarrhea ตอนที่ III /,,Clinical,M3
+CSM303,เกิดภาวะ Hypovolumic Shock ในโรค UGI Bleeding ตอนที่ III /,,Clinical,M3
+CSM401,เกิดภาวะ Brain herniation ในโรค Toxoplasmosis ตอนที่ III /,,Clinical,M4
+CSM402,เกิดภาวะ Brain herniation ในโรค CVA ตอนที่ III /,,Clinical,M4
+CSM403,เกิดภาวะ Aspirate pneumonia ในโรค CVA ตอนที่ III /,,Clinical,M4
+CSM404,เกิดภาวะ IICP ในโรค Cryptococcal meningitis ตอนที่ III /,,Clinical,M4
+CSM501,เกิด Internal bleeding จากการทำ Liver biopsy ตอนที่ III /,,Clinical,M5
+CSM502,เกิด Pneumothorax จากการทำ Bronchoscopy ตอนที่ III /,,Clinical,M5
+CSM503,เกิด Brain herniation จากการทำ Lumbar punture ตอนที่ III /,,Clinical,M5
+CSM504,เกิด Gut perforation จากการทำ Gastroscopy/Colonoscopy ตอนที่ III /,,Clinical,M5
+CSM601,เกิดภาวะ Sepsis/Malnutrition ใน Steven Johnson Syndrome ตอนที่ III /,,Clinical,M6
+CSM602,เกิดภาวะ Septic shock ในโรค Acute pyelonephritis ตอนที่ III /,,Clinical,M6
+CSM603,เกิดภาวะ Septic shock/Cardiac arrest ใน Sepsis ตอนที่ III /,,Clinical,M6
+CSM604,เกิดภาวะ Severe acidosis ใน Lactic acidosis ตอนที่ III /,,Clinical,M6
+CSM605,เกิดภาวะ Shock/Arrhythmia จากการทำ Hemodialysis ตอนที่ III /,,Clinical,M5
+CSM606,เกิดภาวะแทรกซ้อนฉุกเฉินในโรค DM (เช่น Hypoglycemia/DKA) ตอนที่ III /,,Clinical,M6
+CSM607,เกิดภาวะแทรกซ้อนฉุกเฉินในโรค Dengue fever (เช่น Shock/Bleeding) ตอนที่ III /,,Clinical,M6
+CSM608,เกิดภาวะแทรกซ้อนฉุกเฉินในโรค ESRD (เช่น Fluid overload/Hyperkalemia) ตอนที่ III /,,Clinical,M6
+CSM609,เกิดภาวะแทรกซ้อนฉุกเฉินในโรค HT (เช่น CVA/Encephalopathy) ตอนที่ III /,,Clinical,M6
+CSP101,เกิด Apnea/RDS/BPD/ROP/NEC/Anemia ใน Preterm ที่ VLBW ตอนที่ III /,,Clinical,P1
+CSP102,เกิด Hypo-Hyperglycemia ใน Preterm ที่ VLBW ตอนที่ III /,,Clinical,P1
+CSP103,เกิด Hypo-Hyperthermia ใน Preterm ที่ VLBW ตอนที่ III /,,Clinical,P1
+CSP104,เกิด Hypo-Hyperglycemia/Polycythemia ใน Macrosomia/LGA/GDM ตอนที่ III /,,Clinical,P1
+CSP105,เกิด PPHN/Pneumothorax ใน MAS ตอนที่ III /,,Clinical,P1
+CSP201,เกิด Acidosis/Electrolyte Imbalance ในโรค Acute Diarrhea ตอนที่ III /,,Clinical,P2
+CSP202,เกิด Sepsis/Emphysema/IRDS/Hypoxia ในโรค Pneumonia ตอนที่ III /,,Clinical,P2
+CSP203,เกิด Shock/Bleeding/Pleural effusion ในโรค DHF ตอนที่ III /,,Clinical,P2
+CSO101,กระดูกหักใกล้ข้อ/หลังเข้าเฝือก 24 ชั่วโมง แล้วเกิด Compartment syndrome ตอนที่ III /,,Clinical,O1
+CSO102,ดึงถ่วงน้ำหนักผ่านกระดูก แล้วเกิดการเปลี่ยนแปลงระบบไหลเวียนเลือด ส่วนปลาย และระบบประสาท ตอนที่ III /,,Clinical,O1
+CSO103,เกิดภาวะแทรกซ้อนในโรค Long bone fracture เช่น Chest injury/Abdominal injury/C-spine injury/Fat embolism ตอนที่ III /,,Clinical,O1
+CSO104,เกิดภาวะแทรกซ้อนใน Total knee replacement เช่น Active blood loss/spinal shock ตอนที่ III /,,Clinical,O1
+CSO105,เกิดภาวะแทรกซ้อนใน Hip replacement เช่น Dislocation/Sciatic nerve injury/Hematoma/Fracture ตอนที่ III /,,Clinical,O1
+CSO106,เกิดภาวะแทรกซ้อนใน Laminectomy/Discectomy เช่น Cauda equina syndrome/Nerve root injury ตอนที่ III /,,Clinical,O1
+CSE101,Iris prolapsed ใน ECCE ตอนที่ III /,,Clinical,E1
+CSE102,Rupture posterior capsule ใน ECCE ตอนที่ III /,,Clinical,E1
+CSE103,Rupture posterior capsule ใน Phaco with IOL ตอนที่ III /,,Clinical,E1
+CSE104,กระจกตาบวม ใน ECCE ตอนที่ III /,,Clinical,E1
+CSE105,กระจกตาบวม ใน Phaco with IOL ตอนที่ III /,,Clinical,E1
+CSE106,Endophthalmitis ใน ECCE ตอนที่ III /,,Clinical,E1
+CSE107,Endophthalmitis ใน Phaco with IOL ตอนที่ III /,,Clinical,E1
+CSE108,Endophthamitis ใน Intravitreous ตอนที่ III /,,Clinical,E1
+CSE201,เกิดภาวะแทรกซ้อนในการทำ Tracheostomy Tube (เช่น Subcutaneous Emphysema/Bleeding/Pneumothorax/T-E fistula/Nerve injury) ตอนที่ III /,,Clinical,E2
+CSE202,เกิดภาวะแทรกซ้อนใน Thyroidectomy (เช่น Nerve injury/Hematoma/Hypoparathyroidism/Dysphagia) ตอนที่ III /,,Clinical,E2
+CSE203,เกิดภาวะแทรกซ้อนใน Tonsillectomy (เช่น Bleeding/Nasopharygeal stenosis) ตอนที่ III /,,Clinical,E2
+CSD101,เกิดปัญหาใน Dental Tx ผู้ป่วยโรค DM เช่น Hypo-Hyperglycemia/แผล หายช้า/Advance Periodontitis ตอนที่ III /,,Clinical,D1
+CSD102,เกิดปัญหาใน Dental Tx in Hemorrhagic disorders เช่น Spontaneous or prolong bleeding/Delayed healing ตอนที่ III /,,Clinical,D1
+CSD103,เกิด Airway obstruction ในโรค Ludwig's Angina ตอนที่ III /,,Clinical,D1
+CSD104,เกิด Allergy to Local anesthesia ใน Dental Tx ตอนที่ III /,,Clinical,D1
+CSD105,เกิด Chest pain/Acute MI ใน Dental Tx ผู้ป่วยโรค Angina pectoris or MI ตอนที่ III /,,Clinical,D1
+CSD106,เกิด Subacute bacterial endocarditis ใน Dental Tx ผู้ป่วยโรคลิ้นหัวใจ หรือใส่ลิ้นหัวใจเทียม ตอนที่ III /,,Clinical,D1
+CSD107,เกิด Tumor that extends to malignancy ในโรค Oral lesion แผลในช่องปาก ตอนที่ III /,,Clinical,D1
+CSD108,เกิดภาวะฉุกเฉินใน Emergency in dental clinic เช่น Syncope/Hyperventilation/Toxic effect of local anesthesia ตอนที่ III /,,Clinical,D1
+CSD109,เกิดภาวะแทรกซ้อนในผู้ป่วย Head and neck cancer therapy เช่น Osteoradionecrosis/Halitosis/Mucositis ตอนที่ III /,,Clinical,D1
+CSD110,เกิดภาวะแทรกซ้อนใน Oral surgery/Simple-Surgical extraction เช่น Bleeding/Pain and Swelling/Fibrinolytic alveolitis ตอนที่ III /,,Clinical,D1
+CSD111,แผลถอนฟันหายช้าและติดเชื้อ ในผู้ป่วย HIV/Immunosuppressive/On steroid ตอนที่ III /,,Clinical,D1
+GPS101,เกิดอุบัติการณ์ด้านความมั่นคงปลอดภัยไซเบอร์ที่ทำให้ข้อมูลความลับของ สถานพยาบาลรั่วไหล (Confidentiality Failure),,General,S1
+GPS102,เกิดอุบัติการณ์ด้านความมั่นคงปลอดภัยไซเบอร์ที่ทำให้ข้อมูลสารสนเทศของ สถานพยาบาลถูกแก้ไข/ลบ/เพิ่มเติม/ทำให้เสียหายหรือสูญหายโดยมิชอบ (Integrity Failure),,General,S1
+GPS103,เกิดอุบัติการณ์ด้านความมั่นคงปลอดภัยไซเบอร์ที่ทำให้ระบบสารสนเทศของ สถานพยาบาลขัดข้อง/ใช้การไม่ได้/ทำงานช้าหรือไม่ปกติ (Availability Failure),,General,S1
+GPS104,"เกิดอุบัติการณ์ด้านความมั่นคงปลอดภัยไซเบอร์ที่ทำให้เกิดความเสียหายต่อข้อมูล หรือระบบสารสนเทศของสถานพยาบาลมากกว่าหนึ่งด้าน (Multiple Failures) ระหว่าง Confidentiality Failure, Integrity Failure และ Availability Failure",,General,S1
+GPS105,เกิดอุบัติการณ์การละเมิดความเป็นส่วนตัว (Privacy) ของข้อมูลส่วนบุคคลของ บุคลากรหรือนักศึกษาของสถานพยาบาล ที่ไม่ใช่อุบัติการณ์ด้านความมั่นคง ปลอดภัยไซเบอร์,,General,S1
+GPS106,เกิดอุบัติการณ์ความละเมิดความเป็นส่วนตัว (Privacy) ของข้อมูลส่วนบุคคลของ ผู้ป่วย/ผู้รับบริการ หรือบุคคลภายนอก ที่ไม่ใช่อุบัติการณ์ด้านความมั่นคง ปลอดภัยไซเบอร์,,General,S1
+GPS201,บุคลากรถูกกล่าวถึงหรือวิพากษ์วิจารณ์ในทางลบบนสื่อสังคมออนไลน์หรือสื่อ สาธารณะที่เกี่ยวข้องกับการปฏิบัติหน้าที่,,General,S2
+GPS202,บุคลากรถูกกล่าวถึงหรือวิพากษ์วิจารณ์ในทางลบบนสื่อสังคมออนไลน์หรือสื่อ สาธารณะที่ไม่ได้เกี่ยวข้องกับการปฏิบัติหน้าที่,,General,S2
+GPS203,บุคลากรใช้สื่อสังคมออนไลน์ไม่เหมาะสม เกิดผลกระทบทางลบต่อตนเอง บุคลากรคนอื่น สถานพยาบาล ผู้ป่วย/ผู้รับบริการ หรือบุคคลภายนอก,,General,S2
+GPS204,"เกิดอุบัติการณ์ที่ส่งผลกระทบทางลบต่อสถานพยาบาลบนสื่อสังคมออนไลน์ เช่น Drama, Fake News แต่ไม่ได้เกิดจากบุคลากร และไม่กระทบบุคลากรคนใดคน หนึ่งโดยตรง",,General,S2
+GPI101,บุคลากรถูกวัสดุอุปกรณ์มีคมทิ่มตำ,,General,I1
+GPI102,บุคลากรสัมผัสเลือดหรือสารคัดหลั่งบริเวณเยื่อบุหรือผิวหนังที่มีแผล (mucous membrane and non-intact skin exposure to blood and body fluid),,General,I1
+GPI103,"บุคลากรไม่ได้รับการสร้างภูมิคุ้มกันโรคก่อนสัมผัส (pre-exposure prophylaxis, active immunization) ที่เหมาะสมตามลำดับความสำคัญและหน้าที่",,General,I1
+GPI104,"บุคลากรไม่ได้รับการป้องกันการติดเชื้อหลังสัมผัสเชื้อที่อาจก่อโรคได้จากการ ปฏิบัติงาน (post-exposure prophylaxis, passive immunization)",,General,I1
+GPI201,บุคลากรติดเชื้อที่แพร่ทางอากาศ (airborne transmission) จากการปฏิบัติงาน ได้แก่ วัณโรค หัด และอีสุกอีใส,,General,I2.1
+GPI202,บุคลากรติดเชื้อที่แพร่ผ่านละอองฝอย (droplet transmission) จากการ ปฏิบัติงาน เช่น ไข้หวัดใหญ่ หัดเยอรมัน ฯลฯ,,General,I2.2
+GPI203,บุคลากรติดเชื้อที่แพร่ทางการสัมผัส (contact transmission) จากการปฏิบัติงาน เช่น เอชไอวี ตับอักเสบบี ตับอักเสบซี ฯลฯ,,General,I2.3
+GPI204,บุคลากรติดเชื้อที่แพร่ผ่านพาหะ (vector borne transmission) จากการ ปฏิบัติงาน เช่น ไข้เลือดออก ซิก้า ฯลฯ,,General,I2.4
+GPM101,เจ้าหน้าที่ทะเลาะกันในขณะปฏิบัติงาน,,General,M1.1
+GPM102,เจ้าหน้าที่ถูกคุกคามทางจิตใจ,,General,M1.2
+GPM103,เจ้าหน้าที่มีภาวะเป็น second victim,,General,M1.2
+GPM104,เจ้าหน้าที่มีภาวะเครียดจากการทำงาน,,General,M1.3
+GPM203,เกิดเรื่องร้องเรียนจากการบริการทางการแพทย์,,General,M2
+GPM204,เกิดเรื่องร้องเรียนทั่วไป ซึ่งไม่เกี่ยวกับการบริการทางการแพทย์,,General,M2
+GPM205,เกิดเรื่องฟ้องร้องทางคดีผู้บริโภค,,General,M2
+GPM206,เกิดเรื่องฟ้องร้องทางคดีแพ่ง,,General,M2
+GPM207,เกิดเรื่องฟ้องร้องทางคดีอาญา,,General,M2
+GPM208,เกิดเรื่องฟ้องร้องทางคดีปกครอง,,General,M2
+GPP101,บุคลากรปฏิบัติงานโดยมีภาระงานที่มากเกินเกณฑ์มาตรฐาน (work load),,General,P1
+GPP102,บุคลากรที่มีภาวะเสี่ยงต่อการติดเชื้อ หรือรับการแพร่กระจายเชื้อ ไม่ได้รับการ ป้องกันหรือดูแลที่เหมาะสม,,General,P1
+GPP103,บุคลากรประสบอุบัติเหตุหรือบาดเจ็บจากการปฏิบัติงาน (ยกเว้น ถูกวัสดุอุปกรณ์ มีคมทิ่มตำ),,General,P1
+GPP201,องค์กรเกิดภาวะที่คุกคามบุคลากรด้านกายภาพ ได้แก่ เสียงดัง (noise) แสงสว่าง (light) ความร้อน (heat),,General,P2.1
+GPP202,บุคลากรไม่ได้รับ/ไม่ได้ใช้อุปกรณ์ หรือใช้ไม่ถูกต้องในการป้องกันและคุ้มครอง ความปลอดภัยทางกายภาพ,,General,P2.1
+GPP203,บุคลากรเกิดโรคจากการทำงาน ซึ่งมีสาเหตุจาก Physical Hazard,,General,P2.1
+GPP204,องค์กรมีภาวะความไม่ปลอดภัยจากสารเคมีและวัตถุอันตราย,,General,P2.2
+GPP205,บุคลากรไม่ได้รับ/ไม่ได้ใช้อุปกรณ์ หรือใช้ไม่ถูกต้องในการป้องกันและคุ้มครอง ความปลอดภัยทางเคมี,,General,P2.2
+GPP206,บุคลากรเกิดโรคจากการทำงาน ซึ่งมีสาเหตุจาก Chemical Hazard,,General,P2.2
+GPP207,องค์กรเกิดความไม่ปลอดภัยจากรังสีในที่ทำงาน เช่น เกิดการรั่วไหลของรังสี,,General,P2.3
+GPP208,บุคลากรไม่ได้รับ/ไม่ได้ใช้อุปกรณ์ หรือใช้ไม่ถูกต้องในการป้องกันและคุ้มครอง ความปลอดภัยทางรังสี,,General,P2.3
+GPP209,บุคลากรเกิดโรคจากการทำงาน ซึ่งมีสาเหตุจาก Radiation Hazard,,General,P2.3
+GPP210,บุคคลากรมีการทำงานในท่าทางหรือลักษณะอันอาจมีผลกระทบต่อสุขภาพด้าน โครงร่างของกระดูกและกล้ามเนื้อ,,General,P2.4
+GPP211,บุคลากรไม่ได้รับคำแนะนำ/อุปกรณ์ในการปรับ การทำงานเพื่อลดผลกระทบต่อ สุขภาพด้านโครงร่างของกระดูกและกล้ามเนื้อ,,General,P2.4
+GPP212,บุคลากรเกิดโรคจากการทำงานเกี่ยวกับโครงร่างกระดูกและกล้ามเนื้อ ซึ่งมีสาเหตุ จาก Biomechanical Hazard,,General,P2.4
+GPP301,บุคลากรไม่ได้ตรวจสุขภาพก่อนการรับเข้าทำงาน,,General,P3.1
+GPP302,บุคลากรได้รับการตรวจสุขภาพประจำปี ซึ่งมีโปรแกรมการตรวจไม่ครบถ้วน เหมาะสม ตรงตามลักษณะงาน,,General,P3.2
+GPP303,บุคลากรที่มีโอกาสแพร่กระจายเชื้อต่างๆ มาทำงานโดยไม่ป้องกันและควบคุม,,General,P3.2
+GPL101,อุปกรณ์บนรถพยาบาลไม่พร้อมใช้ ไม่เหมาะสมและไม่ปลอดภัยสำหรับการส่งต่อ ผู้ป่วย,,General,L1.1
+GPL102,บุคคลากรที่เกิดอุบัติเหตุจากการคมนาคมหรือการเดินทางโดยระบบขนส่ง สาธารณะระหว่างการปฏิบัติงาน,,General,L1.2
+GPL103,บุคลากรเสียชีวิตหรือบาดเจ็บจากการปฏิบัติหน้าที่ระหว่างการส่งต่อผู้ป่วยด้วย รถพยาบาล,,General,L1.2
+GPL104,เกิดอุบัติเหตุของรถพยาบาลระหว่างปฏิบัติหน้าที่,,General,L1.2
+GPL105,พนักงานขับรถมีสภาพไม่พร้อมสมบูรณ์สำหรับการขับรถพยาบาล เช่น พักผ่อน น้อย อายุมาก ดื่มสุรา,,General,L1.3
+GPL106,พนักงานขับรถไม่ปฏิบัติตามแนวทางความปลอดภัยของรถบริการการแพทย์ ฉุกเฉิน และรถพยาบาล เช่น ขับรถเร็วเกินกว่ากำหนด,,General,L1.3
+GPL201,บุคลากรไม่ปฏิบัติตามแนวทางการให้ข้อมูลด้านสุขภาพแก่ผู้รับบริการ,,General,L2.1
+GPL202,บุคลากรให้ข้อมูลไม่ครบถ้วนแก่ผู้ป่วยและญาติ,,General,L2.1
+GPL203,บุคลากรบันทึกข้อมูลในเวชระเบียนไม่ครบถ้วน ไม่ถูกต้อง,,General,L2.2
+GPL204,บุคลากรแก้ไขข้อมูลในเวชระเบียนโดยไม่ถูกต้องตามแนวทางและข้อกำหนดตาม กฎหมาย,,General,L2.2
+GPL205,เกิดปัญหาด้านการบริหารจัดการ/การเก็บรักษาเวชระเบียน เช่น เวชระเบียนสูญ หาย ผู้ป่วยคนเดียวมีเวชระเบียนสองฉบับ เป็นต้น,,General,L2.2
+GPE101,อันตรายจากโครงสร้างอาคารสถานที่และสิ่งแวดล้อมเชิงกายภาพ เช่น แสง เสียง ฝุ่นละออง มีเชื้อรา เป็นต้น,,General,E1
+GPE102,ห้องแยกโรค/Isolation room มีการระบายอากาศไม่เหมาะสม และ/หรือ ไม่ เป็นไปตามเกณฑ์มาตรฐาน,,General,E1
+GPE201,บุคลากรได้รับผลกระทบ Psychosocial factors จากผู้บังคับบัญชา หรือเพื่อน ร่วมงาน,,General,E2
+GPE202,บุคลากรไม่มี work-life balance,,General,E2
+GPE203,บรรยากาศในการทำงานและสภาวะแวดล้อมไม่เหมาะสม,,General,E2
+GPE204,บุคคลากรได้ทำงานในตำแหน่งที่ไม่มีความชำนาญ และไม่มีการเตรียมความพร้อม,,General,E2
+GPE205,"เกิดปัญหาด้านการจัดการสภาพแวดล้อมในการให้บริการ เช่น ไม่มีป้ายให้ คำแนะนำ/บอกทาง, ไม่มีทางหนีไฟหรือมีแต่ไม่พร้อมใช้/มีสิ่งกีดขวาง, ลิฟต์ ขัดข้อง มีคนติดในลิฟต์ หรือ ลิฟต์ไม่พร้อมใช้งาน/ชำรุด/ติดค้าง เป็นต้น",,General,E2
+GPE206,"เกิดปัญหาด้านการควบคุมสิ่งแวดล้อมในสถานที่ทำงาน เช่น ระบบน้ำอุปโภค- บริโภคไม่เพียงพอ/ไม่พร้อมใช้, ระบบไฟฟ้าไม่เพียงพอ ไม่พร้อมใช้/ดับ/ช็อต/ กระพริบ, การบำบัดน้ำเสีย/กำจัดขยะ ไม่ถูกวิธี/ไม่ได้มาตรฐาน",,General,E2
+GPE207,เกิดปัญหาความไม่ปลอดภัย/ขาดการปฏิบัติหรือไม่ปฏิบัติตามนโยบายความ ปลอดภัย เช่น ทรัพย์สินสูญหาย/ถูกลักขโมย เป็นต้น,,General,E2
+GPE301,บุคลากรได้รับภัยคุกคามหรือถูกทำร้ายทางวาจาจากบุคคลภายใน,,General,E3
+GPE302,บุคลากรได้รับภัยคุกคามหรือถูกทำร้ายทางกายจากบุคคลภายใน,,General,E3
+GPE303,บุคลากรได้รับภัยคุกคามหรือถูกทำร้ายทางวาจาจากผู้ป่วยและญาติหรือ บุคคลภายนอก,,General,E3
+GPE304,บุคลากรได้รับภัยคุกคามหรือถูกทำร้ายทางกายจากผู้ป่วยและญาติหรือ บุคคลภายนอก,,General,E3
+GPE305,เกิดกรณีความไม่สงบในสถานพยาบาล เช่น เมาสุราอาละวาด,,General,E3
+GPO101,เรื่องอื่น ๆ ที่ไม่ใช่ SIMPLE โปรดระบุ ...............................................................,,General,-
+GOS101,เกิดปัญหาด้านการควบคุมการวางแผน เช่น ไม่มีแผนปฏิบัติการ-แผนไม่ ครอบคลุม/การสื่อสารแผน/การมอบหมายผู้รับผิดชอบ/ไม่กำหนด วัตถุประสงค์ ตอนที่ I-2 /,,General,S1
+GOS102,เกิดปัญหาด้านการควบคุมกระบวนการปฏิบัติงาน เช่น ไม่กำหนด กระบวนการปฏิบัติงานที่สำคัญ/ขาดการประเมินประสิทธิภาพ/ขาดการ ติดตามผล/ไม่มีการปรับปรุงแก้ไขข้อเสนอแนะ ตอนที่ I-6 /,,General,S1
+GOS103,เกิดปัญหาด้านการติดตามประเมินผล เช่น ไม่มีการประเมินความคืบหน้า/ ไม่เปรียบเทียบผลการใช้จ่ายเงิน/ไม่แจ้งผลการประเมินให้ทราบ/ไม่ได้ ทบทวนวัตถุประสงค์-แผนและกระบวนการดำเนินงาน ตอนที่ I-4 /,,General,S1
+GOS201,อาคารสถานที่/พื้นที่ให้บริการ ไม่เหมาะสม/ไม่ปลอดภัย/ไม่ถูกสุขลักษณะ ตอนที่ I-3 /,,General,S2
+GOS202,ห้องน้ำหรือห้องสุขาไม่พร้อมใช้ (เช่น ชำรุด/กดชักโครกไม่ลง/ส้วมเต็ม/ไม่ พอใช้) หรือไม่สะดวกต่อผู้พิการ ตอนที่ I-3 /,,General,S2
+GOS301,อันตรายจากภัยธรรมชาติ อุทกภัย อัคคีภัย วาตภัย ตอนที่ II-1 /,,General,S3
+GOI101,เกิดปัญหาด้าน Hardware เช่น ไม่มีแผนบริหารจัดการ/ไม่เพียงพอ/ไม่ พร้อมใช้/ใช้ไม่ตรงวัตถุประสงค์/ใช้ผิดวิธี- เทคนิค ตอนที่ I-4 /,,General,I1
+GOI102,เกิดปัญหาด้าน Network & Security เช่น ไม่พร้อมใช้/ระบบล่ม/มีการ เข้าถึงโดยผู้ไม่มีสิทธิ์ ตอนที่ I-4 /,,General,I1
+GOI103,เกิดปัญหาด้าน Software เช่น ไม่เข้ากับ hardware/ไม่พร้อมใช้/ไม่ ตอบสนองความต้องการ/ใช้ผิดวิธี-เทคนิค ตอนที่ I-4 /,,General,I1
+GOI104,เกิดปัญหาด้าน User & IT Team เช่น ไม่มอบหมายผู้รับผิดชอบ/ไม่พร้อม/ ไม่ครอบคลุมบทบาทหน้าที่/ขาดความรู้และทักษะ ตอนที่ I-4 /,,General,I1
+GOI105,เกิดปัญหาด้านข้อมูล สารสนเทศ เช่น ไม่ถูกต้อง/ไม่ครบถ้วน/ไม่น่าเชื่อถือ/ ไม่เป็นปัจจุบัน ตอนที่ I-4 /,,General,I1
+GOI106,"เกิดปัญหาด้านระบบ/กระบวนการสื่อสาร เช่น ไม่มีแผน/วิธีการหรือช่อง ทางการสื่อสาร, ไม่สื่อสารหรือสื่อสารไม่ต่อเนื่อง/ไม่ครบถ้วน, ขาดการ ติดตามประเมินผลการสื่อสาร ตอนที่ I-3 /",,General,I1
+GOI201,"เกิดปัญหาด้านการควบคุมทรัพย์สิน เช่น ไม่กำหนดระเบียบ/ผู้รับผิดชอบ, ไม่มีทะเบียนคุม/เอกสารหลักฐานกำกับ, ขาดการตรวจสอบหรือสอบทาน ตอนที่ I-1 /",,General,I2
+GOI202,"เกิดปัญหาด้านระบบบริหารการพัสดุ เช่น ไม่กำหนดระเบียบ/แผนความ ต้องการและการจัดหา, ไม่มีทะเบียนคุม/การตรวจรับ/การบำรุงรักษา, ขาด การควบคุมการแจกจ่าย/การจำหน่าย ตอนที่ I-1 /",,General,I2
+GOI203,เกิดปัญหาด้านการควบคุมการใช้ทรัพยากร เช่น จัดสรรไม่เหมาะสม/ใช้ไม่ คุ้ม-ไม่ถูกตามมาตรฐาน/บุคลากรไม่ปฏิบัติตามข้อกำหนด-ขาดทักษะการใช้ ตอนที่ II-3 /,,General,I2
+GOM101,"เกิดปัญหาด้านการรับสมัคร บรรจุ แต่งตั้งบุคลากร เช่น ไม่มีการกำหนด กระบวนการคัดเลือก/ทักษะและความสามารถที่จำเป็นกับตำแหน่ง, ไม่มีการ เผยแพร่ข้อมูลการรับสมัคร/การสอบคัดเลือก, ไม่มีคำสั่งเป็นลายลักษณ์อักษรโดย ผู้บริหารสูงสุด ตอนที่ I-5 /",,General,M1
+GOM102,"เกิดปัญหาด้านการบริหารจัดการเกี่ยวกับบุคลากร เช่น ไม่กำหนดหน้าที่ ความรับผิดชอบ/การเปลี่ยนแปลงที่สำคัญเกี่ยวกับการมอบหมายงานเป็น ลายลักษณ์อักษร, ไม่มีการจัดทำแนวทางการปฏิบัติเรื่องค่าตอบแทน, การ เลื่อนขั้นเงินเดือนไม่มีการพิจารณาอนุมัติและจัดทำเป็นลายลักษณ์อักษร ตอนที่ I-5 /",,General,M1
+GOM103,"เกิดปัญหาด้านการพัฒนาบุคลากร เช่น ไม่มีการจัดสรรงบประมาณ/ ทรัพยากร/เครื่องมือ และการจัดฝึกอบรม, ไม่มีการพิจารณาความต้องการ ฝึกอบรมของบุคลากรเพื่อพัฒนาทักษะ ตอนที่ I-5 /",,General,M1
+GOM201,เกิดปัญหาด้านการควบคุมสภาพแวดล้อมของการดำเนินงาน เช่น เอกสาร กระบวนการดำเนินงานไม่เป็นปัจจุบัน/ไม่มีกฎ ระเบียบ ความรับผิดชอบที่ ชัดเจน/ขาดการติดตามผลและวางแผนป้องกัน ตอนที่ I-6 /,,General,M2
+GOP101,เกิดปัญหาด้านการควบคุมภารกิจ เช่น ไม่กำหนดวัตถุประสงค์-เป้าหมาย การดำเนินงาน/ภารกิจไม่ชัดเจนเป็นลายลักษณ์อักษร/ขาดการประกาศ สื่อสารภารกิจ ตอนที่ I-1 /,,General,P1
+GOP201,"เกิดปัญหาด้านกระบวนการบริการ เช่น ไม่มีการกำหนดมาตรฐานขั้นตอน กระบวนการบริการ, ให้บริการไม่ครอบคลุม/ไม่พร้อม/ไม่ตรงตามช่วง ระยะเวลา ตอนที่ I-6 /",,General,P2
+GOL101,"เกิดปัญหาด้านการควบคุม กำกับดูแลด้านวิชาชีพ เช่น บุคลากรมีคุณสมบัติ ไม่เหมาะสมตามมาตรฐานวิชาชีพ, ละเลยการปฏิบัติหน้าที่ หรือปฏิบัติ หน้าที่โดยไม่ใช้ความรู้ตามหลักวิชาการ, ประพฤติตนและประกอบกิจแห่ง วิชาชีพโดยไม่ถูกต้องตามกฎหมาย ตอนที่ II-2 /",,General,L1
+GOL102,เกิดเหตุการณ์การทุจริตในหน้าที่ หรือปฏิบัติโดยมีอคติ และ/หรือใช้อำนาจ หน้าที่เพื่อผลประโยชน์ส่วนตน ตอนที่ II-2 /,,General,L1
+GOE101,"เกิดปัญหาด้านการควบคุมการเงิน เช่น ไม่กำหนดระเบียบ/ผู้รับผิดชอบ, ไม่มี เอกสารหลักฐานกำกับ, ขาดการตรวจสอบหรือสอบทาน เป็นต้น ตอนที่ I-6 /",,General,E1
+GOE201,"เกิดปัญหาด้านการควบคุมงบประมาณ เช่น ไม่กำหนดระเบียบ/ผู้รับผิดชอบ, ไม่มีทะเบียนคุม/เอกสารหลักฐานกำกับ, ขาดการตรวจสอบหรือสอบทาน เป็น ต้น ตอนที่ I-6 /",,General,E2

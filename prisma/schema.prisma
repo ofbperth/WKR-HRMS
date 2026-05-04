@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  // For PostgreSQL later: change provider to "postgresql" and set DATABASE_URL accordingly.
+}
+
+
+
+
+
+
+
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  unitId       String?
+  unit         Unit?    @relation(fields: [unitId], references: [id])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reportedIncidents Incident[] @relation("ReportedIncidents")
+  reviewedIncidents Incident[] @relation("ReviewedIncidents")
+  closedIncidents   Incident[] @relation("ClosedIncidents")
+  rcaKpiOwner       RCA[]      @relation("RcaKpiOwner")
+  rcaApproved       RCA[]      @relation("RcaApprover")
+  actionOwned       ActionPlan[] @relation("ActionOwner")
+  actionVerified    ActionPlan[] @relation("ActionVerifier")
+  comments          Comment[]
+  attachments       Attachment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String   @default("หน่วยงาน")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  reportedIncidents Incident[] @relation("ReporterUnit")
+  incidentIncidents Incident[] @relation("IncidentUnit")
+}
+
+model RiskCode {
+  id                String            @id @default(cuid())
+  code              String            @unique
+  nameTh            String
+  nameEn            String?
+  clinicalOrGeneral String
+  simpleCategory    String
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  incidents Incident[]
+}
+
+model Incident {
+  id                String             @id @default(cuid())
+  incidentNo        String             @unique
+  reportedAt        DateTime           @default(now())
+  occurredAt        DateTime
+  reportedById      String
+  reportedBy        User               @relation("ReportedIncidents", fields: [reportedById], references: [id])
+  reporterUnitId    String
+  reporterUnit      Unit               @relation("ReporterUnit", fields: [reporterUnitId], references: [id])
+  incidentUnitId    String
+  incidentUnit      Unit               @relation("IncidentUnit", fields: [incidentUnitId], references: [id])
+  location          String?
+  patientHn         String?
+  affectedType      String
+  clinicalOrGeneral String
+  simpleCategory    String
+  riskCodeId        String
+  riskCode          RiskCode           @relation(fields: [riskCodeId], references: [id])
+  title             String
+  description       String
+  immediateAction   String?
+  severity          String
+  isSentinel        Boolean            @default(false)
+  needRmSupport     Boolean            @default(false)
+  status            String             @default("New")
+  reviewedById      String?
+  reviewedBy        User?              @relation("ReviewedIncidents", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  closedById        String?
+  closedBy          User?              @relation("ClosedIncidents", fields: [closedById], references: [id])
+  closedAt          DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  rca         RCA?
+  actionPlans ActionPlan[]
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@index([incidentNo])
+  @@index([occurredAt])
+  @@index([incidentUnitId])
+  @@index([riskCodeId])
+  @@index([severity])
+  @@index([status])
+  @@index([isSentinel])
+  @@index([needRmSupport])
+}
+
+model RCA {
+  id                             String    @id @default(cuid())
+  incidentId                     String    @unique
+  incident                       Incident  @relation(fields: [incidentId], references: [id])
+  problemStatement               String?
+  timeline                       String?
+  contributingHuman              String?
+  contributingProcess            String?
+  contributingEquipment          String?
+  contributingEnvironment        String?
+  contributingCommunication      String?
+  contributingIT                 String?
+  rootCause                      String?
+  preventiveAction               String?
+  kpi                            String?
+  kpiOwnerId                     String?
+  kpiOwner                       User?     @relation("RcaKpiOwner", fields: [kpiOwnerId], references: [id])
+  needRmSupport                  Boolean   @default(false)
+  status                         String    @default("Draft")
+  submittedAt                    DateTime?
+  approvedById                   String?
+  approvedBy                     User?     @relation("RcaApprover", fields: [approvedById], references: [id])
+  approvedAt                     DateTime?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  actionPlans ActionPlan[]
+}
+
+model ActionPlan {
+  id                  String           @id @default(cuid())
+  incidentId          String
+  incident            Incident         @relation(fields: [incidentId], references: [id])
+  rcaId               String?
+  rca                 RCA?             @relation(fields: [rcaId], references: [id])
+  title               String
+  description         String?
+  ownerId             String
+  owner               User             @relation("ActionOwner", fields: [ownerId], references: [id])
+  coOwnerText         String?
+  dueDate             DateTime
+  status              String           @default("NotStarted")
+  evidenceText        String?
+  evidenceUrl         String?
+  kpiName             String?
+  kpiTarget           String?
+  kpiResult           String?
+  effectivenessReview String?
+  verifiedById        String?
+  verifiedBy          User?            @relation("ActionVerifier", fields: [verifiedById], references: [id])
+  verifiedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  message    String
+  createdAt  DateTime @default(now())
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  incidentId   String
+  incident     Incident @relation(fields: [incidentId], references: [id])
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  fileName     String
+  fileUrl      String
+  fileType     String?
+  createdAt    DateTime @default(now())
+}
+
+model Notification {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  type              String
+  title             String
+  message           String
+  relatedIncidentId String?
+  isRead            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime @default(now())
+}
+
+model MonthlyReport {
+  id                String   @id @default(cuid())
+  year              Int
+  month             Int
+  generatedAt       DateTime @default(now())
+  generatedBySystem Boolean  @default(true)
+  summaryJson       String
+  fileUrl           String?
+
+  @@unique([year, month])
+}
