@@ -1,86 +1,161 @@
 import type React from "react";
 import Link from "next/link";
-import { ClipboardList, FilePlus2, Hospital, LayoutDashboard, LogOut, Search, Settings, ShieldAlert, Users } from "lucide-react";
+import { BarChart3, ClipboardCheck, ClipboardList, FileCheck2, FilePlus2, FileText, Grid3X3, Home, Hospital, LayoutDashboard, LogOut, Search, Settings, ShieldAlert, UserCircle, Users } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { roleLabels } from "@/lib/rbac";
 import { RoleBadge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
-const menus: Record<Role, Array<{ href: string; label: string; icon?: React.ReactNode }>> = {
+type MenuItem = { href: string; label: string; icon?: React.ReactNode };
+type MenuSection = { title: string; items: MenuItem[] };
+
+const rmTeamMenu: MenuSection[] = [
+  {
+    title: "Main work",
+    items: [
+      { href: "/rm", label: "Home", icon: <Home size={18} /> },
+      { href: "/report/new", label: "Report Incident", icon: <FilePlus2 size={18} /> },
+      { href: "/rm/triage", label: "Review Queue", icon: <FileCheck2 size={18} /> },
+      { href: "/rm/rca", label: "RCA", icon: <ClipboardCheck size={18} /> },
+      { href: "/rm/actions", label: "Actions", icon: <ClipboardList size={18} /> },
+      { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
+      { href: "/rm/search", label: "Search / Export", icon: <Search size={18} /> },
+    ],
+  },
+  {
+    title: "Find and report",
+    items: [
+      { href: "/my-reports", label: "My Reports", icon: <FileText size={18} /> },
+      { href: "/rm/reports", label: "Reports", icon: <BarChart3 size={18} /> },
+    ],
+  },
+  {
+    title: "Analytics",
+    items: [
+      { href: "/rm/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+      { href: "/rm/heatmap", label: "Heatmap", icon: <Grid3X3 size={18} /> },
+      { href: "/rm/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
+    ],
+  },
+  { title: "Settings", items: [{ href: "/rm/automation", label: "Automation", icon: <Settings size={18} /> }, { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> }] },
+];
+
+const adminMenu: MenuSection[] = [
+  {
+    title: "Admin",
+    items: [
+      { href: "/admin", label: "Console", icon: <Home size={18} /> },
+      { href: "/admin/dashboard", label: "Admin Dashboard", icon: <LayoutDashboard size={18} /> },
+      { href: "/admin/users", label: "Users", icon: <Users size={18} /> },
+      { href: "/admin/units", label: "Units", icon: <Hospital size={18} /> },
+      { href: "/admin/risk-codes", label: "Risk Codes", icon: <ShieldAlert size={18} /> },
+    ],
+  },
+  {
+    title: "RM operations",
+    items: [
+      { href: "/report/new", label: "Report Incident", icon: <FilePlus2 size={18} /> },
+      { href: "/rm/triage", label: "Review Queue", icon: <FileCheck2 size={18} /> },
+      { href: "/rm/rca", label: "RCA", icon: <ClipboardCheck size={18} /> },
+      { href: "/rm/actions", label: "Actions", icon: <ClipboardList size={18} /> },
+      { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
+      { href: "/rm/search", label: "Search / Export", icon: <Search size={18} /> },
+    ],
+  },
+  {
+    title: "Dashboards",
+    items: [
+      { href: "/rm/dashboard", label: "RM Dashboard", icon: <LayoutDashboard size={18} /> },
+      { href: "/rm/heatmap", label: "Heatmap", icon: <Grid3X3 size={18} /> },
+      { href: "/rm/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
+      { href: "/executive/dashboard", label: "Executive", icon: <BarChart3 size={18} /> },
+      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { href: "/my-reports", label: "My Reports", icon: <FileText size={18} /> },
+      { href: "/admin/auth-settings", label: "Auth Settings", icon: <ShieldAlert size={18} /> },
+      { href: "/admin/audit-logs", label: "Audit Logs", icon: <FileCheck2 size={18} /> },
+      { href: "/admin/automation", label: "Automation", icon: <Settings size={18} /> },
+      { href: "/admin/governance", label: "Governance", icon: <ShieldAlert size={18} /> },
+      { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
+    ],
+  },
+];
+
+const menus: Record<Role, MenuSection[]> = {
   Reporter: [
-    { href: "/reporter", label: "หน้าหลักผู้รายงาน", icon: <LayoutDashboard size={18} /> },
-    { href: "/report/new", label: "รายงาน Incident", icon: <FilePlus2 size={18} /> },
-    { href: "/my-reports", label: "My Reports", icon: <ClipboardList size={18} /> },
+    { title: "Report", items: [
+      { href: "/reporter", label: "Home", icon: <Home size={18} /> },
+      { href: "/report/new", label: "Report Incident", icon: <FilePlus2 size={18} /> },
+      { href: "/my-reports", label: "My Reports", icon: <FileText size={18} /> },
+      { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
+    ] },
   ],
   UnitManager: [
-    { href: "/unit", label: "หน้าหลักหัวหน้าหน่วย", icon: <LayoutDashboard size={18} /> },
-    { href: "/report/new", label: "รายงาน Incident", icon: <FilePlus2 size={18} /> },
-    { href: "/my-reports", label: "My Reports", icon: <ClipboardList size={18} /> },
-    { href: "/unit/incidents", label: "Unit Incident List", icon: <ClipboardList size={18} /> },
+    { title: "Unit work", items: [
+      { href: "/unit", label: "Home", icon: <Home size={18} /> },
+      { href: "/report/new", label: "Report Incident", icon: <FilePlus2 size={18} /> },
+      { href: "/unit/triage", label: "Review Queue", icon: <FileCheck2 size={18} /> },
+      { href: "/unit/rca", label: "RCA", icon: <ClipboardCheck size={18} /> },
+      { href: "/unit/actions", label: "Actions", icon: <ClipboardList size={18} /> },
+    ] },
+    { title: "Track", items: [
+      { href: "/unit/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+      { href: "/unit/incidents", label: "Search / Export", icon: <Search size={18} /> },
+      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+      { href: "/my-reports", label: "My Reports", icon: <FileText size={18} /> },
+      { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
+    ] },
   ],
-  RMTeam: [
-    { href: "/rm", label: "RM Workbench", icon: <ShieldAlert size={18} /> },
-    { href: "/report/new", label: "รายงาน Incident", icon: <FilePlus2 size={18} /> },
-    { href: "/my-reports", label: "My Reports", icon: <ClipboardList size={18} /> },
-    { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
-    { href: "/rm/search", label: "Search / Export", icon: <Search size={18} /> },
-  ],
+  RMTeam: rmTeamMenu,
   Executive: [
-    { href: "/executive", label: "Executive Dashboard", icon: <LayoutDashboard size={18} /> },
+    { title: "Executive", items: [
+      { href: "/executive", label: "Home", icon: <Home size={18} /> },
+      { href: "/executive/dashboard", label: "Dashboard", icon: <BarChart3 size={18} /> },
+      { href: "/executive/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
+      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+      { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
+    ] },
   ],
-  Admin: [
-    { href: "/admin", label: "Admin Home", icon: <Settings size={18} /> },
-    { href: "/admin/users", label: "Users", icon: <Users size={18} /> },
-    { href: "/admin/units", label: "Units", icon: <Hospital size={18} /> },
-    { href: "/admin/risk-codes", label: "Risk Codes", icon: <ShieldAlert size={18} /> },
-    { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
-  ],
+  Admin: adminMenu,
 };
 
 export function AppShell({ children, user }: { children: React.ReactNode; user: { name: string; email: string; role: Role } }) {
-  const menu = menus[user.role];
-
+  const sections = menus[user.role];
+  const mobileItems = sections.flatMap(section => section.items).slice(0, 9);
   return <div className="min-h-screen bg-transparent">
-    <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-emerald-100 bg-white/95 p-5 shadow-[10px_0_30px_rgba(15,23,42,0.04)] backdrop-blur lg:block">
-      <Link href="/dashboard" className="mb-8 flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-lg bg-emerald-500 text-white shadow-[0_12px_24px_rgba(34,197,94,0.28)]"><Hospital size={26} /></div>
-        <div>
-          <div className="text-xl font-bold tracking-normal text-emerald-600">WKR-HRMS</div>
-          <div className="text-xs font-medium text-slate-500">Hospital Risk Management</div>
+    <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-emerald-100 bg-white/95 shadow-xl shadow-emerald-950/5 backdrop-blur print:hidden lg:flex">
+      <div className="shrink-0 p-5 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-300 p-2.5 text-white shadow-lg shadow-emerald-500/20"><Hospital size={24} /></div>
+          <div><div className="text-lg font-bold tracking-normal text-emerald-700">WKR-HRMS</div><div className="text-xs text-muted-foreground">Hospital Risk Management</div></div>
         </div>
-      </Link>
-
-      <nav className="space-y-1.5">
-        {menu.map(m => <Link key={m.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700" href={m.href}>{m.icon}{m.label}</Link>)}
+      </div>
+      <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-3">
+        {sections.map(section => <div key={section.title} className="space-y-1">
+          <div className="px-3 text-[11px] font-bold uppercase text-emerald-700/80">{section.title}</div>
+          {section.items.map(m => <Link key={m.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800" href={m.href}><span className="text-emerald-600">{m.icon}</span>{m.label}</Link>)}
+        </div>)}
       </nav>
-
-      <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm shadow-sm">
-        <div className="font-semibold text-slate-900">{user.name}</div>
-        <div className="mb-3 truncate text-xs text-muted-foreground">{user.email}</div>
-        <div className="flex items-center justify-between gap-2"><RoleBadge role={user.role} /><span className="text-xs text-slate-500">{roleLabels[user.role]}</span></div>
+      <div className="shrink-0 border-t border-emerald-100 bg-white/90 p-3">
+        <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm"><div className="font-semibold">{user.name}</div><div className="mb-2 truncate text-xs text-muted-foreground">{user.email}</div><RoleBadge role={user.role} /><div className="mt-1 text-xs text-slate-500">{roleLabels[user.role]}</div></div>
       </div>
     </aside>
-
-    <main className="lg:pl-72">
-      <header className="sticky top-0 z-10 border-b border-emerald-100 bg-white/90 backdrop-blur-xl">
-        <div className="flex min-h-16 items-center justify-between gap-3 px-4 lg:px-8">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-slate-900 lg:text-base">ระบบรายงานและบริหารความเสี่ยงโรงพยาบาล</div>
-            <div className="hidden text-xs text-slate-500 sm:block">One screen, clear triage, role-based workflow</div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:block"><RoleBadge role={user.role} /></div>
-            <NotificationBell />
-            <form action="/api/auth/logout" method="post">
-              <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-emerald-50" aria-label="ออกจากระบบ"><LogOut size={16}/><span className="hidden sm:inline">ออกจากระบบ</span></button>
-            </form>
-          </div>
+    <main className="print:pl-0 lg:pl-72">
+      <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-3 border-b border-emerald-100 bg-white/86 px-4 backdrop-blur print:hidden lg:px-8">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-slate-900 sm:text-base">ระบบรายงานและบริหารความเสี่ยงโรงพยาบาล</div>
+          <div className="hidden text-xs text-muted-foreground sm:block">One screen, clear triage, role-based workflow</div>
         </div>
-        <nav className="flex gap-2 overflow-x-auto border-t border-emerald-50 px-4 py-2 lg:hidden">
-          {menu.map(m => <Link key={m.href} href={m.href} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">{m.icon}{m.label}</Link>)}
-        </nav>
+        <div className="flex shrink-0 items-center gap-3"><NotificationBell /><form action="/api/auth/logout" method="post"><button className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-emerald-50"><LogOut size={16}/><span className="hidden sm:inline">Logout</span></button></form></div>
       </header>
-      <div className="p-4 lg:p-8">{children}</div>
+      <nav className="flex gap-2 overflow-x-auto border-b border-emerald-100 bg-white/95 px-4 py-3 print:hidden lg:hidden">
+        {mobileItems.map(m => <Link key={m.href} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm" href={m.href}><span className="text-emerald-600">{m.icon}</span>{m.label}</Link>)}
+      </nav>
+      <div className="p-4 print:p-0 lg:p-8">{children}</div>
     </main>
   </div>;
 }

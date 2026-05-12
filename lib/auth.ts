@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 import { isRole, type Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE, signSession, verifySessionToken, type SessionUser } from "@/lib/session";
@@ -23,6 +25,10 @@ export async function requireUser(roles?: Role[]) {
 }
 
 export function apiError(error: unknown) {
+  if (error instanceof ZodError) return Response.json({ error: "VALIDATION_ERROR" }, { status: 400 });
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return Response.json({ error: "CONFLICT" }, { status: 409 });
+  }
   const message = error instanceof Error ? error.message : "UNKNOWN";
   if (message === "UNAUTHORIZED") return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
   if (message === "FORBIDDEN") return Response.json({ error: "FORBIDDEN" }, { status: 403 });
