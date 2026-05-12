@@ -52,7 +52,7 @@ export default function LoginPage() {
               <div className="text-sm font-medium text-slate-500">Hospital Risk Management System</div>
             </div>
           </div>
-          <div className="max-w-xl rounded-lg border border-emerald-100 bg-white/82 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)]">
+          <div className="max-w-xl rounded-lg border border-emerald-100 bg-white/80 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)]">
             <h1 className="text-2xl font-bold tracking-normal text-slate-950">UI/UX Design Direction</h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">ระบบรายงานและบริหารความเสี่ยงที่เน้นความเร็ว ความชัดเจน และการทำงานตามบทบาทของผู้ใช้</p>
             <div className="mt-6 grid gap-3 text-sm text-slate-700">
@@ -63,7 +63,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <Card className="w-full border-emerald-100 bg-white/94">
+        <Card className="w-full border-emerald-100 bg-white/95">
           <CardHeader className="text-center">
             <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-lg bg-emerald-500 text-white shadow-[0_16px_30px_rgba(34,197,94,0.25)]"><Hospital size={34} /></div>
             <CardTitle className="text-2xl text-emerald-600">WKR-HRMS</CardTitle>
