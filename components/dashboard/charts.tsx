@@ -19,11 +19,11 @@ export function LinkedStatCard({ title, value, href, caption }: { title: string;
 }
 
 export function TrendLineChart({ title, data, high = false }: { title: string; data: any[]; high?: boolean }) {
-  return <ChartCard title={title}>{data.length === 0 ? <Empty /> : <ResponsiveContainer width="100%" height={240}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis allowDecimals={false} /><Tooltip /><Line type="monotone" dataKey={high ? "high" : "total"} stroke="#2563eb" strokeWidth={2} /></LineChart></ResponsiveContainer>}</ChartCard>;
+  return <ChartCard title={title}>{data.length === 0 ? <Empty /> : <ResponsiveContainer width="100%" height={300}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis allowDecimals={false} /><Tooltip /><Line type="monotone" dataKey={high ? "high" : "total"} stroke="#2563eb" strokeWidth={2} /></LineChart></ResponsiveContainer>}</ChartCard>;
 }
 
 export function RateLineChart({ title, data, dataKey = "nearMissRate" }: { title: string; data: any[]; dataKey?: string }) {
-  return <ChartCard title={title}>{data.length === 0 ? <Empty /> : <ResponsiveContainer width="100%" height={240}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} /><Tooltip formatter={(value) => [`${value}%`, "Rate"]} /><Line type="monotone" dataKey={dataKey} stroke="#dc2626" strokeWidth={2} /></LineChart></ResponsiveContainer>}</ChartCard>;
+  return <ChartCard title={title}>{data.length === 0 ? <Empty /> : <ResponsiveContainer width="100%" height={300}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} /><Tooltip formatter={(value) => [`${value}%`, "Rate"]} /><Line type="monotone" dataKey={dataKey} stroke="#dc2626" strokeWidth={2} /></LineChart></ResponsiveContainer>}</ChartCard>;
 }
 
 export function SeverityBarChart({ title, data, drilldown }: { title: string; data: any[]; drilldown?: Drilldown }) {
@@ -32,7 +32,7 @@ export function SeverityBarChart({ title, data, drilldown }: { title: string; da
     const href = drilldownHref(item, drilldown);
     if (href) router.push(href);
   };
-  return <ChartCard title={title}><ResponsiveContainer width="100%" height={240}><BarChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" onClick={open}>{data.map((item, i) => <Cell key={i} fill={colors[i % colors.length]} className={drilldownHref(item, drilldown) ? "cursor-pointer" : ""} />)}</Bar></BarChart></ResponsiveContainer></ChartCard>;
+  return <ChartCard title={title}><ResponsiveContainer width="100%" height={300}><BarChart data={data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" onClick={open}>{data.map((item, i) => <Cell key={i} fill={colors[i % colors.length]} className={drilldownHref(item, drilldown) ? "cursor-pointer" : ""} />)}</Bar></BarChart></ResponsiveContainer></ChartCard>;
 }
 
 export function CategoryPieChart({ title, data, drilldown }: { title: string; data: any[]; drilldown?: Drilldown }) {
@@ -41,7 +41,7 @@ export function CategoryPieChart({ title, data, drilldown }: { title: string; da
     const href = drilldownHref(item, drilldown);
     if (href) router.push(href);
   };
-  return <ChartCard title={title}>{data.every(item => item.value === 0) ? <Empty /> : <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={data} dataKey="value" nameKey="name" outerRadius={90} label onClick={open}>{data.map((item, i) => <Cell key={i} fill={colors[i % colors.length]} className={drilldownHref(item, drilldown) ? "cursor-pointer" : ""} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>}</ChartCard>;
+  return <ChartCard title={title}>{data.every(item => item.value === 0) ? <Empty /> : <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={data} dataKey="value" nameKey="name" outerRadius={110} label onClick={open}>{data.map((item, i) => <Cell key={i} fill={colors[i % colors.length]} className={drilldownHref(item, drilldown) ? "cursor-pointer" : ""} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>}</ChartCard>;
 }
 
 export function TopRiskCodeBarChart({ title, data, dataKey = "value", labelKey = "riskCode", drilldown }: { title: string; data: any[]; dataKey?: string; labelKey?: string; drilldown?: Drilldown }) {
@@ -50,7 +50,7 @@ export function TopRiskCodeBarChart({ title, data, dataKey = "value", labelKey =
     const href = drilldownHref(item, drilldown);
     if (href) router.push(href);
   };
-  const chartHeight = Math.max(320, data.length * 58);
+  const chartHeight = Math.max(360, data.length * 62);
   return <ChartCard title={title} className="lg:col-span-2" contentClassName="overflow-x-auto">
     {data.length === 0 ? <Empty /> : <div className="min-w-[760px]">
       <ResponsiveContainer width="100%" height={chartHeight}>
@@ -89,7 +89,7 @@ export function SentinelEventList({ title, data }: { title: string; data: Array<
 }
 
 function ChartCard({ title, children, className, contentClassName }: { title: string; children: React.ReactNode; className?: string; contentClassName?: string }) {
-  return <Card className={className}><CardHeader><CardTitle>{title}</CardTitle></CardHeader><CardContent className={contentClassName}>{children}</CardContent></Card>;
+  return <Card className={className}><CardHeader><CardTitle className="text-lg leading-7">{title}</CardTitle></CardHeader><CardContent className={contentClassName}>{children}</CardContent></Card>;
 }
 
 function Empty() {
