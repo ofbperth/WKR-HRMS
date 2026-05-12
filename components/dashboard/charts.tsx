@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const colors = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#65a30d", "#be123c", "#4b5563"];
 type Drilldown = { basePath: string; param: string; field: string };
@@ -51,7 +52,7 @@ export function TopRiskCodeBarChart({ title, data, dataKey = "value", labelKey =
     if (href) router.push(href);
   };
   const chartHeight = Math.max(360, data.length * 62);
-  return <ChartCard title={title} className="lg:col-span-2" contentClassName="overflow-x-auto">
+  return <ChartCard title={title} className="dashboard-chart-wide" contentClassName="overflow-x-auto">
     {data.length === 0 ? <Empty /> : <div className="min-w-[760px]">
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} layout="vertical" margin={{ top: 8, right: 32, bottom: 8, left: 8 }} barCategoryGap={18}>
@@ -78,7 +79,7 @@ export function UnitRankingChart({ title, data, score = false, drilldown }: { ti
 }
 
 export function SentinelEventList({ title, data }: { title: string; data: Array<{ id: string; incidentNo: string; unit: string; severity: string; riskCode: string; title: string; status: string }> }) {
-  return <ChartCard title={title} className="lg:col-span-2">
+  return <ChartCard title={title} className="dashboard-chart-wide">
     {data.length === 0 ? <Empty /> : <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-left text-sm">
         <thead className="border-b text-xs uppercase text-slate-500"><tr><th className="py-2 pr-3">Incident</th><th className="py-2 pr-3">Unit</th><th className="py-2 pr-3">Severity</th><th className="py-2 pr-3">Risk</th><th className="py-2 pr-3">Title</th><th className="py-2 pr-3">Status</th></tr></thead>
@@ -89,7 +90,7 @@ export function SentinelEventList({ title, data }: { title: string; data: Array<
 }
 
 function ChartCard({ title, children, className, contentClassName }: { title: string; children: React.ReactNode; className?: string; contentClassName?: string }) {
-  return <Card className={className}><CardHeader><CardTitle className="text-lg leading-7">{title}</CardTitle></CardHeader><CardContent className={contentClassName}>{children}</CardContent></Card>;
+  return <Card className={cn("dashboard-card", className)}><CardHeader><CardTitle className="text-lg leading-7">{title}</CardTitle></CardHeader><CardContent className={contentClassName}>{children}</CardContent></Card>;
 }
 
 function Empty() {

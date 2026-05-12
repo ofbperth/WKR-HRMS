@@ -21,7 +21,7 @@ export function DashboardFilter({ units = [], categories = [], showUnit = true }
     router.push(`?${query.toString()}`);
   }
 
-  return <form action={apply} className="grid grid-cols-1 gap-3 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+  return <form action={apply} className="dashboard-filter-form grid grid-cols-1 gap-3 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
     <label className="grid min-w-0 gap-1 text-sm font-medium">Period<select name="preset" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" value={preset} onChange={e => setPreset(e.target.value)}><option value="thisMonth">This month</option><option value="fiscalYear">Fiscal year</option><option value="last12">Last 12 months</option><option value="custom">Custom date</option></select></label>
     <label className="grid min-w-0 gap-1 text-sm font-medium">Start<DateField name="startDate" defaultValue={search.get("startDate") || ""} disabled={preset !== "custom"} /></label>
     <label className="grid min-w-0 gap-1 text-sm font-medium">End<DateField name="endDate" defaultValue={search.get("endDate") || ""} disabled={preset !== "custom"} /></label>

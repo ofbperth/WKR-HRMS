@@ -25,7 +25,7 @@ const defaultValues: Partial<FormValues> = {
 };
 
 function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
-  return <label className="space-y-1 text-sm font-medium text-slate-700"><span>{label}</span>{children}{error ? <p className="text-xs text-red-600">{error}</p> : null}</label>;
+  return <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700"><span>{label}</span>{children}{error ? <p className="text-xs text-red-600">{error}</p> : null}</label>;
 }
 
 export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes: DbRiskCode[] }) {
@@ -113,12 +113,21 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
 
   if (createdNo) return <Card><CardHeader><CardTitle>ส่งรายงานสำเร็จ</CardTitle></CardHeader><CardContent><p className="text-slate-600">Incident No</p><div className="mt-2 text-3xl font-bold text-blue-700">{createdNo}</div><p className="mt-4 text-sm text-slate-500">กำลังพาไปหน้ารายละเอียด...</p></CardContent></Card>;
 
-  return <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
-    <div className="flex flex-wrap gap-2 text-sm">
-      {[1,2,3].map(n => <button key={n} type="button" onClick={() => setStep(n)} className={`rounded-full border px-4 py-2 ${step === n ? "bg-primary text-white" : "bg-white"}`}>Step {n}</button>)}
+  return <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mx-auto max-w-5xl space-y-5">
+    <div className="rounded-lg border border-emerald-100 bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+      <div className="grid gap-2 sm:grid-cols-3">
+        {[
+          { n: 1, title: "เหตุการณ์" },
+          { n: 2, title: "ประเภท / ความรุนแรง" },
+          { n: 3, title: "ตรวจสอบ" },
+        ].map(item => <button key={item.n} type="button" onClick={() => setStep(item.n)} className={`flex min-h-12 items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition ${step === item.n ? "border-emerald-500 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+          <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${step === item.n ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>{item.n}</span>
+          <span><span className="block text-xs uppercase text-slate-500">Step {item.n}</span><span className="font-semibold">{item.title}</span></span>
+        </button>)}
+      </div>
     </div>
 
-    {step === 1 ? <Card><CardHeader><CardTitle>Step 1: ข้อมูลเหตุการณ์</CardTitle></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
+    {step === 1 ? <Card><CardHeader><CardTitle className="text-xl">Step 1: ข้อมูลเหตุการณ์</CardTitle><p className="mt-1 text-sm text-slate-500">ระบุเวลา หน่วยงาน และรายละเอียดเหตุการณ์ที่จำเป็น</p></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
       <Field label="วันที่เกิดเหตุ" error={errors.occurredDate?.message}><Input type="date" {...register("occurredDate")} /></Field>
       <Field label="เวลาเกิดเหตุ" error={errors.occurredTime?.message}><Input type="time" {...register("occurredTime")} /></Field>
       <Field label="หน่วยงานที่เกิดเหตุ" error={errors.incidentUnitId?.message}><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("incidentUnitId")}><option value="">เลือกหน่วยงาน</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
@@ -130,20 +139,20 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
       </div>
       <div className="md:col-span-2"><Field label="ชื่อเหตุการณ์แบบสั้น" error={errors.title?.message}><Input placeholder="เช่น จ่ายยาผิดขนาดก่อนถึงผู้ป่วย" {...register("title")} /></Field></div>
       {pdpaNameDetected ? <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด</div> : null}
-      <div className="md:col-span-2 rounded-lg border border-red-300 bg-red-700 p-3 text-sm font-semibold text-white shadow-sm">
+      <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium leading-6 text-red-800">
         ห้ามใส่ชื่อ-นามสกุล หรือข้อมูลที่สามารถระบุตัวตนผู้ป่วยในรายละเอียดเหตุการณ์ เพื่อให้เป็นไปตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ให้ใช้ HN/AN ในช่องที่กำหนดเท่านั้น และบันทึกเฉพาะข้อมูลที่จำเป็นต่อการบริหารความเสี่ยง
       </div>
       <div className="md:col-span-2"><Field label="รายละเอียดเหตุการณ์" error={errors.description?.message}><textarea className="min-h-32 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("description")} /></Field></div>
       <div className="md:col-span-2"><Field label="การแก้ไขเบื้องต้น"><textarea className="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("immediateAction")} /></Field></div>
-      <div className="md:col-span-2 flex justify-end"><Button type="button" onClick={goToStep2}>ถัดไป</Button></div>
+      <div className="md:col-span-2 flex flex-wrap justify-end gap-2 border-t pt-4"><Button type="button" onClick={goToStep2}>ถัดไป</Button></div>
     </CardContent></Card> : null}
 
-    {step === 2 ? <Card><CardHeader><CardTitle>Step 2: ประเภทและความรุนแรง</CardTitle></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
+    {step === 2 ? <Card><CardHeader><CardTitle className="text-xl">Step 2: ประเภทและความรุนแรง</CardTitle><p className="mt-1 text-sm text-slate-500">เลือกกลุ่มความเสี่ยง Risk code และระดับความรุนแรง</p></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
       <Field label="Clinical / General"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("clinicalOrGeneral")}><option value="Clinical">Clinical</option><option value="General">General</option></select></Field>
       <Field label="SIMPLE category" error={errors.simpleCategory?.message}><Input placeholder="เช่น Medication & Blood Safety" {...register("simpleCategory")} /></Field>
       <div className="md:col-span-2 space-y-2">
         <Field label="Risk code พร้อม search/dropdown" error={errors.riskCodeId?.message}><Input value={riskQuery} onChange={e => setRiskQuery(e.target.value)} placeholder={`ค้นหาเฉพาะ ${selectedClinicalOrGeneral} code / ชื่อไทย / SIMPLE`} /></Field>
-        <div className="max-h-60 overflow-auto rounded-lg border bg-white">
+        <div className="max-h-72 overflow-auto rounded-lg border bg-white">
           {filteredRiskCodes.length ? filteredRiskCodes.map(r => <button type="button" key={r.id} onClick={() => selectRiskCode(r)} className={`block w-full border-b px-3 py-2 text-left text-sm hover:bg-slate-50 ${values.riskCodeId === r.id ? "bg-blue-50" : ""}`}><span className="font-semibold">{r.code}</span> {r.nameTh}<span className="ml-2 text-xs text-slate-500">{r.clinicalOrGeneral} · {r.simpleCategory}</span>{values.riskCodeId === r.id ? <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] text-white">เลือกแล้ว</span> : null}</button>) : <div className="px-3 py-4 text-sm text-slate-500">ไม่พบ Risk code ในกลุ่ม {selectedClinicalOrGeneral}</div>}
         </div>
       </div>
@@ -176,16 +185,22 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
               </div>
             </label>;
           })}
-        </div> : <div className="grid gap-2 md:grid-cols-3">
-          {severityOptions.map(s => <label key={s} title={clinicalSeverityDescriptions[s]} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${values.severity === s ? "border-blue-500 bg-blue-50" : "bg-white"}`}><input type="radio" value={s} {...register("severity")} /><span><SeverityBadge severity={s} /><div className="mt-1 text-xs text-slate-600">{clinicalSeverityDescriptions[s]}</div></span></label>)}
+        </div> : <div className="grid items-stretch gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {severityOptions.map(s => <label key={s} title={clinicalSeverityDescriptions[s]} className={`grid min-h-32 cursor-pointer grid-cols-[1.25rem_1fr] gap-3 rounded-lg border p-4 ${values.severity === s ? "border-blue-500 bg-blue-50" : "bg-white"}`}>
+            <input className="mt-0.5" type="radio" value={s} {...register("severity")} />
+            <span className="grid min-w-0 content-start gap-2">
+              <span className="h-7"><SeverityBadge severity={s} /></span>
+              <span className="text-sm leading-6 text-slate-700">{clinicalSeverityDescriptions[s]}</span>
+            </span>
+          </label>)}
         </div>}
       </div>
-      <label className="flex items-center gap-3 rounded-lg border bg-white p-3 text-sm font-medium"><input type="checkbox" {...register("needRmSupport")} />ต้องการความช่วยเหลือจาก RM</label>
-      <div className="md:col-span-2 flex justify-between"><Button type="button" className="bg-slate-700" onClick={() => setStep(1)}>ย้อนกลับ</Button><Button type="button" onClick={goToStep3}>ถัดไป</Button></div>
+      <label className="md:col-span-2 flex w-fit items-center gap-3 rounded-lg border bg-white p-3 text-sm font-medium"><input type="checkbox" {...register("needRmSupport")} />ต้องการความช่วยเหลือจาก RM</label>
+      <div className="md:col-span-2 flex flex-wrap justify-between gap-2 border-t pt-4"><Button type="button" className="bg-slate-700" onClick={() => setStep(1)}>ย้อนกลับ</Button><Button type="button" onClick={goToStep3}>ถัดไป</Button></div>
     </CardContent></Card> : null}
 
-    {step === 3 ? <Card><CardHeader><CardTitle>Step 3: ตรวจสอบและส่งรายงาน</CardTitle></CardHeader><CardContent className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-2 text-sm">
+    {step === 3 ? <Card><CardHeader><CardTitle className="text-xl">Step 3: ตรวจสอบและส่งรายงาน</CardTitle><p className="mt-1 text-sm text-slate-500">ตรวจความถูกต้องก่อนส่งรายงานเข้าสู่ระบบ</p></CardHeader><CardContent className="space-y-4">
+      <div className="grid gap-3 text-sm md:grid-cols-2">
         <Summary label="วันเวลาเกิดเหตุ" value={`${values.occurredDate || "-"} ${values.occurredTime || ""}`} />
         <Summary label="หน่วยงาน" value={units.find(u => u.id === values.incidentUnitId)?.name || "-"} />
         <Summary label="ชื่อเหตุการณ์" value={values.title || "-"} />
@@ -193,8 +208,8 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
         <Summary label="Severity" value={values.severity ? `Level ${values.severity}: ${severityDescriptions[values.severity]}` : "-"} />
         <Summary label="Need RM support" value={values.needRmSupport ? "Yes" : "No"} />
       </div>
-      <div className="rounded-lg bg-slate-50 p-4 text-sm"><div className="font-semibold">รายละเอียด</div><p className="mt-1 whitespace-pre-wrap text-slate-600">{values.description || "-"}</p></div>
-      <div className="flex justify-between"><Button type="button" className="bg-slate-700" onClick={() => setStep(2)}>ย้อนกลับ</Button><Button disabled={submitting} type="submit">{submitting ? "กำลังส่ง..." : "ส่งรายงาน"}</Button></div>
+      <div className="rounded-lg border bg-slate-50 p-4 text-sm"><div className="font-semibold">รายละเอียด</div><p className="mt-1 whitespace-pre-wrap leading-6 text-slate-600">{values.description || "-"}</p></div>
+      <div className="flex flex-wrap justify-between gap-2 border-t pt-4"><Button type="button" className="bg-slate-700" onClick={() => setStep(2)}>ย้อนกลับ</Button><Button disabled={submitting} type="submit">{submitting ? "กำลังส่ง..." : "ส่งรายงาน"}</Button></div>
     </CardContent></Card> : null}
   </form>;
 }

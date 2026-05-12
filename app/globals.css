@@ -76,16 +76,13 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.16);
 }
 
-form:has(input[type="date"]):has(select),
-div:has(input[type="date"]):has(select) {
+.dashboard-filter-form {
   max-width: 100%;
   overflow: hidden;
 }
 
-form:has(input[type="date"]):has(select) > .grid,
-div:has(input[type="date"]):has(select) > .grid,
-form:has(input[type="date"]):has(select).grid,
-div:has(input[type="date"]):has(select).grid {
+.dashboard-filter-form > .grid,
+.dashboard-filter-form.grid {
   align-items: end;
   display: grid !important;
   gap: 1rem !important;
@@ -94,23 +91,19 @@ div:has(input[type="date"]):has(select).grid {
   overflow: hidden;
 }
 
-form:has(input[type="date"]):has(select) label,
-div:has(input[type="date"]):has(select) label {
+.dashboard-filter-form label {
   display: block;
   min-width: 0 !important;
   width: 100% !important;
 }
 
-form:has(input[type="date"]):has(select) input,
-form:has(input[type="date"]):has(select) select,
-div:has(input[type="date"]):has(select) input,
-div:has(input[type="date"]):has(select) select {
+.dashboard-filter-form input,
+.dashboard-filter-form select {
   min-width: 0 !important;
   width: 100% !important;
 }
 
-form:has(input[type="date"]):has(select) [class*="col-span"],
-div:has(input[type="date"]):has(select) [class*="col-span"] {
+.dashboard-filter-form [class*="col-span"] {
   grid-column: auto !important;
 }
 
@@ -126,6 +119,35 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 1 !important;
   pointer-events: auto !important;
   position: static !important;
+}
+
+.dashboard-chart-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.dashboard-chart-wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @page {

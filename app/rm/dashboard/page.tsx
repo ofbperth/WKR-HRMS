@@ -13,7 +13,7 @@ export default async function RmDashboardPage({ searchParams }: { searchParams: 
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">RM Dashboard</h1><p className="text-sm text-slate-600">Triage, RCA, action follow-up, and sentinel monitoring.</p></div>
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} />
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div className="dashboard-stat-grid">
       <LinkedStatCard title="New incidents" value={data.cards.newIncidents} href="/rm/search?status=New" />
       <LinkedStatCard title="Under review" value={data.cards.underReview} href="/rm/search?status=UnderReview" />
       <LinkedStatCard title="RCA not started" value={data.cards.rcaRequired} href="/rm/search?status=RCARequired" />
@@ -24,7 +24,7 @@ export default async function RmDashboardPage({ searchParams }: { searchParams: 
       <LinkedStatCard title="Sentinel events" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="Waiting verification" value={data.cards.waitingVerification} href="/rm/search?status=WaitingVerification" />
     </div>
-    <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,32rem),1fr))]">
+    <div className="dashboard-chart-grid">
       <SeverityBarChart title="Incident by status" data={data.charts.status} drilldown={{ basePath: "/rm/search", param: "status", field: "name" }} />
       <SeverityBarChart title="Incident by severity" data={data.charts.severity} drilldown={{ basePath: "/rm/search", param: "severity", field: "name" }} />
       <CategoryPieChart title="Clinical vs General risk" data={data.charts.clinicalGeneral} drilldown={{ basePath: "/rm/search", param: "clinicalOrGeneral", field: "name" }} />

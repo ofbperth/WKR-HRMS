@@ -22,7 +22,7 @@ export default async function UnitDashboardPage({ searchParams }: { searchParams
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">Unit Dashboard</h1><p className="text-sm text-slate-600">Incidents, RCA, and action status for your unit only.</p></div>
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} showUnit={false} />
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="dashboard-stat-grid">
       <LinkedStatCard title="This month" value={data.cards.totalThisMonth} href={rangeHref(basePath, getThisMonthRange())} />
       <LinkedStatCard title="Fiscal year" value={data.cards.totalFiscalYear} href={rangeHref(basePath, getFiscalYearRange())} />
       <LinkedStatCard title="Open RCA" value={data.cards.openRca} href={`${basePath}?status=RCARequired`} />
@@ -32,7 +32,7 @@ export default async function UnitDashboardPage({ searchParams }: { searchParams
       <LinkedStatCard title="Highest severity" value={data.cards.highestSeverity || "-"} href={`${basePath}?severity=${data.cards.highestSeverityLabel || ""}`} />
       <LinkedStatCard title="Closed case rate" value={`${data.cards.closedCaseRate}%`} href={`${basePath}?status=Closed`} />
     </div>
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="dashboard-chart-grid">
       <TrendLineChart title="Unit incident trend by month" data={data.charts.trend} />
       <SeverityBarChart title="Unit severity distribution" data={data.charts.severity} drilldown={{ basePath, param: "severity", field: "name" }} />
       <TopRiskCodeBarChart title="Unit top risk codes" data={data.charts.topRiskCodes} drilldown={{ basePath, param: "riskCodeId", field: "riskCodeId" }} />
