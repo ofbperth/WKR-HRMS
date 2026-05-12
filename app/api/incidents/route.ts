@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const params = Object.fromEntries(url.searchParams.entries());
     const incidents = await getIncidentList(user, params);
-    return Response.json(incidents.map(removeSensitiveIncidentIdentifiers));
+    return Response.json({ data: incidents.data.map(removeSensitiveIncidentIdentifiers), meta: incidents.meta });
   } catch (error) {
     return apiError(error);
   }
