@@ -71,16 +71,42 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.16);
 }
 
+form:has(input[type="date"]):has(select) {
+  align-items: end;
+  display: grid !important;
+  gap: 1rem !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)) !important;
+  max-width: 100%;
+  overflow: visible;
+}
+
+form:has(input[type="date"]):has(select) > * {
+  min-width: 0 !important;
+  width: 100%;
+}
+
+form:has(input[type="date"]):has(select) label,
+form:has(input[type="date"]):has(select) select,
+form:has(input[type="date"]):has(select) input {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+form:has(input[type="date"]):has(select) [class*="col-span"],
+form:has(input[type="date"]):has(select) [class*="md:col-span"],
+form:has(input[type="date"]):has(select) [class*="lg:col-span"] {
+  grid-column: auto !important;
+}
+
 input[type="date"] {
-  cursor: pointer;
+  appearance: auto;
+  cursor: text;
+  min-width: 0;
   position: relative;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  inset: 0;
-  height: auto;
-  opacity: 0;
-  position: absolute;
-  width: auto;
+  opacity: 1;
+  pointer-events: auto;
 }
