@@ -3,21 +3,49 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
+  --background: 152 42% 97%;
+  --foreground: 220 28% 13%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --primary: 199 89% 38%;
+  --card-foreground: 220 28% 13%;
+  --primary: 145 55% 43%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --destructive: 0 84% 60%;
+  --secondary: 150 34% 94%;
+  --secondary-foreground: 154 41% 18%;
+  --muted: 150 24% 95%;
+  --muted-foreground: 215 12% 43%;
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 199 89% 38%;
-  --radius: 0.8rem;
+  --border: 150 22% 87%;
+  --input: 150 22% 87%;
+  --ring: 145 55% 43%;
+  --radius: 0.5rem;
 }
-body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
+
+* { box-sizing: border-box; }
+
+html { min-height: 100%; }
+
+body {
+  min-height: 100%;
+  background:
+    linear-gradient(180deg, hsl(150 45% 98%) 0%, hsl(160 35% 96%) 48%, hsl(210 28% 97%) 100%);
+  color: hsl(var(--foreground));
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: hsl(145 55% 43% / 0.18);
+}
+
+select,
+textarea {
+  border-color: hsl(var(--input));
+  outline: none;
+}
+
+select:focus-visible,
+textarea:focus-visible {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.16);
+}
