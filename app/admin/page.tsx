@@ -29,7 +29,6 @@ export default async function Page() {
     <div className="grid gap-4 md:grid-cols-3">
       <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">Create an incident using RM-level access</p></Link>
       <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">View reports submitted by the current admin user</p></Link>
-      <Link href="/rm/incidents" className={actionClass}><div className="font-semibold text-slate-900">Incident Log</div><p className="mt-1 text-sm text-slate-600">Organization-wide incident list</p></Link>
       <Link href="/rm/search" className={actionClass}><div className="font-semibold text-slate-900">Search / Export</div><p className="mt-1 text-sm text-slate-600">Find, filter, open, and export incidents</p></Link>
       <Link href="/rm/triage" className={actionClass}><div className="font-semibold text-slate-900">Triage</div><p className="mt-1 text-sm text-slate-600">Review and classify new incidents</p></Link>
       <Link href="/rm/rca" className={actionClass}><div className="font-semibold text-slate-900">RCA Review</div><p className="mt-1 text-sm text-slate-600">Approve RCA or request revision</p></Link>

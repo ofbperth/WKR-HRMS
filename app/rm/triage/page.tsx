@@ -10,9 +10,9 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const params = searchParams;
-  const [lookup, incidents] = await Promise.all([getLookupData(), getTriageIncidentList(user, params)]);
+  const [lookup, incidentPage] = await Promise.all([getLookupData(), getTriageIncidentList(user, params)]);
   return <AppShell user={user}>
     <div className="mb-6"><h1 className="text-2xl font-bold">RM Triage</h1><p className="mt-2 text-slate-600">Review reported incidents, modify classification, and approve the next workflow step.</p></div>
-    <IncidentList incidents={incidents} lookup={lookup} basePath="/rm/triage" searchParams={params} canSeeSensitive={canSeeSensitive(user.role)} />
+    <IncidentList incidents={incidentPage.data} meta={incidentPage.meta} lookup={lookup} basePath="/rm/triage" searchParams={params} canSeeSensitive={canSeeSensitive(user.role)} />
   </AppShell>;
 }

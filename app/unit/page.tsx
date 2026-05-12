@@ -26,7 +26,7 @@ export default async function Page() {
     <div className="grid gap-4 md:grid-cols-3">
       <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
       <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">Incident Log</div><p className="mt-1 text-sm text-slate-600">รายการ incident ของหน่วยงาน</p></Link>
+      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">Search / Export</div><p className="mt-1 text-sm text-slate-600">Find, filter, open, and export unit incidents</p></Link>
     </div>
   </RoleHome></AppShell>;
 }
