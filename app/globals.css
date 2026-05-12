@@ -71,42 +71,54 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.16);
 }
 
-form:has(input[type="date"]):has(select) {
+form:has(input[type="date"]):has(select),
+div:has(input[type="date"]):has(select) {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+form:has(input[type="date"]):has(select) > .grid,
+div:has(input[type="date"]):has(select) > .grid,
+form:has(input[type="date"]):has(select).grid,
+div:has(input[type="date"]):has(select).grid {
   align-items: end;
   display: grid !important;
   gap: 1rem !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)) !important;
   max-width: 100%;
-  overflow: visible;
-}
-
-form:has(input[type="date"]):has(select) > * {
-  min-width: 0 !important;
-  width: 100%;
+  overflow: hidden;
 }
 
 form:has(input[type="date"]):has(select) label,
+div:has(input[type="date"]):has(select) label {
+  display: block;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+form:has(input[type="date"]):has(select) input,
 form:has(input[type="date"]):has(select) select,
-form:has(input[type="date"]):has(select) input {
+div:has(input[type="date"]):has(select) input,
+div:has(input[type="date"]):has(select) select {
   min-width: 0 !important;
   width: 100% !important;
 }
 
 form:has(input[type="date"]):has(select) [class*="col-span"],
-form:has(input[type="date"]):has(select) [class*="md:col-span"],
-form:has(input[type="date"]):has(select) [class*="lg:col-span"] {
+div:has(input[type="date"]):has(select) [class*="col-span"] {
   grid-column: auto !important;
 }
 
 input[type="date"] {
-  appearance: auto;
-  cursor: text;
+  appearance: auto !important;
+  cursor: pointer;
   min-width: 0;
-  position: relative;
+  position: static !important;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: static !important;
 }
