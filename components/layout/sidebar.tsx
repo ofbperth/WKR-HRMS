@@ -51,7 +51,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
       </Link>
 
       <nav className="space-y-1.5">
-        {menu.map(m => <Link key={m.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-650 transition hover:bg-emerald-50 hover:text-emerald-700" href={m.href}>{m.icon}{m.label}</Link>)}
+        {menu.map(m => <Link key={m.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700" href={m.href}>{m.icon}{m.label}</Link>)}
       </nav>
 
       <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm shadow-sm">
