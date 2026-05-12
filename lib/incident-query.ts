@@ -1,6 +1,8 @@
-import type { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
+import { activeIncidentFilter } from "@/lib/prisma-fields";
+
+type IncidentWhereInput = Record<string, unknown>;
 
 export type IncidentFilterParams = {
   from?: string;
@@ -20,21 +22,23 @@ export const incidentInclude = {
   reporterUnit: true,
   riskCode: true,
   reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
-} satisfies Prisma.IncidentInclude;
+};
 
 export function scopeWhereForUser(user: { id: string; role: Role; unitId: string | null }) {
-  if (user.role === "Reporter") return { reportedById: user.id } satisfies Prisma.IncidentWhereInput;
-  if (user.role === "UnitManager") return { incidentUnitId: user.unitId ?? "__NO_UNIT__" } satisfies Prisma.IncidentWhereInput;
-  if (user.role === "Executive") return {} satisfies Prisma.IncidentWhereInput;
-  return {} satisfies Prisma.IncidentWhereInput;
+  if (user.role === "Reporter") return { reportedById: user.id };
+  if (user.role === "UnitManager") return { incidentUnitId: user.unitId ?? "__NO_UNIT__" };
+  if (user.role === "Executive") return {};
+  return {};
 }
 
 export function buildIncidentWhere(user: { id: string; role: Role; unitId: string | null }, params: IncidentFilterParams) {
-  const where: Prisma.IncidentWhereInput = { AND: [scopeWhereForUser(user)] };
-  const and = where.AND as Prisma.IncidentWhereInput[];
+  const where: IncidentWhereInput = { AND: [scopeWhereForUser(user)] };
+  const and = where.AND as IncidentWhereInput[];
+  const activeFilter = activeIncidentFilter();
+  if (activeFilter) and.push(activeFilter);
 
   if (params.from || params.to) {
-    const occurredAt: Prisma.DateTimeFilter = {};
+    const occurredAt: Record<string, Date> = {};
     if (params.from) occurredAt.gte = new Date(`${params.from}T00:00:00`);
     if (params.to) occurredAt.lte = new Date(`${params.to}T23:59:59`);
     and.push({ occurredAt });
@@ -74,8 +78,9 @@ export async function getIncidentList(user: { id: string; role: Role; unitId: st
 }
 
 export async function getIncidentForUser(id: string, user: { id: string; role: Role; unitId: string | null }) {
+  const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
-    where: { id, AND: [scopeWhereForUser(user)] },
+    where: { id, AND: [scopeWhereForUser(user), ...(activeFilter ? [activeFilter] : [])] } as any,
     include: {
       incidentUnit: true,
       reporterUnit: true,
@@ -83,11 +88,38 @@ export async function getIncidentForUser(id: string, user: { id: string; role: R
       reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
       comments: { include: { user: { select: { name: true, role: true } } }, orderBy: { createdAt: "desc" } },
       attachments: true,
+      rca: { include: { kpiOwner: { select: { id: true, name: true, email: true, role: true, unitId: true } }, approvedBy: { select: { id: true, name: true, role: true } } } },
+      actionPlans: { include: { owner: { select: { id: true, name: true, email: true, role: true, unitId: true } }, verifiedBy: { select: { id: true, name: true, role: true } } }, orderBy: { dueDate: "asc" } },
     },
   });
   if (!incident) return null;
   const audits = await prisma.auditLog.findMany({ where: { entityType: "Incident", entityId: id }, include: { user: { select: { name: true, role: true } } }, orderBy: { createdAt: "desc" }, take: 30 });
   return { ...incident, audits };
+}
+
+export async function getActiveUsers() {
+  return prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, email: true, role: true, unitId: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export function removeSensitiveIncidentStorage<T extends Record<string, any>>(incident: T) {
+  const { hnEncrypted, anEncrypted, reporterNameEncrypted, ...rest } = incident;
+  return rest;
+}
+
+export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>>(incident: T) {
+  const reportedBy = incident.reportedBy
+    ? { ...incident.reportedBy, name: "[RESTRICTED]" }
+    : incident.reportedBy;
+  return {
+    ...removeSensitiveIncidentStorage(incident),
+    reportedBy,
+    patientHn: null,
+    patientAn: null,
+  };
 }
 
 export async function getLookupData() {
@@ -96,5 +128,5 @@ export async function getLookupData() {
     prisma.riskCode.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
     prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } }),
   ]);
-  return { units, riskCodes, simpleCategories: simpleCategories.map(s => s.simpleCategory) };
+  return { units, riskCodes, simpleCategories: simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory) };
 }

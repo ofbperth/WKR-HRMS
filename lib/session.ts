@@ -2,7 +2,12 @@ import { jwtVerify, SignJWT } from "jose";
 import { isRole, type Role } from "@/lib/types";
 
 export const SESSION_COOKIE = "hrms_session";
-const secret = new TextEncoder().encode(process.env.AUTH_SECRET || "dev-secret-change-me");
+
+function getSessionSecret() {
+  const value = process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV === "production" && !value) throw new Error("AUTH_SECRET_REQUIRED");
+  return new TextEncoder().encode(value || "dev-secret-change-me");
+}
 
 export type SessionUser = {
   id: string;
@@ -17,16 +22,22 @@ export async function signSession(user: SessionUser) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(secret);
+    .sign(getSessionSecret());
 }
 
 export async function verifySessionToken(token?: string): Promise<SessionUser | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSessionSecret());
     if (!payload.id || typeof payload.role !== "string" || !isRole(payload.role)) return null;
     return payload as unknown as SessionUser;
   } catch {
     return null;
   }
+}
+
+export async function refreshSessionUnit(token: string | undefined, unitId: string | null) {
+  const session = await verifySessionToken(token);
+  if (!session) return null;
+  return signSession({ ...session, unitId });
 }

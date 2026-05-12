@@ -1,0 +1,31 @@
+import { getFiscalYearRange, getLast12MonthsRange, getThisMonthRange, type AnalyticsFilters } from "@/lib/dashboard-analytics";
+
+function dateOnly(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export function normalizeDashboardSearchParams(searchParams: Record<string, string | string[] | undefined>): AnalyticsFilters {
+  const preset = typeof searchParams.preset === "string" ? searchParams.preset : "last12";
+  const filters: AnalyticsFilters = {};
+  if (preset === "thisMonth") {
+    const range = getThisMonthRange();
+    filters.startDate = dateOnly(range.start);
+    filters.endDate = dateOnly(range.end);
+  } else if (preset === "fiscalYear") {
+    const range = getFiscalYearRange();
+    filters.startDate = dateOnly(range.start);
+    filters.endDate = dateOnly(range.end);
+  } else if (preset === "last12") {
+    const range = getLast12MonthsRange();
+    filters.startDate = dateOnly(range.start);
+    filters.endDate = dateOnly(range.end);
+  } else {
+    if (typeof searchParams.startDate === "string") filters.startDate = searchParams.startDate;
+    if (typeof searchParams.endDate === "string") filters.endDate = searchParams.endDate;
+  }
+  for (const key of ["unitId", "clinicalOrGeneral", "simpleCategory", "includeClosed"] as const) {
+    if (typeof searchParams[key] === "string") filters[key] = searchParams[key];
+  }
+  return filters;
+}
+

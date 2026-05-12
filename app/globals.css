@@ -21,9 +21,14 @@
   --radius: 0.5rem;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
 
-html { min-height: 100%; }
+html {
+  min-height: 100%;
+}
 
 body {
   min-height: 100%;
@@ -121,4 +126,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 1 !important;
   pointer-events: auto !important;
   position: static !important;
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  main > div {
+    padding: 0 !important;
+  }
+
+  .print-page {
+    padding: 8mm !important;
+  }
 }

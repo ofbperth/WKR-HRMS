@@ -1,23 +1,66 @@
-import type { AuditLog, Comment, Incident, RiskCode, Unit, User } from "@prisma/client";
-import { formatDateTime, maskHn } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { canManageIncident, canSeeSensitive } from "@/lib/rbac";
 import { severityDescriptions } from "@/lib/severity";
+import type { DbAuditLog, DbComment, DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AddCommentForm, IncidentClassificationEditor } from "@/components/incidents/incident-detail-actions";
+import { ActionPlanForm, ActionUpdateForm, AddCommentForm, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
+import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 
-type DetailIncident = Incident & {
-  incidentUnit: Unit;
-  reporterUnit: Unit;
-  riskCode: RiskCode;
-  reportedBy: Pick<User, "id" | "name" | "email" | "role" | "unitId">;
-  comments: Array<Comment & { user: Pick<User, "name" | "role"> }>;
-  audits: Array<AuditLog & { user: Pick<User, "name" | "role"> | null }>;
+type DetailIncident = DbIncident & {
+  incidentUnit: DbUnit;
+  reporterUnit: DbUnit;
+  riskCode: DbRiskCode;
+  reportedBy: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
+  comments: Array<DbComment & { user: Pick<DbUser, "name" | "role"> }>;
+  audits: Array<DbAuditLog & { user: Pick<DbUser, "name" | "role"> | null }>;
+  rca?: {
+    id: string;
+    problemStatement: string | null;
+    timeline: string | null;
+    contributingHuman: string | null;
+    contributingProcess: string | null;
+    contributingEquipment: string | null;
+    contributingEnvironment: string | null;
+    contributingCommunication: string | null;
+    contributingIT: string | null;
+    rootCause: string | null;
+    preventiveAction: string | null;
+    kpi: string | null;
+    kpiOwnerId: string | null;
+    needRmSupport: boolean;
+    status: string;
+    submittedAt: Date | null;
+    approvedAt: Date | null;
+  } | null;
+  reviewedAt: Date | null;
+  actionPlans: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    ownerId: string;
+    owner: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
+    dueDate: Date;
+    status: string;
+    evidenceText: string | null;
+    evidenceUrl: string | null;
+    kpiName: string | null;
+    kpiTarget: string | null;
+    kpiResult: string | null;
+    effectivenessReview: string | null;
+    verifiedAt: Date | null;
+  }>;
 };
 
-export function IncidentDetail({ incident, currentUser, riskCodes }: { incident: DetailIncident; currentUser: Pick<User, "id" | "role" | "unitId" | "name" | "email">; riskCodes: RiskCode[] }) {
-  const sensitive = canSeeSensitive(currentUser.role);
+export function IncidentDetail({ incident, currentUser, units, riskCodes, users = [] }: { incident: DetailIncident; currentUser: Pick<DbUser, "id" | "role" | "unitId" | "name" | "email">; units: DbUnit[]; riskCodes: DbRiskCode[]; users?: Array<Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">> }) {
   const manage = canManageIncident(currentUser.role);
+  const canRevealSensitive = canSeeSensitive(currentUser.role);
+  const unitCanWork = currentUser.role === "UnitManager" && currentUser.unitId === incident.incidentUnitId;
+  const isIncidentOwner = currentUser.role === "Reporter" && currentUser.id === incident.reportedById;
+  const rcaSubmitted = ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"].includes(incident.status) || ["Submitted", "Approved"].includes(incident.rca?.status ?? "");
+  const canEditDetails = (isIncidentOwner || unitCanWork || manage) && !rcaSubmitted && incident.status !== "Rejected";
+  const canTriage = (manage || unitCanWork) && !incident.reviewedAt && !["Closed", "Rejected"].includes(incident.status);
+  const rcaAllowed = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status);
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{incident.incidentNo}</h1><p className="mt-1 text-slate-600">{incident.title}</p></div><div className="flex flex-wrap gap-2"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} /><SentinelBadge value={incident.isSentinel} /><RmSupportBadge value={incident.needRmSupport} /></div></div>
     <div className="grid gap-4 lg:grid-cols-3">
@@ -26,21 +69,53 @@ export function IncidentDetail({ incident, currentUser, riskCodes }: { incident:
         <Info label="วันเวลาที่เกิดเหตุ" value={formatDateTime(incident.occurredAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
-        <Info label="Reporter" value={`${incident.reportedBy.name} (${incident.reportedBy.email})`} />
-        <Info label="Patient HN" value={sensitive ? (incident.patientHn || "-") : maskHn(incident.patientHn)} />
+        <Info label="Reporter" value="Restricted" />
+        <div>
+          <div className="font-medium text-slate-500">Patient identifier</div>
+          {canRevealSensitive
+            ? <PatientIdentifierReveal incidentId={incident.id} patientHn={null} patientAn={null} requesterName={`${currentUser.name} (${currentUser.email})`} />
+            : <div className="rounded-lg border bg-slate-50 p-3 text-sm font-medium text-slate-700">Restricted</div>}
+        </div>
         <div><div className="font-medium text-slate-500">รายละเอียด</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.description}</p></div>
         <div><div className="font-medium text-slate-500">Immediate action</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.immediateAction || "-"}</p></div>
+        {canEditDetails ? <IncidentDetailEditor incident={incident} units={units} riskCodes={riskCodes} /> : null}
       </CardContent></Card>
       <Card><CardHeader><CardTitle>Classification</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
         <Info label="Affected type" value={incident.affectedType} />
         <Info label="Clinical/General" value={incident.clinicalOrGeneral} />
         <Info label="SIMPLE" value={incident.simpleCategory} />
         <Info label="Risk code" value={`${incident.riskCode.code} ${incident.riskCode.nameTh}`} />
+        <Info label="Medication 6 Rights" value={incident.medicationRight || "-"} />
         <Info label="Severity meaning" value={severityDescriptions[incident.severity]} />
       </CardContent></Card>
     </div>
 
-    {manage ? <div className="space-y-3"><h2 className="text-lg font-semibold">RM classification edit</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
+    {canTriage ? <div className="space-y-3"><TriageClassificationForm incident={incident} riskCodes={riskCodes} backHref={currentUser.role === "UnitManager" ? "/unit/triage" : "/rm/triage"} /></div> : null}
+
+    {manage && !canTriage ? <div className="space-y-3"><h2 className="text-lg font-semibold">RM classification edit</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
+
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+        {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">Status: {incident.rca.status}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">Submitted {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
+          <Info label="Problem" value={incident.rca.problemStatement || "-"} />
+          <Info label="Root cause" value={incident.rca.rootCause || "-"} />
+          <Info label="Preventive action" value={incident.rca.preventiveAction || "-"} />
+        </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
+        {(unitCanWork || currentUser.role === "Admin") && rcaAllowed ? <RcaForm incidentId={incident.id} rca={incident.rca} users={users} /> : null}
+        {manage && incident.rca?.status === "Submitted" ? <RcaApprovalForm incidentId={incident.id} /> : null}
+      </CardContent></Card>
+
+      <Card><CardHeader><CardTitle>Action plans</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+        {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มี action plan</p> : incident.actionPlans.map(action => <div key={action.id} className="space-y-3 rounded-lg border p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">Owner: {action.owner.name} · Due {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{action.status}</span></div>
+          <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
+          {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">Evidence</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>Evidence link</a> : null}</div> : null}
+          {(action.ownerId === currentUser.id || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} /> : null}
+        </div>)}
+        {(unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved" ? <ActionPlanForm incidentId={incident.id} users={users} /> : null}
+      </CardContent></Card>
+    </div>
 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>Comments</CardTitle></CardHeader><CardContent className="space-y-3">

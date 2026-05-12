@@ -19,8 +19,9 @@ export function maskHn(value?: string | null) {
 export function statusLabel(status: string) {
   const labels: Record<string, string> = {
     New: "ใหม่",
-    UnderReview: "กำลังทบทวน",
-    RCARequired: "ต้องทำ RCA",
+    UnderReview: "ผ่าน Triage / ไม่ต้อง RCA",
+    RCARequired: "ยังไม่ทำ RCA",
+    RCASubmitted: "RCA submitted",
     ActionOngoing: "ดำเนิน Action",
     WaitingVerification: "รอตรวจสอบ",
     Closed: "ปิดเคส",
@@ -34,6 +35,7 @@ export function statusTone(status: string) {
     New: "bg-blue-50 text-blue-700 border-blue-200",
     UnderReview: "bg-sky-50 text-sky-700 border-sky-200",
     RCARequired: "bg-red-50 text-red-700 border-red-200",
+    RCASubmitted: "bg-blue-50 text-blue-700 border-blue-200",
     ActionOngoing: "bg-amber-50 text-amber-700 border-amber-200",
     WaitingVerification: "bg-violet-50 text-violet-700 border-violet-200",
     Closed: "bg-emerald-50 text-emerald-700 border-emerald-200",

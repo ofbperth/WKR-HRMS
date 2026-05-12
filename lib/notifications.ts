@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 
@@ -10,7 +9,7 @@ export async function notifyRoles(roles: Role[], input: {
 }) {
   const users = await prisma.user.findMany({ where: { role: { in: roles }, isActive: true }, select: { id: true } });
   if (users.length === 0) return { count: 0 };
-  const data: Prisma.NotificationCreateManyInput[] = users.map(u => ({
+  const data = users.map((u: { id: string }) => ({
     userId: u.id,
     type: input.type,
     title: input.title,

@@ -3,7 +3,8 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { canAccessApiPath, canAccessPath, roleHome } from "@/lib/rbac";
 
 const publicPaths = ["/login"];
-const publicApiPrefixes = ["/api/auth/login", "/api/auth/logout"];
+const publicApiPrefixes = ["/api/auth/login", "/api/auth/logout", "/api/auth/google", "/api/auth/callback/google"];
+const unitOnboardingPaths = ["/onboarding/unit", "/api/onboarding/unit", "/api/auth/me", "/api/notifications"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,6 +27,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!session) return NextResponse.redirect(new URL("/login", request.url));
+  if (!session.unitId && unitOnboardingPaths.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (!session.unitId && !pathname.startsWith("/api") && pathname !== "/pdpa") return NextResponse.redirect(new URL("/onboarding/unit", request.url));
+  if (!session.unitId && pathname.startsWith("/api")) return NextResponse.json({ error: "USER_UNIT_REQUIRED" }, { status: 428 });
   if (pathname === "/" || pathname === "/dashboard") return NextResponse.redirect(new URL(roleHome[session.role], request.url));
   if (!canAccessPath(session.role, pathname)) return NextResponse.redirect(new URL(roleHome[session.role], request.url));
   return NextResponse.next();

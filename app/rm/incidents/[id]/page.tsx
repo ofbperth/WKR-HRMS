@@ -1,13 +1,5 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { AppShell } from "@/components/layout/sidebar";
-import { getIncidentForUser, getLookupData } from "@/lib/incident-query";
-import { IncidentDetail } from "@/components/incidents/incident-detail";
+import { redirect } from "next/navigation";
 
-export default async function Page({ params }: { params: { id: string } }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const [incident, lookup] = await Promise.all([getIncidentForUser(params.id, user), getLookupData()]);
-  if (!incident) notFound();
-  return <AppShell user={user}><IncidentDetail incident={incident} currentUser={user} riskCodes={lookup.riskCodes} /></AppShell>;
+export default function Page({ params }: { params: { id: string } }) {
+  redirect(`/rm/search/${params.id}`);
 }

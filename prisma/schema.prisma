@@ -19,11 +19,15 @@ model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
-  passwordHash String
+  passwordHash String?
   role         String
   unitId       String?
   unit         Unit?    @relation(fields: [unitId], references: [id])
   isActive     Boolean  @default(true)
+  authProvider String   @default("CREDENTIALS")
+  googleId     String?  @unique
+  image        String?
+  lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -38,6 +42,7 @@ model User {
   attachments       Attachment[]
   notifications     Notification[]
   auditLogs         AuditLog[]
+  invitesSent       UserInvite[] @relation("InvitedBy")
 }
 
 model Unit {
@@ -49,6 +54,7 @@ model Unit {
   updatedAt DateTime @updatedAt
 
   users             User[]
+  userInvites       UserInvite[]
   reportedIncidents Incident[] @relation("ReporterUnit")
   incidentIncidents Incident[] @relation("IncidentUnit")
 }
@@ -80,6 +86,11 @@ model Incident {
   incidentUnit      Unit               @relation("IncidentUnit", fields: [incidentUnitId], references: [id])
   location          String?
   patientHn         String?
+  patientAn         String?
+  hnEncrypted       String?            @map("hn_encrypted")
+  anEncrypted       String?            @map("an_encrypted")
+  reporterNameEncrypted String?        @map("reporter_name_encrypted")
+  medicationRight   String?
   affectedType      String
   clinicalOrGeneral String
   simpleCategory    String
@@ -92,6 +103,12 @@ model Incident {
   isSentinel        Boolean            @default(false)
   needRmSupport     Boolean            @default(false)
   status            String             @default("New")
+  lifecycleStatus   String             @default("ACTIVE") @map("lifecycle_status")
+  archivedAt        DateTime?          @map("archived_at")
+  deletedAt         DateTime?          @map("deleted_at")
+  retentionReviewRequired Boolean      @default(false) @map("retention_review_required")
+  legalHold         Boolean            @default(false) @map("legal_hold")
+  underInvestigation Boolean           @default(false) @map("under_investigation")
   reviewedById      String?
   reviewedBy        User?              @relation("ReviewedIncidents", fields: [reviewedById], references: [id])
   reviewedAt        DateTime?
@@ -112,6 +129,9 @@ model Incident {
   @@index([riskCodeId])
   @@index([severity])
   @@index([status])
+  @@index([archivedAt])
+  @@index([deletedAt])
+  @@index([lifecycleStatus])
   @@index([isSentinel])
   @@index([needRmSupport])
 }
@@ -129,6 +149,7 @@ model RCA {
   contributingCommunication      String?
   contributingIT                 String?
   rootCause                      String?
+  rcaEncrypted                   String?   @map("rca_encrypted")
   preventiveAction               String?
   kpi                            String?
   kpiOwnerId                     String?
@@ -143,6 +164,8 @@ model RCA {
   updatedAt                      DateTime  @updatedAt
 
   actionPlans ActionPlan[]
+
+  @@index([status])
 }
 
 model ActionPlan {
@@ -169,6 +192,10 @@ model ActionPlan {
   verifiedAt          DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
+
+  @@index([dueDate])
+  @@index([status])
+  @@index([ownerId])
 }
 
 model Comment {
@@ -209,12 +236,18 @@ model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
   user       User?    @relation(fields: [userId], references: [id])
+  userRole   String?   @map("role")
   action     String
   entityType String
   entityId   String?
+  ipAddress  String?   @map("ip_address")
   oldValue   String?
   newValue   String?
   createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entityType])
 }
 
 model MonthlyReport {
@@ -227,4 +260,111 @@ model MonthlyReport {
   fileUrl           String?
 
   @@unique([year, month])
+}
+
+model AuthSettings {
+  id                String   @id @default("default")
+  googleEnabled     Boolean  @default(false)
+  allowedDomains    String   @default("[]")
+  allowedEmails     String   @default("[]")
+  allowAutoProvision Boolean @default(false)
+  defaultRole       String   @default("Reporter")
+  defaultIsActive   Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model UserInvite {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  role        String
+  unitId      String?
+  unit        Unit?     @relation(fields: [unitId], references: [id])
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  status      String    @default("Pending")
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+
+  @@index([email])
+  @@index([status])
+}
+
+model AutomationRun {
+  id          String   @id @default(cuid())
+  jobName     String
+  status      String
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  message     String?
+  resultJson  String?
+  error       String?
+  triggeredBy String?
+
+  @@index([jobName])
+  @@index([startedAt])
+  @@index([status])
+}
+
+model RetentionRun {
+  id              String   @id @default(cuid())
+  mode            String
+  status          String
+  startedAt       DateTime @default(now()) @map("started_at")
+  finishedAt      DateTime? @map("finished_at")
+  reviewed        Int      @default(0)
+  archived        Int      @default(0)
+  softDeleted     Int      @default(0) @map("soft_deleted")
+  filesDeleted    Int      @default(0) @map("files_deleted")
+  skippedProtected Int     @default(0) @map("skipped_protected")
+  stoppedByFailsafe Boolean @default(false) @map("stopped_by_failsafe")
+  message         String?
+  resultJson      String?  @map("result_json")
+  createdById     String?  @map("created_by_id")
+
+  @@index([startedAt])
+  @@index([status])
+}
+
+model CacheEntry {
+  id          String   @id @default(cuid())
+  cacheKey    String   @unique @map("cache_key")
+  cacheType   String   @map("cache_type")
+  unitId      String?  @map("unit_id")
+  reportType  String?  @map("report_type")
+  filtersJson String   @map("filters_json")
+  payloadJson String   @map("payload_json")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([cacheType])
+  @@index([unitId])
+  @@index([reportType])
+  @@index([expiresAt])
+}
+
+model StorageObject {
+  id          String   @id @default(cuid())
+  bucket      String
+  objectKey   String   @unique @map("object_key")
+  objectType  String   @map("object_type")
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  storageTier String   @default("HOT") @map("storage_tier")
+  compressed  Boolean  @default(false)
+  readOnly    Boolean  @default(false) @map("read_only")
+  expiresAt   DateTime? @map("expires_at")
+  archivedAt  DateTime? @map("archived_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([objectType])
+  @@index([targetType, targetId])
+  @@index([storageTier])
+  @@index([expiresAt])
+  @@index([archivedAt])
+  @@index([deletedAt])
 }

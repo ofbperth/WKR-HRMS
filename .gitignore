@@ -1,6 +1,29 @@
-﻿node_modules
+﻿# dependencies
+node_modules
+
+# nextjs
 .next
+out
+
+# env
 .env
+.env.local
+
+# logs
+*.log
+
+# build
+dist
+coverage
+
+# prisma
 prisma/dev.db
 prisma/dev.db-journal
-*.tsbuildinfo
+
+# testing
+playwright-report
+test-results
+
+# misc
+.DS_Store
+Thumbs.db

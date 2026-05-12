@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import type { RiskCode, Unit } from "@prisma/client";
-import { createIncidentSchema } from "@/lib/validators";
-import { severityDescriptions } from "@/lib/severity";
+import { createIncidentSchema, medicationRightValues } from "@/lib/validators";
+import { clinicalSeverityDescriptions, generalSeverityDetails, severityDescriptions, severityOptionsFor } from "@/lib/severity";
+import type { DbRiskCode, DbUnit } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ function Field({ label, children, error }: { label: string; children: React.Reac
   return <label className="space-y-1 text-sm font-medium text-slate-700"><span>{label}</span>{children}{error ? <p className="text-xs text-red-600">{error}</p> : null}</label>;
 }
 
-export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: RiskCode[] }) {
+export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes: DbRiskCode[] }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [riskQuery, setRiskQuery] = useState("");
@@ -37,6 +37,7 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
   const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(createIncidentSchema), defaultValues });
   const values = watch();
   const selectedClinicalOrGeneral = values.clinicalOrGeneral || "Clinical";
+  const severityOptions = useMemo(() => severityOptionsFor(selectedClinicalOrGeneral), [selectedClinicalOrGeneral]);
   const filteredRiskCodes = useMemo(() => {
     const q = riskQuery.trim().toLowerCase();
     return riskCodes
@@ -45,6 +46,8 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
       .slice(0, 80);
   }, [riskCodes, riskQuery, selectedClinicalOrGeneral]);
   const selectedRisk = riskCodes.find(r => r.id === values.riskCodeId);
+  const isMedicationAdministration = selectedRisk?.code === "CPM205" || /Administration/i.test(selectedRisk?.nameTh ?? "");
+  const pdpaNameDetected = /(^|[\s,.;:()[\]{}"'“”‘’\-\/])(นาย|นาง|นางสาว|นส\.|ด\.ช\.?|ด\.ญ\.?|ดช|ดญ|miss|ms|mr|mrs)(?=$|[\s,.;:()[\]{}"'“”‘’\-\/])/i.test([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
 
   useEffect(() => {
     if (selectedRisk && selectedRisk.clinicalOrGeneral !== selectedClinicalOrGeneral) {
@@ -52,7 +55,10 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
       setValue("simpleCategory", "", { shouldValidate: true, shouldDirty: true, shouldTouch: true });
       setRiskQuery("");
     }
-  }, [selectedClinicalOrGeneral, selectedRisk, setValue]);
+    if (values.severity && !(severityOptions as readonly string[]).includes(values.severity)) {
+      setValue("severity", severityOptions[0], { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    }
+  }, [selectedClinicalOrGeneral, selectedRisk, setValue, severityOptions, values.severity]);
 
   async function goToStep2() {
     const ok = await trigger(["occurredDate", "occurredTime", "incidentUnitId", "affectedType", "title", "description"]);
@@ -79,7 +85,7 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
     alert("ยังส่งรายงานไม่ได้: กรุณาตรวจสอบช่องที่จำเป็นให้ครบ");
   }
 
-  function selectRiskCode(r: RiskCode) {
+  function selectRiskCode(r: DbRiskCode) {
     setValue("riskCodeId", r.id, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     setValue("simpleCategory", r.simpleCategory, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     setValue("clinicalOrGeneral", r.clinicalOrGeneral as "Clinical" | "General", { shouldValidate: true, shouldDirty: true, shouldTouch: true });
@@ -87,6 +93,11 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
   }
 
   async function onSubmit(input: FormValues) {
+    if (pdpaNameDetected) {
+      alert("ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด");
+      setStep(1);
+      return;
+    }
     setSubmitting(true);
     const res = await fetch("/api/incidents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
     setSubmitting(false);
@@ -113,8 +124,15 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
       <Field label="หน่วยงานที่เกิดเหตุ" error={errors.incidentUnitId?.message}><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("incidentUnitId")}><option value="">เลือกหน่วยงาน</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
       <Field label="สถานที่เกิดเหตุ"><Input placeholder="เช่น ห้องยา, ER zone 1, Ward" {...register("location")} /></Field>
       <Field label="ประเภทผู้ได้รับผลกระทบ"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("affectedType")}><option value="Patient">Patient</option><option value="Personnel">Personnel</option><option value="People">People</option><option value="Organization">Organization</option></select></Field>
-      <Field label="Patient HN (optional / masked ตาม permission)"><Input placeholder="HN ถ้าเกี่ยวกับผู้ป่วย" {...register("patientHn")} /></Field>
+      <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
+        <Field label="Patient HN (optional / masked ตาม permission)"><Input placeholder="HN ถ้าเกี่ยวกับผู้ป่วย" {...register("patientHn")} /></Field>
+        <Field label="Patient AN (optional / masked ตาม permission)"><Input placeholder="AN ถ้าเป็นผู้ป่วยใน" {...register("patientAn")} /></Field>
+      </div>
       <div className="md:col-span-2"><Field label="ชื่อเหตุการณ์แบบสั้น" error={errors.title?.message}><Input placeholder="เช่น จ่ายยาผิดขนาดก่อนถึงผู้ป่วย" {...register("title")} /></Field></div>
+      {pdpaNameDetected ? <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด</div> : null}
+      <div className="md:col-span-2 rounded-lg border border-red-300 bg-red-700 p-3 text-sm font-semibold text-white shadow-sm">
+        ห้ามใส่ชื่อ-นามสกุล หรือข้อมูลที่สามารถระบุตัวตนผู้ป่วยในรายละเอียดเหตุการณ์ เพื่อให้เป็นไปตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ให้ใช้ HN/AN ในช่องที่กำหนดเท่านั้น และบันทึกเฉพาะข้อมูลที่จำเป็นต่อการบริหารความเสี่ยง
+      </div>
       <div className="md:col-span-2"><Field label="รายละเอียดเหตุการณ์" error={errors.description?.message}><textarea className="min-h-32 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("description")} /></Field></div>
       <div className="md:col-span-2"><Field label="การแก้ไขเบื้องต้น"><textarea className="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("immediateAction")} /></Field></div>
       <div className="md:col-span-2 flex justify-end"><Button type="button" onClick={goToStep2}>ถัดไป</Button></div>
@@ -129,11 +147,38 @@ export function IncidentForm({ units, riskCodes }: { units: Unit[]; riskCodes: R
           {filteredRiskCodes.length ? filteredRiskCodes.map(r => <button type="button" key={r.id} onClick={() => selectRiskCode(r)} className={`block w-full border-b px-3 py-2 text-left text-sm hover:bg-slate-50 ${values.riskCodeId === r.id ? "bg-blue-50" : ""}`}><span className="font-semibold">{r.code}</span> {r.nameTh}<span className="ml-2 text-xs text-slate-500">{r.clinicalOrGeneral} · {r.simpleCategory}</span>{values.riskCodeId === r.id ? <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] text-white">เลือกแล้ว</span> : null}</button>) : <div className="px-3 py-4 text-sm text-slate-500">ไม่พบ Risk code ในกลุ่ม {selectedClinicalOrGeneral}</div>}
         </div>
       </div>
+      {isMedicationAdministration ? <Field label="Medication Administration: 6 Rights" error={errors.medicationRight?.message}>
+        <select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("medicationRight")}>
+          <option value="">เลือก 6 Rights ที่เกี่ยวข้อง</option>
+          {medicationRightValues.map((right) => <option key={right} value={right}>{right}</option>)}
+        </select>
+      </Field> : null}
       <div className="md:col-span-2 space-y-3">
-        <div className="text-sm font-semibold">Severity A-I</div>
-        <div className="grid gap-2 md:grid-cols-3">
-          {(Object.keys(severityDescriptions) as Array<keyof typeof severityDescriptions>).map(s => <label key={s} title={severityDescriptions[s]} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${values.severity === s ? "border-blue-500 bg-blue-50" : "bg-white"}`}><input type="radio" value={s} {...register("severity")} /><span><SeverityBadge severity={s} /><div className="mt-1 text-xs text-slate-600">{severityDescriptions[s]}</div></span></label>)}
+        <div>
+          <div className="text-sm font-semibold">{selectedClinicalOrGeneral === "General" ? "General risk severity 1-5" : "Clinical severity A-I"}</div>
+          {selectedClinicalOrGeneral === "General" ? <p className="mt-1 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">General risk ใช้คะแนน 1-5 สำหรับผลกระทบต่อการดำเนินงาน ทรัพย์สิน และชื่อเสียง หากเหตุการณ์มีอันตรายต่อชีวิต/ร่างกายผู้ป่วยหรือบุคลากร ให้เลือกประเภท Clinical/Personnel ที่ใช้ระดับ A-I แทน</p> : null}
         </div>
+        {selectedClinicalOrGeneral === "General" ? <div className="grid gap-2">
+          {severityOptions.map(s => {
+            const detail = generalSeverityDetails[s as keyof typeof generalSeverityDetails];
+            return <label key={s} title={severityDescriptions[s]} className={`cursor-pointer rounded-lg border p-3 ${values.severity === s ? "border-blue-500 bg-blue-50" : "bg-white"}`}>
+              <div className="flex items-start gap-3">
+                <input type="radio" value={s} {...register("severity")} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2"><SeverityBadge severity={s} /><span className="text-sm font-semibold">{detail.label}</span></div>
+                  <p className="mt-1 text-xs text-slate-700">{detail.summary}</p>
+                  <div className="mt-2 grid gap-1 text-xs text-slate-600 md:grid-cols-3">
+                    <div>{detail.people}</div>
+                    <div>{detail.property}</div>
+                    <div>{detail.reputation}</div>
+                  </div>
+                </div>
+              </div>
+            </label>;
+          })}
+        </div> : <div className="grid gap-2 md:grid-cols-3">
+          {severityOptions.map(s => <label key={s} title={clinicalSeverityDescriptions[s]} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${values.severity === s ? "border-blue-500 bg-blue-50" : "bg-white"}`}><input type="radio" value={s} {...register("severity")} /><span><SeverityBadge severity={s} /><div className="mt-1 text-xs text-slate-600">{clinicalSeverityDescriptions[s]}</div></span></label>)}
+        </div>}
       </div>
       <label className="flex items-center gap-3 rounded-lg border bg-white p-3 text-sm font-medium"><input type="checkbox" {...register("needRmSupport")} />ต้องการความช่วยเหลือจาก RM</label>
       <div className="md:col-span-2 flex justify-between"><Button type="button" className="bg-slate-700" onClick={() => setStep(1)}>ย้อนกลับ</Button><Button type="button" onClick={goToStep3}>ถัดไป</Button></div>
