@@ -38,6 +38,27 @@ body {
   background: hsl(145 55% 43% / 0.18);
 }
 
+form,
+fieldset,
+label,
+.grid,
+.flex {
+  min-width: 0;
+}
+
+form .flex:has(input),
+form .flex:has(select),
+form .flex:has(textarea) {
+  flex-wrap: wrap;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
 select,
 textarea {
   border-color: hsl(var(--input));
@@ -48,4 +69,18 @@ select:focus-visible,
 textarea:focus-visible {
   border-color: hsl(var(--ring));
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.16);
+}
+
+input[type="date"] {
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  inset: 0;
+  height: auto;
+  opacity: 0;
+  position: absolute;
+  width: auto;
 }
