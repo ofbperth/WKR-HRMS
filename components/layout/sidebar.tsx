@@ -62,7 +62,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
     </aside>
 
     <main className="lg:pl-72">
-      <header className="sticky top-0 z-10 border-b border-emerald-100 bg-white/86 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-emerald-100 bg-white/90 backdrop-blur-xl">
         <div className="flex min-h-16 items-center justify-between gap-3 px-4 lg:px-8">
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-slate-900 lg:text-base">ระบบรายงานและบริหารความเสี่ยงโรงพยาบาล</div>
