@@ -94,10 +94,11 @@ function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: bo
   return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
 }
 
-async function runSequential<T extends readonly (() => Promise<unknown>)[]>(tasks: T) {
+async function runBatched<T extends readonly (() => Promise<unknown>)[]>(tasks: T, batchSize = 6) {
   const results: unknown[] = [];
-  for (const task of tasks) {
-    results.push(await task());
+  for (let index = 0; index < tasks.length; index += batchSize) {
+    const batch = tasks.slice(index, index + batchSize);
+    results.push(...await Promise.all(batch.map((task) => task())));
   }
   return results as { [K in keyof T]: Awaited<ReturnType<T[K]>> };
 }
@@ -129,6 +130,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
   const now = new Date();
   const month = getThisMonthRange(now);
   const fiscal = getFiscalYearRange(now);
+  const last12Months = getLast12MonthsRange(now);
   const { lookup, unitNames, riskNames, riskExtras, unitExtras } = await commonLookups();
 
   const [
@@ -153,11 +155,13 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     needRmSupport,
     highSeverityCount,
     leadershipDecision,
+    rcaRequired,
+    rcaWaitingApproval,
     trendRows,
     sentinelRows,
     openRcaRows,
     overdueActionRows,
-  ] = await runSequential([
+  ] = await runBatched([
     () => prisma.incident.count({ where }),
     () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: month.start, lte: month.end } }) }),
     () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: fiscal.start, lte: fiscal.end } }) }),
@@ -179,10 +183,12 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     () => prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
     () => prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
-    () => prisma.incident.findMany({ where, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 2000 }),
+    () => prisma.incident.count({ where: withExtra(where, { status: "RCARequired", rca: null }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] }) }),
+    () => prisma.incident.findMany({ where: withExtra(where, { occurredAt: { gte: last12Months.start, lte: last12Months.end } }), select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 1200 }),
     () => prisma.incident.findMany({ where: withExtra(where, { isSentinel: true }), select: { id: true, incidentNo: true, occurredAt: true, incidentUnit: { select: { name: true } }, severity: true, riskCode: { select: { code: true } }, title: true, status: true }, orderBy: { occurredAt: "desc" }, take: 5 }),
-    () => prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
-    () => prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
+    () => prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 1000 }),
+    () => prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 1000 }),
   ]) as any;
 
   const categoryNames = new Map(lookup.simpleCategories.map((category) => [category, category]));
@@ -204,8 +210,8 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       total,
       newIncidents: groupValue(statusRows as any, "status", "New"),
       underReview: groupValue(statusRows as any, "status", "UnderReview"),
-      rcaRequired: await prisma.incident.count({ where: withExtra(where, { status: "RCARequired", rca: null }) }),
-      rcaWaitingApproval: await prisma.incident.count({ where: withExtra(where, { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] }) }),
+      rcaRequired,
+      rcaWaitingApproval,
       rcaSubmittedRate: percent(rcaSubmitted, rcaScope),
       openRca,
       rcaRevisionRequired,

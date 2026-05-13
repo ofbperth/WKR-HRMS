@@ -124,7 +124,9 @@ model Incident {
   attachments Attachment[]
 
   @@index([incidentNo])
+  @@index([createdAt])
   @@index([occurredAt])
+  @@index([reportedById])
   @@index([incidentUnitId])
   @@index([riskCodeId])
   @@index([severity])
@@ -138,6 +140,7 @@ model Incident {
   @@index([occurredAt, severity])
   @@index([occurredAt, incidentUnitId])
   @@index([incidentUnitId, status])
+  @@index([riskCodeId, occurredAt])
   @@index([clinicalOrGeneral, occurredAt])
   @@index([simpleCategory, occurredAt])
 }
