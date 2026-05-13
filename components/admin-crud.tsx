@@ -11,6 +11,7 @@ const authProviderOptions = ["CREDENTIALS", "GOOGLE", "BOTH"];
 const cgOptions = ["Clinical", "General"];
 const unitTypeOptions = ["หน่วยงาน", "ทีม"];
 const protectedAdminEmail = "ofbperth@gmail.com";
+const userPageSize = 10;
 
 export function AdminCrud({ mode }: { mode: Mode }) {
   const [items, setItems] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   const [editing, setEditing] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [authFilter, setAuthFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const endpoint = `/api/admin/${mode}`;
   const title = useMemo(() => mode === "users" ? "จัดการ User" : mode === "units" ? "จัดการหน่วยงาน" : "จัดการ Risk code", [mode]);
 
@@ -33,6 +35,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   }, [endpoint]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setCurrentPage(1); }, [authFilter, mode]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,6 +83,9 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   }
 
   const visibleItems = mode === "users" && authFilter ? items.filter(item => item.authProvider === authFilter) : items;
+  const totalPages = mode === "users" ? Math.max(1, Math.ceil(visibleItems.length / userPageSize)) : 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pagedItems = mode === "users" ? visibleItems.slice((safeCurrentPage - 1) * userPageSize, safeCurrentPage * userPageSize) : visibleItems;
   const formEditing = mode === "users" ? null : editing;
 
   return <div className="space-y-6">
@@ -107,8 +113,16 @@ export function AdminCrud({ mode }: { mode: Mode }) {
 
     {mode === "users" ? <div className="rounded-lg border bg-white p-3 shadow-sm"><label className="grid max-w-xs gap-1 text-sm font-medium">Filter ตาม auth provider<select className="h-10 rounded-md border px-3 text-sm" value={authFilter} onChange={e => setAuthFilter(e.target.value)}><option value="">ทั้งหมด</option>{authProviderOptions.map(option => <option key={option}>{option}</option>)}</select></label></div> : null}
 
-    <AdminMobileCards mode={mode} items={visibleItems} loading={loading} onEdit={setEditing} onUnlinkGoogle={unlinkGoogle} />
-    <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm md:block"><div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : visibleItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="px-3 py-3 align-top"><div className="min-w-0 break-words">{cell}</div></td>)}<td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
+    <AdminMobileCards mode={mode} items={pagedItems} loading={loading} onEdit={setEditing} onUnlinkGoogle={unlinkGoogle} />
+    <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm md:block"><div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : pagedItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="px-3 py-3 align-top"><div className="min-w-0 break-words">{cell}</div></td>)}<td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
+    {mode === "users" && !loading && visibleItems.length > userPageSize ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm shadow-sm">
+      <div className="text-slate-600">Showing {(safeCurrentPage - 1) * userPageSize + 1}-{Math.min(safeCurrentPage * userPageSize, visibleItems.length)} of {visibleItems.length} users</div>
+      <div className="flex items-center gap-2">
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}>Previous</button>
+        <span className="text-slate-600">Page {safeCurrentPage} / {totalPages}</span>
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}>Next</button>
+      </div>
+    </div> : null}
     {mode === "users" && editing ? <UserEditDialog user={editing} units={units} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} onDeactivate={deactivate} onHardDelete={hardDeleteUser} /> : null}
   </div>;
 }

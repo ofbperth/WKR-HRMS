@@ -86,6 +86,7 @@ export async function DELETE(req: Request) {
           where: { reportedById: id, reporterNameEncrypted: null },
           data: { reporterNameEncrypted: encryptToStorage(old.name) },
         });
+        await tx.incident.updateMany({ where: { reportedById: id }, data: { reportedById: null } as any });
         await tx.incident.updateMany({ where: { reviewedById: id }, data: { reviewedById: null } as any });
         await tx.incident.updateMany({ where: { closedById: id }, data: { closedById: null } as any });
         await tx.rCA.updateMany({ where: { kpiOwnerId: id }, data: { kpiOwnerId: null } });
@@ -96,6 +97,7 @@ export async function DELETE(req: Request) {
         await tx.attachment.updateMany({ where: { uploadedById: id }, data: { uploadedById: null } as any });
         await tx.notification.deleteMany({ where: { userId: id } });
         await tx.userInvite.updateMany({ where: { invitedById: id }, data: { invitedById: null } as any });
+        await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } as any });
         await tx.auditLog.create({ data: { userId: actor.id, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } });
         await tx.user.delete({ where: { id } });
       });
