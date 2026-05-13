@@ -18,8 +18,7 @@ const rmTeamMenu: MenuSection[] = [
       { href: "/rm/triage", label: "Review Queue", icon: <FileCheck2 size={18} /> },
       { href: "/rm/rca", label: "RCA", icon: <ClipboardCheck size={18} /> },
       { href: "/rm/actions", label: "Actions", icon: <ClipboardList size={18} /> },
-      { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
-      { href: "/rm/search", label: "Search / Export", icon: <Search size={18} /> },
+      { href: "/rm/search", label: "Search/Export Incident", icon: <Search size={18} /> },
     ],
   },
   {
@@ -58,8 +57,7 @@ const adminMenu: MenuSection[] = [
       { href: "/rm/triage", label: "Review Queue", icon: <FileCheck2 size={18} /> },
       { href: "/rm/rca", label: "RCA", icon: <ClipboardCheck size={18} /> },
       { href: "/rm/actions", label: "Actions", icon: <ClipboardList size={18} /> },
-      { href: "/rm/incidents", label: "Incident Log", icon: <ClipboardList size={18} /> },
-      { href: "/rm/search", label: "Search / Export", icon: <Search size={18} /> },
+      { href: "/rm/search", label: "Search/Export Incident", icon: <Search size={18} /> },
     ],
   },
   {

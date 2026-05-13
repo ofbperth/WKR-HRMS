@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type MouseEvent } from "react";
-import { formatDateOnly, formatDateTime, maskHn } from "@/lib/format";
+import { formatDateOnly } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
@@ -41,32 +41,43 @@ export function IncidentList({ incidents, lookup, basePath, searchParams, detail
     </form>
 
     <div className="overflow-hidden rounded-xl border bg-white">
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1200px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th className="px-4 py-3">Action</th><th className="px-4 py-3">Incident No</th><th className="px-4 py-3">Occurred</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Risk code</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Badge</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Reporter</th><th className="px-4 py-3">HN/AN</th><th className="px-4 py-3">Last updated</th></tr>
-          </thead>
-          <tbody className="divide-y">
-            {incidents.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={12}>ไม่พบข้อมูล</td></tr> : visibleIncidents.map((incident) => <tr key={incident.id} className="hover:bg-slate-50">
-              <td className="px-4 py-3"><Link className="rounded-md border px-3 py-2 text-xs hover:bg-slate-100" href={`${detailBasePath ?? basePath}/${incident.id}`}>View</Link></td>
-              <td className="px-4 py-3 font-semibold">{incident.incidentNo}</td>
-              <td className="px-4 py-3">{formatDateOnly(incident.occurredAt)}</td>
-              <td className="px-4 py-3">{incident.incidentUnit.name}</td>
-              <td className="px-4 py-3"><div className="font-medium">{incident.title}</div><div className="line-clamp-1 text-xs text-slate-500">{incident.description}</div></td>
-              <td className="px-4 py-3"><span className="font-semibold">{incident.riskCode.code}</span><div className="text-xs text-slate-500">{incident.riskCode.nameTh}</div></td>
-              <td className="px-4 py-3"><SeverityBadge severity={incident.severity} /></td>
-              <td className="space-x-1 px-4 py-3"><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></td>
-              <td className="px-4 py-3"><StatusBadge status={incident.status} /></td>
-              <td className="px-4 py-3">Restricted</td>
-              <td className="px-4 py-3">{`${maskHn(incident.patientHn)} / ${maskHn(incident.patientAn ?? null)}`}</td>
-              <td className="px-4 py-3">{formatDateTime(incident.updatedAt)}</td>
-            </tr>)}
-          </tbody>
-        </table>
+      <div className="hidden w-full gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500 md:grid md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)]">
+        <div>Occurred</div>
+        <div>Unit</div>
+        <div>Title</div>
+        <div>Risk code / Badges / Status</div>
       </div>
+      {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : <div className="divide-y">
+        {visibleIncidents.map((incident) => <Link key={incident.id} className="grid w-full gap-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)] md:items-start" href={`${detailBasePath ?? basePath}/${incident.id}`}>
+          <ListField label="Occurred" className="md:row-span-2" value={formatDateOnly(incident.occurredAt)} />
+          <ListField label="Unit" className="md:row-span-2" value={incident.incidentUnit.name} />
+          <div className="min-w-0 md:row-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">Title</div>
+            <div className="mt-1 break-words font-semibold leading-6 text-slate-950 md:mt-0">{incident.title}</div>
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">Risk code</div>
+            <div className="mt-1 break-words font-semibold text-slate-900 md:mt-0">{incident.riskCode.code}</div>
+            <div className="mt-0.5 break-words text-xs leading-5 text-slate-500">{incident.riskCode.nameTh}</div>
+          </div>
+          <div className="flex min-w-0 flex-wrap gap-2 md:col-start-4">
+            <SeverityBadge severity={incident.severity} />
+            <SentinelBadge value={incident.isSentinel} />
+            <RmSupportBadge value={incident.needRmSupport} />
+            <StatusBadge status={incident.status} />
+          </div>
+        </Link>)}
+      </div>}
     </div>
 
     <Pagination basePath={basePath} searchParams={searchParams} page={page} total={incidents.length} />
+  </div>;
+}
+
+function ListField({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+  return <div className={className}>
+    <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">{label}</div>
+    <div className="mt-1 break-words font-medium leading-6 text-slate-900 md:mt-0">{value}</div>
   </div>;
 }
 

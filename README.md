@@ -122,11 +122,11 @@ Seed role expectations:
 | `/unit/dashboard` | Unit dashboard scoped to current UnitManager unit |
 | `/rm/dashboard` | RM operational dashboard |
 | `/rm/analytics` | RM analytics alias |
-| `/rm/incidents` | RM incident log |
+| `/rm/incidents` | Redirect to RM search/export incident |
 | `/rm/heatmap` | Unit x severity incident heatmap |
 | `/rm/analysis` | Risk trend and category analysis |
 | `/rm/safety-goals` | 9 Important Safety Goals for RM |
-| `/rm/search` | Search and CSV export |
+| `/rm/search` | Search/export incident |
 | `/executive` | Executive dashboard counts |
 | `/executive/dashboard` | Executive analytics dashboard |
 | `/executive/safety-goals` | 9 Important Safety Goals for executive view |
