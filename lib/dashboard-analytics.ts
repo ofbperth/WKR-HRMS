@@ -94,6 +94,14 @@ function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: bo
   return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
 }
 
+async function runSequential<T extends readonly (() => Promise<unknown>)[]>(tasks: T) {
+  const results: unknown[] = [];
+  for (const task of tasks) {
+    results.push(await task());
+  }
+  return results as { [K in keyof T]: Awaited<ReturnType<T[K]>> };
+}
+
 function summarizeDimension(rows: Array<{ severity: string; _count: number; [key: string]: any }>, key: string, label: string, names: Map<string, string>, extras?: Map<string, Record<string, unknown>>) {
   const map = new Map<string, { name: string; value: number; score: number; openRca: number; overdueActions: number; extra: Record<string, unknown> }>();
   for (const row of rows) {
@@ -149,33 +157,33 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     sentinelRows,
     openRcaRows,
     overdueActionRows,
-  ] = await Promise.all([
-    prisma.incident.count({ where }),
-    prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: month.start, lte: month.end } }) }),
-    prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: fiscal.start, lte: fiscal.end } }) }),
-    prisma.incident.groupBy({ by: ["status"], where, _count: true }),
-    prisma.incident.groupBy({ by: ["severity"], where, _count: true }),
-    prisma.incident.groupBy({ by: ["clinicalOrGeneral"], where, _count: true }),
-    prisma.incident.groupBy({ by: ["simpleCategory", "severity"], where, _count: true }),
-    prisma.incident.groupBy({ by: ["riskCodeId", "severity"], where, _count: true }),
-    prisma.incident.groupBy({ by: ["incidentUnitId", "severity"], where, _count: true }),
-    prisma.rCA.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
-    prisma.actionPlan.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
-    prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
-    prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
-    prisma.rCA.count({ where: { incident: where, status: { not: "Approved" } } }),
-    prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
-    prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
-    prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
-    prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
-    prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
-    prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
-    prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
-    prisma.incident.findMany({ where, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 2000 }),
-    prisma.incident.findMany({ where: withExtra(where, { isSentinel: true }), select: { id: true, incidentNo: true, occurredAt: true, incidentUnit: { select: { name: true } }, severity: true, riskCode: { select: { code: true } }, title: true, status: true }, orderBy: { occurredAt: "desc" }, take: 5 }),
-    prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
-    prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
-  ]);
+  ] = await runSequential([
+    () => prisma.incident.count({ where }),
+    () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: month.start, lte: month.end } }) }),
+    () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: fiscal.start, lte: fiscal.end } }) }),
+    () => prisma.incident.groupBy({ by: ["status"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["severity"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["clinicalOrGeneral"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["simpleCategory", "severity"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["riskCodeId", "severity"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["incidentUnitId", "severity"], where, _count: true }),
+    () => prisma.rCA.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
+    () => prisma.actionPlan.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
+    () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
+    () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
+    () => prisma.rCA.count({ where: { incident: where, status: { not: "Approved" } } }),
+    () => prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
+    () => prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
+    () => prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
+    () => prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
+    () => prisma.incident.findMany({ where, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 2000 }),
+    () => prisma.incident.findMany({ where: withExtra(where, { isSentinel: true }), select: { id: true, incidentNo: true, occurredAt: true, incidentUnit: { select: { name: true } }, severity: true, riskCode: { select: { code: true } }, title: true, status: true }, orderBy: { occurredAt: "desc" }, take: 5 }),
+    () => prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
+    () => prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
+  ]) as any;
 
   const categoryNames = new Map(lookup.simpleCategories.map((category) => [category, category]));
   const highestSeverityLabel = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "";
@@ -226,7 +234,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map((name) => ({ name, value: groupValue(actionStatusRows as any, "status", name) })),
       openRcaByUnit: dimensionFromIncidents(openRcaRows),
       overdueActionByUnit: dimensionFromIncidents(overdueActionRows),
-      lastSentinelEvents: sentinelRows.map((item) => ({
+      lastSentinelEvents: sentinelRows.map((item: any) => ({
         id: item.id,
         incidentNo: item.incidentNo,
         occurredAt: item.occurredAt,
@@ -272,21 +280,36 @@ export async function getSafetyGoalAnalytics(filters: AnalyticsFilters = {}) {
   const where = buildIncidentWhere({ ...filters, includeClosed: "true" });
   const { lookup } = await commonLookups();
   const riskByCode = new Map(lookup.riskCodes.map((risk) => [risk.code, risk.id]));
-  return Promise.all(safetyGoals.map(async (goal) => {
-    const riskCodeIds = goal.codes.map((code) => riskByCode.get(code)).filter(Boolean) as string[];
-    const scopedWhere = withExtra(where, { riskCodeId: { in: riskCodeIds.length ? riskCodeIds : ["__NO_RISK__"] } });
-    const [count, severityRows, openRca, overdueActions, trendRows] = await Promise.all([
-      prisma.incident.count({ where: scopedWhere }),
-      prisma.incident.groupBy({ by: ["severity"], where: scopedWhere, _count: true }),
-      prisma.rCA.count({ where: { incident: scopedWhere, status: { not: "Approved" } } }),
-      prisma.actionPlan.count({ where: { incident: scopedWhere, status: { not: "Verified" }, dueDate: { lt: new Date() } } }),
-      prisma.incident.findMany({ where: scopedWhere, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 500 }),
-    ]);
+  const riskIdsByGoal = new Map(safetyGoals.map((goal) => [goal.id, goal.codes.map((code) => riskByCode.get(code)).filter(Boolean) as string[]]));
+  const allRiskCodeIds = [...new Set(Array.from(riskIdsByGoal.values()).flat())];
+  const now = new Date();
+  const rows = allRiskCodeIds.length ? await prisma.incident.findMany({
+    where: withExtra(where, { riskCodeId: { in: allRiskCodeIds } }),
+    select: {
+      riskCodeId: true,
+      occurredAt: true,
+      severity: true,
+      isSentinel: true,
+      rca: { select: { status: true } },
+      actionPlans: { select: { status: true, dueDate: true } },
+    },
+    orderBy: { occurredAt: "desc" },
+    take: 5000,
+  }) : [];
+  return safetyGoals.map((goal) => {
+    const riskCodeIds = new Set(riskIdsByGoal.get(goal.id) ?? []);
+    const goalRows = rows.filter((row) => riskCodeIds.has(row.riskCodeId));
+    const severityRows = Array.from(goalRows.reduce((map, row) => {
+      map.set(row.severity, (map.get(row.severity) ?? 0) + 1);
+      return map;
+    }, new Map<string, number>())).map(([severity, count]) => ({ severity, _count: count }));
+    const openRca = goalRows.filter((row) => row.rca && row.rca.status !== "Approved").length;
+    const overdueActions = goalRows.reduce((sum, row) => sum + row.actionPlans.filter((action) => action.status !== "Verified" && action.dueDate < now).length, 0);
     const highestSeverity = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
-    const monthly = trend(trendRows);
+    const monthly = trend(goalRows);
     const increasing = monthly.length >= 2 && monthly[monthly.length - 1].total > monthly[monthly.length - 2].total;
     const critical = ["G", "H", "I", "5"].includes(highestSeverity) || overdueActions > 0;
     const watch = !critical && (["E", "F", "3", "4"].includes(highestSeverity) || openRca > 0 || increasing);
-    return { ...goal, count, highestSeverity, trend: monthly, openRca, overdueActions, status: critical ? "Critical" : watch ? "Watch" : "Good", relatedRiskCodes: goal.codes };
-  }));
+    return { ...goal, count: goalRows.length, highestSeverity, trend: monthly, openRca, overdueActions, status: critical ? "Critical" : watch ? "Watch" : "Good", relatedRiskCodes: goal.codes };
+  });
 }
