@@ -124,6 +124,85 @@ async function commonLookups() {
   return { lookup, unitNames, riskNames, riskExtras, unitExtras };
 }
 
+export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
+  const started = Date.now();
+  const where = buildIncidentWhere(filters);
+  const now = new Date();
+  const month = getThisMonthRange(now);
+  const fiscal = getFiscalYearRange(now);
+  const { lookup } = await commonLookups();
+
+  const [
+    total,
+    totalThisMonth,
+    totalFiscalYear,
+    statusRows,
+    severityRows,
+    openActions,
+    overdueActions,
+    openRca,
+    rcaRevisionRequired,
+    rcaScope,
+    rcaSubmitted,
+    sentinel,
+    needRmSupport,
+    highSeverityCount,
+    leadershipDecision,
+    rcaRequired,
+    rcaWaitingApproval,
+  ] = await runBatched([
+    () => prisma.incident.count({ where }),
+    () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: month.start, lte: month.end } }) }),
+    () => prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: fiscal.start, lte: fiscal.end } }) }),
+    () => prisma.incident.groupBy({ by: ["status"], where, _count: true }),
+    () => prisma.incident.groupBy({ by: ["severity"], where, _count: true }),
+    () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
+    () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
+    () => prisma.rCA.count({ where: { incident: where, status: { not: "Approved" } } }),
+    () => prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
+    () => prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
+    () => prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
+    () => prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
+    () => prisma.incident.count({ where: withExtra(where, { status: "RCARequired", rca: null }) }),
+    () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] }) }),
+  ]) as any;
+
+  const highestSeverityLabel = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "";
+
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[perf] dashboard-summary ${Date.now() - started}ms`);
+  }
+
+  return {
+    filters: { units: lookup.units, categories: lookup.simpleCategories },
+    cards: {
+      totalThisMonth,
+      totalFiscalYear,
+      total,
+      newIncidents: groupValue(statusRows as any, "status", "New"),
+      underReview: groupValue(statusRows as any, "status", "UnderReview"),
+      rcaRequired,
+      rcaWaitingApproval,
+      rcaSubmittedRate: percent(rcaSubmitted, rcaScope),
+      openRca,
+      rcaRevisionRequired,
+      openActions,
+      overdueActions,
+      closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
+      needLeadershipDecision: leadershipDecision,
+      needRmSupport,
+      sentinel,
+      highSeverity: highSeverityCount,
+      waitingVerification: groupValue(statusRows as any, "status", "WaitingVerification"),
+      highestSeverity: highestSeverityLabel ? severityWeights[highestSeverityLabel] ?? 0 : 0,
+      highestSeverityLabel,
+    },
+  };
+}
+
 export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
   const started = Date.now();
   const where = buildIncidentWhere(filters);

@@ -10,6 +10,7 @@ const roleOptions = ["Reporter", "UnitManager", "RMTeam", "Executive", "Admin"];
 const authProviderOptions = ["CREDENTIALS", "GOOGLE", "BOTH"];
 const cgOptions = ["Clinical", "General"];
 const unitTypeOptions = ["หน่วยงาน", "ทีม"];
+const protectedAdminEmail = "ofbperth@gmail.com";
 
 export function AdminCrud({ mode }: { mode: Mode }) {
   const [items, setItems] = useState<any[]>([]);
@@ -50,7 +51,24 @@ export function AdminCrud({ mode }: { mode: Mode }) {
 
   async function deactivate(id: string) {
     if (!confirm("ปิดใช้งานรายการนี้?")) return;
-    await fetch(endpoint, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    const res = await fetch(endpoint, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    if (!res.ok) {
+      const json = await res.json().catch(() => null);
+      alert(deleteErrorMessage(json?.error));
+      return;
+    }
+    setEditing(null);
+    await load();
+  }
+
+  async function hardDeleteUser(id: string, email: string) {
+    if (!confirm(`Hard delete user ${email}? การลบนี้ย้อนกลับไม่ได้ และจะทำได้เฉพาะ user ที่ไม่มีประวัติ incident/RCA/action/audit ผูกอยู่`)) return;
+    const res = await fetch("/api/admin/users", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, hardDelete: true }) });
+    if (!res.ok) {
+      const json = await res.json().catch(() => null);
+      alert(deleteErrorMessage(json?.error));
+      return;
+    }
     setEditing(null);
     await load();
   }
@@ -90,11 +108,12 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     {mode === "users" ? <div className="rounded-lg border bg-white p-3 shadow-sm"><label className="grid max-w-xs gap-1 text-sm font-medium">Filter ตาม auth provider<select className="h-10 rounded-md border px-3 text-sm" value={authFilter} onChange={e => setAuthFilter(e.target.value)}><option value="">ทั้งหมด</option>{authProviderOptions.map(option => <option key={option}>{option}</option>)}</select></label></div> : null}
 
     <div className="overflow-hidden rounded-lg border bg-white shadow-sm"><div className="max-w-full overflow-x-auto"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : visibleItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="truncate px-3 py-3">{cell}</td>)}<td className="px-3 py-3"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
-    {mode === "users" && editing ? <UserEditDialog user={editing} units={units} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} onDeactivate={deactivate} /> : null}
+    {mode === "users" && editing ? <UserEditDialog user={editing} units={units} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} onDeactivate={deactivate} onHardDelete={hardDeleteUser} /> : null}
   </div>;
 }
 
-function UserEditDialog({ user, units, onClose, onSaved, onDeactivate }: { user: any; units: any[]; onClose: () => void; onSaved: () => Promise<void>; onDeactivate: (id: string) => Promise<void> }) {
+function UserEditDialog({ user, units, onClose, onSaved, onDeactivate, onHardDelete }: { user: any; units: any[]; onClose: () => void; onSaved: () => Promise<void>; onDeactivate: (id: string) => Promise<void>; onHardDelete: (id: string, email: string) => Promise<void> }) {
+  const isProtectedAdmin = String(user.email || "").toLowerCase() === protectedAdminEmail;
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
@@ -121,11 +140,19 @@ function UserEditDialog({ user, units, onClose, onSaved, onDeactivate }: { user:
           <Field label="Auth provider"><select name="authProvider" defaultValue={user.authProvider || "CREDENTIALS"} className="h-10 rounded-md border px-3 text-sm">{authProviderOptions.map(r => <option key={r}>{r}</option>)}</select></Field>
         </div>
         <label className="flex items-center gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={user.isActive ?? true} /> เปิดใช้งาน</label>
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">การเปลี่ยน role, unit, status และ auth provider จะถูกบันทึกใน audit log การ deactivate ทำได้เฉพาะตรงนี้</div>
-        <div className="flex flex-wrap justify-between gap-2"><div className="flex gap-2"><Button type="submit">บันทึกการแก้ไข</Button><button type="button" className="rounded-md border px-4 text-sm" onClick={onClose}>ยกเลิก</button></div>{user.isActive ? <button type="button" className="rounded-md border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50" onClick={() => onDeactivate(user.id)}>ปิดใช้งาน user</button> : null}</div>
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">การเปลี่ยน role, unit, status และ auth provider จะถูกบันทึกใน audit log Hard delete จะทำได้เฉพาะ user ที่ไม่มีประวัติผูกอยู่ และ {protectedAdminEmail} จะยังเป็น Admin เสมอ</div>
+        <div className="flex flex-wrap justify-between gap-2"><div className="flex gap-2"><Button type="submit">บันทึกการแก้ไข</Button><button type="button" className="rounded-md border px-4 text-sm" onClick={onClose}>ยกเลิก</button></div><div className="flex flex-wrap gap-2">{user.isActive && !isProtectedAdmin ? <button type="button" className="rounded-md border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50" onClick={() => onDeactivate(user.id)}>ปิดใช้งาน user</button> : null}{!isProtectedAdmin ? <button type="button" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700" onClick={() => onHardDelete(user.id, user.email)}>Hard delete</button> : null}</div></div>
       </form>
     </div>
   </div>;
+}
+
+function deleteErrorMessage(error?: string) {
+  if (error === "PROTECTED_ADMIN") return `${protectedAdminEmail} เป็น Admin หลักและไม่สามารถลบหรือปิดใช้งานได้`;
+  if (error === "CANNOT_DELETE_SELF") return "ไม่สามารถลบ user ที่กำลังใช้งานอยู่ได้";
+  if (error === "USER_HAS_HISTORY") return "ลบถาวรไม่ได้ เพราะ user นี้มีประวัติ incident/RCA/action/audit ผูกอยู่ ให้ใช้ปิดใช้งานแทน";
+  if (error === "NOT_FOUND") return "ไม่พบ user นี้แล้ว";
+  return "ดำเนินการไม่สำเร็จ กรุณาลองใหม่";
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@hospital.local");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -125,9 +125,6 @@ export default function LoginPage() {
               {googleEnabled && googleConfigured
                 ? <a className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-emerald-50" href="/api/auth/google">เข้าสู่ระบบด้วย Google</a>
                 : <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">{googleNeedsMigration ? "Google login ต้อง migration ก่อน" : googleEnabled ? "ยังไม่ได้ตั้งค่า Google Client ID/Secret" : "Admin ปิด Google login ไว้"}</div>}
-              <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">
-                ตัวอย่าง login: admin@hospital.local / password
-              </div>
             </form>
           </CardContent>
         </Card>

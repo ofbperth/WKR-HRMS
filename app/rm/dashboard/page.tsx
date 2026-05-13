@@ -2,14 +2,15 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AppShell } from "@/components/layout/sidebar";
 import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
-import { CategoryPieChart, LinkedStatCard, RateLineChart, SentinelEventList, SeverityBarChart, TopRiskCodeBarChart, TrendLineChart } from "@/components/dashboard/charts";
-import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
+import { LinkedStatCard } from "@/components/dashboard/stat-cards";
+import { DashboardChartsSection } from "@/components/dashboard/dashboard-charts-section";
+import { getDashboardSummary } from "@/lib/dashboard-analytics";
 import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 
 export default async function RmDashboardPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const data = await getDashboardAnalytics(normalizeDashboardSearchParams(searchParams));
+  const data = await getDashboardSummary(normalizeDashboardSearchParams(searchParams));
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">RM Dashboard</h1><p className="text-sm text-slate-600">ติดตาม Triage, RCA, action follow-up และ Sentinel monitoring</p></div>
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} />
@@ -24,18 +25,6 @@ export default async function RmDashboardPage({ searchParams }: { searchParams: 
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="รอ verification" value={data.cards.waitingVerification} href="/rm/search?status=WaitingVerification" />
     </div>
-    <div className="dashboard-chart-grid">
-      <SeverityBarChart title="Incident ตาม status" data={data.charts.status} drilldown={{ basePath: "/rm/search", param: "status", field: "name" }} />
-      <SeverityBarChart title="Incident ตาม severity" data={data.charts.severity} drilldown={{ basePath: "/rm/search", param: "severity", field: "name" }} />
-      <CategoryPieChart title="Clinical vs General risk" data={data.charts.clinicalGeneral} drilldown={{ basePath: "/rm/search", param: "clinicalOrGeneral", field: "name" }} />
-      <TrendLineChart title="Trend incident รายเดือน" data={data.charts.trend} />
-      <TopRiskCodeBarChart title="Incident ตาม SIMPLE category" data={data.charts.simpleCategory} labelKey="category" drilldown={{ basePath: "/rm/search", param: "simpleCategory", field: "category" }} />
-      <TopRiskCodeBarChart title="Top 5 risk ที่เกิดซ้ำ" data={data.charts.topRecurrentRiskCodes} drilldown={{ basePath: "/rm/search", param: "riskCodeId", field: "riskCodeId" }} />
-      <CategoryPieChart title="สัดส่วน status ของ RCA" data={data.charts.rcaStatus} />
-      <CategoryPieChart title="สัดส่วน status ของ Action" data={data.charts.actionStatus} />
-      <TrendLineChart title="Trend severity E-I รายเดือน" data={data.charts.trend} high />
-      <RateLineChart title="Trend %Rate near miss (Incident A-B/Total)" data={data.charts.trend} />
-      <SentinelEventList title="Sentinel event 5 รายการล่าสุด" data={data.charts.lastSentinelEvents} />
-    </div>
+    <DashboardChartsSection variant="rm" />
   </div></AppShell>;
 }
