@@ -107,7 +107,8 @@ export function AdminCrud({ mode }: { mode: Mode }) {
 
     {mode === "users" ? <div className="rounded-lg border bg-white p-3 shadow-sm"><label className="grid max-w-xs gap-1 text-sm font-medium">Filter ตาม auth provider<select className="h-10 rounded-md border px-3 text-sm" value={authFilter} onChange={e => setAuthFilter(e.target.value)}><option value="">ทั้งหมด</option>{authProviderOptions.map(option => <option key={option}>{option}</option>)}</select></label></div> : null}
 
-    <div className="overflow-hidden rounded-lg border bg-white shadow-sm"><div className="max-w-full overflow-x-auto"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : visibleItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="truncate px-3 py-3">{cell}</td>)}<td className="px-3 py-3"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
+    <AdminMobileCards mode={mode} items={visibleItems} loading={loading} onEdit={setEditing} onUnlinkGoogle={unlinkGoogle} />
+    <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm md:block"><div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : visibleItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="px-3 py-3 align-top"><div className="min-w-0 break-words">{cell}</div></td>)}<td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
     {mode === "users" && editing ? <UserEditDialog user={editing} units={units} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} onDeactivate={deactivate} onHardDelete={hardDeleteUser} /> : null}
   </div>;
 }
@@ -156,6 +157,29 @@ function deleteErrorMessage(error?: string) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="grid gap-1 text-sm font-medium">{label}{children}</label>;
+}
+
+function AdminMobileCards({ mode, items, loading, onEdit, onUnlinkGoogle }: { mode: Mode; items: any[]; loading: boolean; onEdit: (item: any) => void; onUnlinkGoogle: (id: string) => void }) {
+  const labels = headers(mode);
+  if (loading) return <div className="rounded-lg border bg-white p-4 text-sm shadow-sm md:hidden">กำลังโหลด...</div>;
+  if (!items.length) return <div className="rounded-lg border bg-white p-4 text-sm text-slate-500 shadow-sm md:hidden">ไม่มีข้อมูล</div>;
+  return <div className="space-y-3 md:hidden">
+    {items.map(item => {
+      const cells = rowCells(mode, item);
+      return <div key={item.id} className="rounded-lg border bg-white p-4 text-sm shadow-sm">
+        <div className="space-y-3">
+          {cells.map((cell, index) => <div key={labels[index] ?? index} className="grid gap-1">
+            <div className="text-xs font-semibold uppercase text-slate-500">{labels[index]}</div>
+            <div className="min-w-0 break-words text-slate-900">{cell}</div>
+          </div>)}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
+          <button type="button" className="rounded-md border px-3 py-1" onClick={() => onEdit(item)}>แก้ไข</button>
+          {mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => onUnlinkGoogle(item.id)}>Unlink Google</button> : null}
+        </div>
+      </div>;
+    })}
+  </div>;
 }
 
 function headers(mode: Mode) {
