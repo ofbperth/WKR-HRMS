@@ -29,6 +29,8 @@ type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: stri
 type SearchParams = Record<string, string | string[] | undefined>;
 type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
+const detailLinkClass = "block h-full px-3 py-3 sm:px-4";
+
 export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
   const query = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
@@ -107,38 +109,36 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           </div>
         </Link>)}
       </div>
-      <div className="hidden overflow-auto md:block">
-        <table className="w-full min-w-[1320px] table-fixed text-left text-sm">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-[1720px] table-auto text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
-              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Incident No</th>
-              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Occurred</th>
-              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Reported</th>
-              <th className="w-[13%] px-3 py-3 sm:px-4">Incident unit</th>
-              <th className="w-[13%] px-3 py-3 sm:px-4">Reporter unit</th>
-              <th className="px-3 py-3 sm:px-4">Title</th>
-              <th className="w-[15rem] px-3 py-3 sm:px-4">Risk code</th>
-              <th className="w-[9rem] px-3 py-3 sm:px-4">Type</th>
-              <th className="w-[6rem] px-3 py-3 sm:px-4">Severity</th>
-              <th className="w-[8.5rem] px-3 py-3 sm:px-4">Badge</th>
+              <th className="w-[8rem] px-3 py-3 sm:px-4">Incident No</th>
+              <th className="w-[8rem] px-3 py-3 sm:px-4">Occurred</th>
+              <th className="w-[8rem] px-3 py-3 sm:px-4">Reported</th>
+              <th className="w-[12rem] px-3 py-3 sm:px-4">Incident unit</th>
+              <th className="w-[11rem] px-3 py-3 sm:px-4">Reporter unit</th>
+              <th className="w-[26rem] px-3 py-3 sm:px-4">Title</th>
+              <th className="w-[20rem] px-3 py-3 sm:px-4">Risk code</th>
+              <th className="w-[10rem] px-3 py-3 sm:px-4">Type</th>
+              <th className="w-[7rem] px-3 py-3 sm:px-4">Severity</th>
+              <th className="w-[9rem] px-3 py-3 sm:px-4">Badge</th>
               <th className="w-[9rem] px-3 py-3 sm:px-4">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {incidents.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={11}>ไม่พบข้อมูล</td></tr> : visibleIncidents.map((incident) => <tr key={incident.id} className="group hover:bg-slate-50">
-              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 font-semibold sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentNo}</Link></td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.occurredAt)}</Link></td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.reportedAt)}</Link></td>
-              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentUnit.name}</Link></td>
-              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.reporterUnit.name}</Link></td>
-              <td className="p-0 align-top">
-                <Link className="block h-full px-3 py-3 font-medium text-blue-700 underline-offset-2 group-hover:underline sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.title}</Link>
-              </td>
-              <td className="p-0 align-top"><Link className="block h-full min-w-0 break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><span className="break-all font-semibold">{incident.riskCode.code}</span><div className="mt-1 break-words text-xs leading-5 text-slate-500">{incident.riskCode.nameTh}</div></Link></td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></Link></td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SeverityBadge severity={incident.severity} /></Link></td>
-              <td className="p-0 align-top"><Link className="block h-full space-y-1 px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></Link></td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><StatusBadge status={incident.status} /></Link></td>
+              <td className="w-[8rem] p-0 align-top"><Link className={`${detailLinkClass} break-words font-semibold`} href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentNo}</Link></td>
+              <td className="w-[8rem] p-0 align-top"><Link className={detailLinkClass} href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.occurredAt)}</Link></td>
+              <td className="w-[8rem] p-0 align-top"><Link className={detailLinkClass} href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.reportedAt)}</Link></td>
+              <td className="w-[12rem] p-0 align-top"><Link className={`${detailLinkClass} break-words`} href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentUnit.name}</Link></td>
+              <td className="w-[11rem] p-0 align-top"><Link className={`${detailLinkClass} break-words`} href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.reporterUnit.name}</Link></td>
+              <td className="w-[26rem] p-0 align-top"><Link className={`${detailLinkClass} whitespace-normal break-words font-medium text-blue-700 underline-offset-2 group-hover:underline`} href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.title}</Link></td>
+              <td className="w-[20rem] p-0 align-top"><Link className={`${detailLinkClass} whitespace-normal break-words`} href={`${detailBasePath ?? basePath}/${incident.id}`}><span className="break-all font-semibold">{incident.riskCode.code}</span><div className="mt-1 whitespace-normal break-words text-xs leading-5 text-slate-500">{incident.riskCode.nameTh}</div></Link></td>
+              <td className="w-[10rem] p-0 align-top"><Link className={`${detailLinkClass} whitespace-normal break-words`} href={`${detailBasePath ?? basePath}/${incident.id}`}><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></Link></td>
+              <td className="w-[7rem] p-0 align-top"><Link className={detailLinkClass} href={`${detailBasePath ?? basePath}/${incident.id}`}><SeverityBadge severity={incident.severity} /></Link></td>
+              <td className="w-[9rem] p-0 align-top"><Link className={`${detailLinkClass} space-y-1`} href={`${detailBasePath ?? basePath}/${incident.id}`}><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></Link></td>
+              <td className="w-[9rem] p-0 align-top"><Link className={detailLinkClass} href={`${detailBasePath ?? basePath}/${incident.id}`}><StatusBadge status={incident.status} /></Link></td>
             </tr>)}
           </tbody>
         </table>
