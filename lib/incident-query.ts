@@ -21,7 +21,7 @@ export type IncidentFilterParams = {
   cursor?: string | string[];
 };
 
-export const INCIDENT_PAGE_SIZE = 25;
+export const INCIDENT_PAGE_SIZE = 20;
 
 export const incidentInclude = {
   incidentUnit: true,

@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AppShell } from "@/components/layout/sidebar";
 import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
-import { CategoryPieChart, LinkedStatCard, SeverityBarChart, TopRiskCodeBarChart, TrendLineChart } from "@/components/dashboard/charts";
-import { getDashboardAnalytics, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
+import { LinkedStatCard } from "@/components/dashboard/stat-cards";
+import { DashboardChartsSection } from "@/components/dashboard/dashboard-charts-section";
+import { getDashboardSummary, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
 import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 
 function dateOnly(date: Date) {
@@ -17,7 +18,7 @@ function rangeHref(basePath: string, range: { start: Date; end: Date }) {
 export default async function UnitDashboardPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const data = await getDashboardAnalytics({ ...normalizeDashboardSearchParams(searchParams), scopeUnitId: user.unitId });
+  const data = await getDashboardSummary({ ...normalizeDashboardSearchParams(searchParams), scopeUnitId: user.unitId });
   const basePath = "/unit/incidents";
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">Unit Dashboard</h1><p className="text-sm text-slate-600">Incident, RCA และ action status เฉพาะหน่วยงานของคุณ</p></div>
@@ -32,12 +33,6 @@ export default async function UnitDashboardPage({ searchParams }: { searchParams
       <LinkedStatCard title="Severity สูงสุด" value={data.cards.highestSeverity || "-"} href={`${basePath}?severity=${data.cards.highestSeverityLabel || ""}`} />
       <LinkedStatCard title="อัตราปิดเคส" value={`${data.cards.closedCaseRate}%`} href={`${basePath}?status=Closed`} />
     </div>
-    <div className="dashboard-chart-grid">
-      <TrendLineChart title="Trend incident รายเดือนของหน่วยงาน" data={data.charts.trend} />
-      <SeverityBarChart title="Severity distribution ของหน่วยงาน" data={data.charts.severity} drilldown={{ basePath, param: "severity", field: "name" }} />
-      <TopRiskCodeBarChart title="Top risk code ของหน่วยงาน" data={data.charts.topRiskCodes} drilldown={{ basePath, param: "riskCodeId", field: "riskCodeId" }} />
-      <CategoryPieChart title="Action status ของหน่วยงาน" data={data.charts.actionStatus} />
-      <CategoryPieChart title="RCA status ของหน่วยงาน" data={data.charts.rcaStatus} />
-    </div>
+    <DashboardChartsSection variant="unit" />
   </div></AppShell>;
 }
