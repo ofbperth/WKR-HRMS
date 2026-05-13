@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { canAccessApiPath, canAccessPath, canApproveRca, canManageIncident, canSeeSensitive, canSubmitRca } from "@/lib/rbac";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
-import { scopeWhereForUser } from "@/lib/incident-query";
+import { removeSensitiveIncidentIdentifiers, scopeWhereForUser } from "@/lib/incident-query";
+import { isGoogleEmailAllowed } from "@/lib/auth-settings";
 
 describe("role based access control", () => {
   it("scopes reporter incidents to their own reports", () => {
@@ -43,5 +44,28 @@ describe("role based access control", () => {
     expect(canAccessApiPath("UnitManager", "/api/incidents/incident-1/sensitive")).toBe(false);
     expect(canAccessApiPath("RMTeam", "/api/incidents/incident-1/sensitive")).toBe(true);
     expect(canAccessApiPath("Admin", "/api/incidents/incident-1/sensitive")).toBe(true);
+  });
+
+  it("removes encrypted storage fields from incident API responses", () => {
+    const result = removeSensitiveIncidentIdentifiers({
+      id: "incident-1",
+      patientHn: "1234567",
+      patientAn: "7654321",
+      hnEncrypted: "encrypted-hn",
+      anEncrypted: "encrypted-an",
+      reporterNameEncrypted: "encrypted-reporter",
+      reportedBy: { id: "reporter-1", name: "Reporter Name" },
+      rca: { id: "rca-1", rcaEncrypted: "encrypted-rca", status: "Draft" },
+    }) as any;
+    expect(result.patientHn).toBeNull();
+    expect(result.patientAn).toBeNull();
+    expect(result.reportedBy.name).toBe("[RESTRICTED]");
+    expect(result).not.toHaveProperty("hnEncrypted");
+    expect(result.rca).not.toHaveProperty("rcaEncrypted");
+  });
+
+  it("accepts Google allowed domains with or without a leading at sign", () => {
+    expect(isGoogleEmailAllowed("ofbperth@gmail.com", { allowedDomains: ["@gmail.com"], allowedEmails: [] })).toBe(true);
+    expect(isGoogleEmailAllowed("ofbperth@gmail.com", { allowedDomains: ["gmail.com"], allowedEmails: [] })).toBe(true);
   });
 });

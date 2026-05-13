@@ -194,7 +194,12 @@ export const getActiveUsers = cache(async function getActiveUsers() {
 
 export function removeSensitiveIncidentStorage<T extends Record<string, any>>(incident: T) {
   const { hnEncrypted, anEncrypted, reporterNameEncrypted, ...rest } = incident;
-  return rest;
+  const sanitized = rest as Record<string, any>;
+  if (sanitized.rca && typeof sanitized.rca === "object") {
+    const { rcaEncrypted, ...rca } = sanitized.rca;
+    sanitized.rca = rca;
+  }
+  return sanitized as Omit<T, "hnEncrypted" | "anEncrypted" | "reporterNameEncrypted">;
 }
 
 export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>>(incident: T) {

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthSettings } from "@/lib/auth-settings";
 import { getGoogleClientConfig } from "@/lib/google-auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   let settings;
   try {

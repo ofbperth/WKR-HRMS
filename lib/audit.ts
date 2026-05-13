@@ -8,6 +8,7 @@ const sensitiveKeys = new Set([
   "anEncrypted",
   "rcaEncrypted",
   "reporterNameEncrypted",
+  "reporterName",
   "googleId",
 ]);
 

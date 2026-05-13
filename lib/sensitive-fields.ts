@@ -1,6 +1,9 @@
 import "server-only";
 import { decrypt, encryptToStorage } from "@/lib/encryption";
 
+// Data minimization: collect patient identifiers and RCA narrative only when
+// needed for risk review, store encrypted copies, and expose plaintext only via
+// role-limited server routes with audit logging.
 export function encryptedIncidentIdentifiers(input: {
   patientHn?: string | null;
   patientAn?: string | null;
