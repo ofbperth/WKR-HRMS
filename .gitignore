@@ -5,6 +5,8 @@ node_modules/
 # nextjs
 .next
 .next/
+.next.locked-old
+.next.locked-old/
 out
 
 # env
