@@ -17,6 +17,7 @@ export default async function Page() {
     prisma.incident.count({ where: { ...unitScope, status: "RCARequired" } }),
     prisma.incident.count({ where: { ...unitScope, isSentinel: true } }),
   ]);
+
   return <AppShell user={user}><RoleHome title="Unit Manager Workspace" description="ติดตาม incident ที่เกิดในหน่วยงานของตนเอง">
     <div className="grid gap-4 md:grid-cols-3">
       <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
@@ -26,7 +27,7 @@ export default async function Page() {
     <div className="grid gap-4 md:grid-cols-3">
       <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
       <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">Search / Export</div><p className="mt-1 text-sm text-slate-600">Find, filter, open, and export unit incidents</p></Link>
+      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">Search / Export</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export incident ของหน่วยงาน</p></Link>
     </div>
   </RoleHome></AppShell>;
 }

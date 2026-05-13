@@ -17,7 +17,8 @@ export default async function Page() {
     prisma.incident.count({ where: { status: "RCARequired" } }),
     prisma.incident.count({ where: { isSentinel: true } }),
   ]);
-  return <AppShell user={user}><RoleHome title="RM Team Workbench" description="Triage incident, ค้นหา, ติดตาม RCA และบริหาร Risk Log">
+
+  return <AppShell user={user}><RoleHome title="RM Team Workbench" description="Triage incident, ค้นหา, ติดตาม RCA และบริหาร workflow ความเสี่ยง">
     <div className="grid gap-4 md:grid-cols-3">
       <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
       <Link href="/rm/search?status=RCARequired" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>RCA Required</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card></Link>

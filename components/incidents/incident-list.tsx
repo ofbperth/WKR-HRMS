@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { type MouseEvent } from "react";
+import { useRouter } from "next/navigation";
+import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
 import { formatDateOnly } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pagination } from "@/components/ui/pagination";
+import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
 import { incidentStatusValues, severityValues } from "@/lib/validators";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
 
@@ -29,23 +30,40 @@ type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: stri
 type SearchParams = Record<string, string | string[] | undefined>;
 type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
-export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+  const router = useRouter();
   const query = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
     if (typeof value === "string" && value && key !== "page" && key !== "cursor") query.set(key, value);
   });
+  const page = meta?.page ?? getPage(searchParams.page, incidents.length);
+  const pageSize = meta?.pageSize;
+  const total = meta?.total ?? incidents.length;
+  const visibleIncidents = meta ? incidents : pageSlice(incidents, page);
+  const getDetailHref = (incidentId: string) => `${detailBasePath ?? basePath}/${incidentId}`;
+
+  function openIncidentDetail(incidentId: string) {
+    router.push(getDetailHref(incidentId));
+  }
+
+  function handleRowKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, incidentId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openIncidentDetail(incidentId);
+    }
+  }
 
   return <div className="space-y-4">
     <form className="grid grid-cols-1 gap-3 overflow-hidden rounded-xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4" action={basePath}>
       <DateFilterField name="from" defaultValue={asString(searchParams.from)} />
       <DateFilterField name="to" defaultValue={asString(searchParams.to)} />
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">All units</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">All severity</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">All SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">All risk codes</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">All status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">All sentinel</option><option value="true">Sentinel</option><option value="false">Non-sentinel</option></select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">All RM support</option><option value="true">Need RM support</option><option value="false">No RM support</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุก Severity</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">ทุก SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก Risk code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุก Status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">Need RM support</option><option value="false">ไม่ต้องการ</option></select>
       <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="Keyword / incident no / risk code" defaultValue={asString(searchParams.q)} />
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">Filter</Button>
@@ -55,32 +73,87 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
     </form>
 
     <div className="overflow-hidden rounded-xl border bg-white">
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1200px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th className="px-4 py-3">Action</th><th className="px-4 py-3">Incident No</th><th className="px-4 py-3">Occurred</th><th className="px-4 py-3">Reported</th><th className="px-4 py-3">Incident unit</th><th className="px-4 py-3">Reporter unit</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Risk code</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Badge</th><th className="px-4 py-3">Status</th></tr>
-          </thead>
-          <tbody className="divide-y">
-            {incidents.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={12}>No incident found</td></tr> : incidents.map((incident) => <tr key={incident.id} className="hover:bg-slate-50">
-              <td className="px-4 py-3"><Link className="rounded-md border px-3 py-2 text-xs hover:bg-slate-100" href={`${detailBasePath ?? basePath}/${incident.id}`}>View</Link></td>
-              <td className="px-4 py-3 font-semibold">{incident.incidentNo}</td>
-              <td className="px-4 py-3">{formatDateOnly(incident.occurredAt)}</td>
-              <td className="px-4 py-3">{formatDateOnly(incident.reportedAt)}</td>
-              <td className="px-4 py-3">{incident.incidentUnit.name}</td>
-              <td className="px-4 py-3">{incident.reporterUnit.name}</td>
-              <td className="px-4 py-3"><div className="font-medium">{incident.title}</div></td>
-              <td className="px-4 py-3"><span className="font-semibold">{incident.riskCode.code}</span><div className="text-xs text-slate-500">{incident.riskCode.nameTh}</div></td>
-              <td className="px-4 py-3"><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></td>
-              <td className="px-4 py-3"><SeverityBadge severity={incident.severity} /></td>
-              <td className="space-x-1 px-4 py-3"><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></td>
-              <td className="px-4 py-3"><StatusBadge status={incident.status} /></td>
-            </tr>)}
-          </tbody>
-        </table>
+      <div className="divide-y md:hidden">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <Link key={incident.id} className="block space-y-3 p-4 transition hover:bg-slate-50" href={getDetailHref(incident.id)}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Incident No</div>
+              <div className="break-words text-sm font-semibold">{incident.incidentNo}</div>
+            </div>
+            <StatusBadge status={incident.status} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Occurred</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.occurredAt)}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Reported</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Incident unit</div>
+              <div className="break-words text-sm">{incident.incidentUnit.name}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Reporter unit</div>
+              <div className="break-words text-sm">{incident.reporterUnit.name}</div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Risk code</div>
+            <div className="break-words text-sm"><span className="break-all font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Type</div>
+            <div className="break-words text-sm">{incident.clinicalOrGeneral} / {incident.simpleCategory}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Title</div>
+            <div className="break-words text-sm font-medium text-blue-700 underline-offset-2">{incident.title}</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SeverityBadge severity={incident.severity} />
+            <SentinelBadge value={incident.isSentinel} />
+            <RmSupportBadge value={incident.needRmSupport} />
+          </div>
+        </Link>)}
+      </div>
+      <div className="hidden divide-y md:block">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <div key={incident.id} role="link" tabIndex={0} aria-label={`Open incident ${incident.incidentNo}`} onClick={() => openIncidentDetail(incident.id)} onKeyDown={(event) => handleRowKeyDown(event, incident.id)} className="group grid cursor-pointer grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+          <div className="col-span-3 min-w-0 xl:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">Incident No</div>
+            <div className="break-words font-semibold">{incident.incidentNo}</div>
+          </div>
+          <div className="col-span-3 min-w-0 xl:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">Occurred</div>
+            <div>{formatDateOnly(incident.occurredAt)}</div>
+          </div>
+          <div className="col-span-6 min-w-0 xl:col-span-3">
+            <div className="text-xs font-semibold uppercase text-slate-500">Incident unit</div>
+            <div className="break-words">{incident.incidentUnit.name}</div>
+          </div>
+          <div className="col-span-12 flex min-w-0 flex-wrap items-start gap-2 xl:col-span-5 xl:justify-end">
+            <SeverityBadge severity={incident.severity} />
+            <SentinelBadge value={incident.isSentinel} />
+            <RmSupportBadge value={incident.needRmSupport} />
+            <StatusBadge status={incident.status} />
+          </div>
+          <div className="col-span-12 min-w-0 xl:col-span-7">
+            <div className="text-xs font-semibold uppercase text-slate-500">Title</div>
+            <div className="break-words font-medium text-blue-700 underline-offset-2 group-hover:underline [overflow-wrap:anywhere]">{incident.title}</div>
+          </div>
+          <div className="col-span-12 min-w-0 xl:col-span-5">
+            <div className="text-xs font-semibold uppercase text-slate-500">Risk code</div>
+            <div className="break-words [overflow-wrap:anywhere]"><span className="font-semibold">{incident.riskCode.code}</span> - <span className="text-slate-600">{incident.riskCode.nameTh}</span></div>
+          </div>
+        </div>)}
       </div>
     </div>
 
-    <Pagination basePath={basePath} searchParams={searchParams} page={meta.page} total={meta.total} pageSize={meta.pageSize} />
+    <Pagination basePath={basePath} searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div>;
 }
 
