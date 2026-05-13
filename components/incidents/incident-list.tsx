@@ -31,28 +31,28 @@ export function IncidentList({ incidents, lookup, basePath, searchParams, detail
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก Risk code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุก Status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">Need RM support</option><option value="false">ไม่ต้องการ</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">ต้องการ RM support</option><option value="false">ไม่ต้องการ</option></select>
       <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="Keyword / incident no / risk code" defaultValue={asString(searchParams.q)} />
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">Filter</Button>
-        <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>Clear</Link>
+        <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
         <a className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={`/api/incidents/export?${query.toString()}`}>Export CSV</a>
       </div>
     </form>
 
     <div className="overflow-hidden rounded-xl border bg-white">
       <div className="hidden w-full gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500 md:grid md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)]">
-        <div>Occurred</div>
-        <div>Unit</div>
-        <div>Title</div>
+        <div>วันที่เกิดเหตุ</div>
+        <div>หน่วยงาน</div>
+        <div>ชื่อเหตุการณ์</div>
         <div>Risk code / Badges / Status</div>
       </div>
       {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : <div className="divide-y">
         {visibleIncidents.map((incident) => <Link key={incident.id} className="grid w-full gap-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)] md:items-start" href={`${detailBasePath ?? basePath}/${incident.id}`}>
-          <ListField label="Occurred" className="md:row-span-2" value={formatDateOnly(incident.occurredAt)} />
-          <ListField label="Unit" className="md:row-span-2" value={incident.incidentUnit.name} />
+          <ListField label="วันที่เกิดเหตุ" className="md:row-span-2" value={formatDateOnly(incident.occurredAt)} />
+          <ListField label="หน่วยงาน" className="md:row-span-2" value={incident.incidentUnit.name} />
           <div className="min-w-0 md:row-span-2">
-            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">Title</div>
+            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">ชื่อเหตุการณ์</div>
             <div className="mt-1 break-words font-semibold leading-6 text-slate-950 md:mt-0">{incident.title}</div>
           </div>
           <div className="min-w-0">

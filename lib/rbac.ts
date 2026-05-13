@@ -9,11 +9,11 @@ export const roleHome: Record<Role, string> = {
 };
 
 export const roleLabels: Record<Role, string> = {
-  Reporter: "Reporter",
-  UnitManager: "Unit Manager",
-  RMTeam: "RM Team",
-  Executive: "Executive",
-  Admin: "Admin",
+  Reporter: "ผู้รายงาน",
+  UnitManager: "หัวหน้าหน่วยงาน",
+  RMTeam: "ทีม RM",
+  Executive: "ผู้บริหาร",
+  Admin: "ผู้ดูแลระบบ",
 };
 
 function hasRmTeamAuthority(role: string) {

@@ -12,9 +12,9 @@ export default async function HeatmapPage({ searchParams }: { searchParams: Reco
   const filters = normalizeDashboardSearchParams(searchParams);
   const [dashboard, heatmap] = await Promise.all([getDashboardAnalytics(filters), getHeatmapAnalytics({ ...filters, simpleCategory: searchParams.yMode === "simpleCategory" ? "__Y_SIMPLE__" : filters.simpleCategory })]);
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">Heatmap Risk per Unit</h1><p className="text-sm text-slate-600">Toggle count/weighted score. Click cells to open filtered RM search.</p></div>
+    <div><h1 className="text-2xl font-bold">Heatmap Risk ต่อหน่วยงาน</h1><p className="text-sm text-slate-600">สลับมุมมอง count/weighted score และคลิก cell เพื่อเปิดผลค้นหา RM ที่กรองไว้</p></div>
     <DashboardFilter units={dashboard.filters.units} categories={dashboard.filters.categories} />
-    <div className="flex flex-wrap gap-2"><a className={`rounded-md border px-3 py-2 text-sm ${searchParams.yMode !== "simpleCategory" ? "bg-primary text-white" : "bg-white"}`} href="/rm/heatmap">Severity view</a><a className={`rounded-md border px-3 py-2 text-sm ${searchParams.yMode === "simpleCategory" ? "bg-primary text-white" : "bg-white"}`} href="/rm/heatmap?yMode=simpleCategory">SIMPLE category view</a></div>
+    <div className="flex flex-wrap gap-2"><a className={`rounded-md border px-3 py-2 text-sm ${searchParams.yMode !== "simpleCategory" ? "bg-primary text-white" : "bg-white"}`} href="/rm/heatmap">มุมมอง Severity</a><a className={`rounded-md border px-3 py-2 text-sm ${searchParams.yMode === "simpleCategory" ? "bg-primary text-white" : "bg-white"}`} href="/rm/heatmap?yMode=simpleCategory">มุมมอง SIMPLE category</a></div>
     <HeatmapGrid data={heatmap} />
   </div></AppShell>;
 }

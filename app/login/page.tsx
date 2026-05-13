@@ -19,19 +19,19 @@ export default function LoginPage() {
     if (typeof window === "undefined") return "";
     const code = new URLSearchParams(window.location.search).get("error");
     const messages: Record<string, string> = {
-      GOOGLE_LOGIN_DISABLED: "Google login is disabled by Admin.",
-      GOOGLE_DOMAIN_NOT_ALLOWED: "This Google account is not in an allowed domain or email list.",
-      GOOGLE_USER_NOT_REGISTERED: "This account is not registered. Please contact Admin.",
-      GOOGLE_EMAIL_NOT_VERIFIED: "Google email is not verified.",
-      USER_INACTIVE: "This user is inactive. Please contact Admin.",
-      GOOGLE_USER_PENDING_APPROVAL: "Account created and waiting for Admin approval.",
-      GOOGLE_OAUTH_NOT_CONFIGURED: "Google OAuth is not configured yet.",
-      google_disabled: "Google login is disabled by Admin.",
-      google_not_configured: "Google OAuth is not configured yet.",
-      google_needs_migration: "Google login requires the database migration first.",
-      google_state_invalid: "Google login session is invalid. Please try again.",
+      GOOGLE_LOGIN_DISABLED: "Admin ปิด Google login ไว้",
+      GOOGLE_DOMAIN_NOT_ALLOWED: "Google account นี้ไม่ได้อยู่ใน domain หรือ email ที่อนุญาต",
+      GOOGLE_USER_NOT_REGISTERED: "บัญชีนี้ยังไม่ได้ลงทะเบียน กรุณาติดต่อ Admin",
+      GOOGLE_EMAIL_NOT_VERIFIED: "Google email ยังไม่ได้ verify",
+      USER_INACTIVE: "User นี้ถูกปิดใช้งาน กรุณาติดต่อ Admin",
+      GOOGLE_USER_PENDING_APPROVAL: "สร้างบัญชีแล้วและกำลังรอ Admin อนุมัติ",
+      GOOGLE_OAUTH_NOT_CONFIGURED: "ยังไม่ได้ตั้งค่า Google OAuth",
+      google_disabled: "Admin ปิด Google login ไว้",
+      google_not_configured: "ยังไม่ได้ตั้งค่า Google OAuth",
+      google_needs_migration: "Google login ต้อง migrate database ก่อน",
+      google_state_invalid: "Session ของ Google login ไม่ถูกต้อง กรุณาลองใหม่",
     };
-    return code ? messages[code] || "Google login failed." : "";
+    return code ? messages[code] || "Google login ไม่สำเร็จ" : "";
   }, []);
 
   useEffect(() => {
@@ -64,14 +64,14 @@ export default function LoginPage() {
 
       const json = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(json?.error || "Email or password is incorrect, or the user is inactive.");
+        setError(json?.error || "Email หรือ password ไม่ถูกต้อง หรือ user ถูกปิดใช้งาน");
         return;
       }
 
       window.location.assign(json?.redirectTo || "/dashboard");
     } catch (err) {
       console.error("Login failed", err);
-      setError("Cannot connect to the login service. Please try again.");
+      setError("เชื่อมต่อ login service ไม่ได้ กรุณาลองใหม่");
     } finally {
       setIsSubmitting(false);
     }
@@ -85,11 +85,11 @@ export default function LoginPage() {
             <div className="grid h-14 w-14 place-items-center rounded-lg bg-emerald-500 text-white shadow-[0_16px_30px_rgba(34,197,94,0.28)]"><Hospital size={30} /></div>
             <div>
               <div className="text-3xl font-bold tracking-normal text-emerald-600">WKR-HRMS</div>
-              <div className="text-sm font-medium text-slate-500">Hospital Risk Management System</div>
+              <div className="text-sm font-medium text-slate-500">ระบบบริหารความเสี่ยงโรงพยาบาล</div>
             </div>
           </div>
           <div className="max-w-xl rounded-lg border border-emerald-100 bg-white/80 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)]">
-            <h1 className="text-2xl font-bold tracking-normal text-slate-950">Hospital risk workflow</h1>
+            <h1 className="text-2xl font-bold tracking-normal text-slate-950">Workflow บริหารความเสี่ยงโรงพยาบาล</h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">ระบบรายงานและบริหารความเสี่ยงที่เน้นความเร็ว ความชัดเจน และการทำงานตามบทบาทของผู้ใช้</p>
             <div className="mt-6 grid gap-3 text-sm text-slate-700">
               <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 text-emerald-600" size={18} /><span>One screen, one intention สำหรับงาน incident สำคัญ</span></div>
@@ -120,13 +120,13 @@ export default function LoginPage() {
               </div>
               {error ? <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Signing in..." : "Login"}
+                {isSubmitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </Button>
               {googleEnabled && googleConfigured
-                ? <a className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-emerald-50" href="/api/auth/google">Login with Google</a>
-                : <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">{googleNeedsMigration ? "Google login requires migration first." : googleEnabled ? "Google Client ID/Secret is not configured." : "Google login is disabled by Admin."}</div>}
+                ? <a className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-emerald-50" href="/api/auth/google">เข้าสู่ระบบด้วย Google</a>
+                : <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">{googleNeedsMigration ? "Google login ต้อง migration ก่อน" : googleEnabled ? "ยังไม่ได้ตั้งค่า Google Client ID/Secret" : "Admin ปิด Google login ไว้"}</div>}
               <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">
-                Sample login: admin@hospital.local / password
+                ตัวอย่าง login: admin@hospital.local / password
               </div>
             </form>
           </CardContent>

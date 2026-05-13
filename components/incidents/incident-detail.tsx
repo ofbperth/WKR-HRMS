@@ -69,36 +69,36 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
         <Info label="วันเวลาที่เกิดเหตุ" value={formatDateTime(incident.occurredAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
-        <Info label="Reporter" value="Restricted" />
+        <Info label="ผู้รายงาน" value="จำกัดสิทธิ์" />
         <div>
-          <div className="font-medium text-slate-500">Patient identifier</div>
+          <div className="font-medium text-slate-500">ข้อมูลระบุตัวผู้ป่วย</div>
           {canRevealSensitive
             ? <PatientIdentifierReveal incidentId={incident.id} patientHn={null} patientAn={null} requesterName={`${currentUser.name} (${currentUser.email})`} />
-            : <div className="rounded-lg border bg-slate-50 p-3 text-sm font-medium text-slate-700">Restricted</div>}
+            : <div className="rounded-lg border bg-slate-50 p-3 text-sm font-medium text-slate-700">จำกัดสิทธิ์</div>}
         </div>
         <div><div className="font-medium text-slate-500">รายละเอียด</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.description}</p></div>
-        <div><div className="font-medium text-slate-500">Immediate action</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.immediateAction || "-"}</p></div>
+        <div><div className="font-medium text-slate-500">การแก้ไขเบื้องต้น</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.immediateAction || "-"}</p></div>
         {canEditDetails ? <IncidentDetailEditor incident={incident} units={units} riskCodes={riskCodes} /> : null}
       </CardContent></Card>
       <Card><CardHeader><CardTitle>Classification</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
-        <Info label="Affected type" value={incident.affectedType} />
+        <Info label="ประเภทผู้ได้รับผลกระทบ" value={incident.affectedType} />
         <Info label="Clinical/General" value={incident.clinicalOrGeneral} />
         <Info label="SIMPLE" value={incident.simpleCategory} />
         <Info label="Risk code" value={`${incident.riskCode.code} ${incident.riskCode.nameTh}`} />
         <Info label="Medication 6 Rights" value={incident.medicationRight || "-"} />
-        <Info label="Severity meaning" value={severityDescriptions[incident.severity]} />
+        <Info label="ความหมาย Severity" value={severityDescriptions[incident.severity]} />
       </CardContent></Card>
     </div>
 
     {canTriage ? <div className="space-y-3"><TriageClassificationForm incident={incident} riskCodes={riskCodes} backHref={currentUser.role === "UnitManager" ? "/unit/triage" : "/rm/triage"} /></div> : null}
 
-    {manage && !canTriage ? <div className="space-y-3"><h2 className="text-lg font-semibold">RM classification edit</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
+    {manage && !canTriage ? <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไข RM classification</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">Status: {incident.rca.status}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">Submitted {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
-          <Info label="Problem" value={incident.rca.problemStatement || "-"} />
+          <Info label="ปัญหา" value={incident.rca.problemStatement || "-"} />
           <Info label="Root cause" value={incident.rca.rootCause || "-"} />
           <Info label="Preventive action" value={incident.rca.preventiveAction || "-"} />
         </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
@@ -106,11 +106,11 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
         {manage && incident.rca?.status === "Submitted" ? <RcaApprovalForm incidentId={incident.id} /> : null}
       </CardContent></Card>
 
-      <Card><CardHeader><CardTitle>Action plans</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+      <Card><CardHeader><CardTitle>Action plan</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มี action plan</p> : incident.actionPlans.map(action => <div key={action.id} className="space-y-3 rounded-lg border p-3">
           <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">Owner: {action.owner.name} · Due {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{action.status}</span></div>
           <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
-          {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">Evidence</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>Evidence link</a> : null}</div> : null}
+          {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">Evidence</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์ Evidence</a> : null}</div> : null}
           {(action.ownerId === currentUser.id || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} /> : null}
         </div>)}
         {(unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved" ? <ActionPlanForm incidentId={incident.id} users={users} /> : null}

@@ -15,11 +15,18 @@ export function RoleBadge({ role }: { role: Role | string }) {
     UnitManager: "border-emerald-200 bg-emerald-50 text-emerald-700",
     Reporter: "border-amber-200 bg-amber-50 text-amber-700",
   };
-  return <Badge className={map[role] || ""}>{role}</Badge>;
+  const labels: Record<string, string> = {
+    Admin: "Admin",
+    RMTeam: "ทีม RM",
+    Executive: "Executive",
+    UnitManager: "Unit Manager",
+    Reporter: "Reporter",
+  };
+  return <Badge className={map[role] || ""}>{labels[role] || role}</Badge>;
 }
 
 export function SeverityBadge({ severity }: { severity: string }) {
-  return <Badge className={severityTone(severity)}>Level {severity}</Badge>;
+  return <Badge className={severityTone(severity)}>ระดับ {severity}</Badge>;
 }
 
 export function StatusBadge({ status }: { status: string }) {
@@ -33,5 +40,5 @@ export function SentinelBadge({ value }: { value: boolean }) {
 
 export function RmSupportBadge({ value }: { value: boolean }) {
   if (!value) return null;
-  return <Badge className="border-violet-200 bg-violet-50 text-violet-700">Need RM support</Badge>;
+  return <Badge className="border-violet-200 bg-violet-50 text-violet-700">ต้องการ RM support</Badge>;
 }

@@ -76,25 +76,25 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Save failed");
+      alert(data.error || "บันทึกไม่สำเร็จ");
       return;
     }
     setEditing(false);
     router.refresh();
   }
 
-  if (!editing) return <Button type="button" className="mt-1" onClick={() => setEditing(true)}>Edit</Button>;
+  if (!editing) return <Button type="button" className="mt-1" onClick={() => setEditing(true)}>แก้ไข</Button>;
 
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
-    <label className="space-y-1 text-sm"><span className="font-medium">Occurred date</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.occurredDate} onChange={e => setForm({ ...form, occurredDate: e.target.value })} /></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">Occurred time</span><input type="time" className="h-10 w-full rounded-md border px-3" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">Incident unit</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.incidentUnitId} onChange={e => setForm({ ...form, incidentUnitId: e.target.value })}>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">Location</span><input className="h-10 w-full rounded-md border px-3" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">Affected type</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.affectedType} onChange={e => setForm({ ...form, affectedType: e.target.value })}>{affectedTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">วันที่เกิดเหตุ</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.occurredDate} onChange={e => setForm({ ...form, occurredDate: e.target.value })} /></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">เวลาเกิดเหตุ</span><input type="time" className="h-10 w-full rounded-md border px-3" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">หน่วยงานที่เกิดเหตุ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.incidentUnitId} onChange={e => setForm({ ...form, incidentUnitId: e.target.value })}>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">สถานที่</span><input className="h-10 w-full rounded-md border px-3" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">ประเภทผู้ได้รับผลกระทบ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.affectedType} onChange={e => setForm({ ...form, affectedType: e.target.value })}>{affectedTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">Clinical / General</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.clinicalOrGeneral} onChange={e => updateClinicalOrGeneral(e.target.value)}>{clinicalOrGeneralValues.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
-    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Title</span><input className="h-10 w-full rounded-md border px-3" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></label>
-    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Description</span><textarea className="min-h-28 w-full rounded-md border px-3 py-2" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
-    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Immediate action</span><textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={form.immediateAction} onChange={e => setForm({ ...form, immediateAction: e.target.value })} /></label>
+    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">ชื่อเหตุการณ์</span><input className="h-10 w-full rounded-md border px-3" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></label>
+    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">รายละเอียด</span><textarea className="min-h-28 w-full rounded-md border px-3 py-2" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
+    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">การแก้ไขเบื้องต้น</span><textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={form.immediateAction} onChange={e => setForm({ ...form, immediateAction: e.target.value })} /></label>
     <div className="space-y-2 text-sm md:col-span-2">
       <label className="space-y-1 font-medium"><span>Risk code พร้อม search/dropdown</span><input className="h-10 w-full rounded-md border px-3" value={riskQuery} onChange={e => setRiskQuery(e.target.value)} placeholder={`ค้นหาเฉพาะ ${form.clinicalOrGeneral} code / ชื่อไทย / SIMPLE`} /></label>
       <div className="max-h-60 overflow-auto rounded-lg border bg-white">
@@ -104,8 +104,8 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
     <label className="space-y-1 text-sm"><span className="font-medium">SIMPLE category</span><input className="h-10 w-full rounded-md border px-3" value={form.simpleCategory} onChange={e => setForm({ ...form, simpleCategory: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">Severity</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{severityOptions.map(severity => <option key={severity} value={severity}>{severity}</option>)}</select></label>
     {selectedRisk?.code === "CPM205" || /Administration/i.test(selectedRisk?.nameTh ?? "") ? <label className="space-y-1 text-sm"><span className="font-medium">Medication 6 Rights</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.medicationRight} onChange={e => setForm({ ...form, medicationRight: e.target.value })}><option value="">-</option>{medicationRightValues.map(right => <option key={right} value={right}>{right}</option>)}</select></label> : null}
-    <label className="!flex !w-fit items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> Need RM support</label>
-    <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="button" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save details"}</Button><Button type="button" className="bg-slate-700" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button></div>
+    <label className="!flex !w-fit items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label>
+    <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="button" onClick={save} disabled={saving}>{saving ? "กำลังบันทึก..." : "บันทึกรายละเอียด"}</Button><Button type="button" className="bg-slate-700" onClick={() => setEditing(false)} disabled={saving}>ยกเลิก</Button></div>
   </div>;
 }
 
@@ -121,23 +121,23 @@ export function IncidentClassificationEditor({ incident, riskCodes }: { incident
     setSaving(true);
     const res = await fetch(`/api/incidents/${incident.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     setSaving(false);
-    if (!res.ok) alert("Save failed"); else { setEditing(false); router.refresh(); }
+    if (!res.ok) alert("บันทึกไม่สำเร็จ"); else { setEditing(false); router.refresh(); }
   }
   if (!editing) return <div className="rounded-lg border bg-white p-4">
     <div className="grid gap-3 text-sm md:grid-cols-3">
       <div><div className="text-slate-500">Severity</div><div className="font-semibold">{incident.severity}</div></div>
       <div><div className="text-slate-500">Status</div><div className="font-semibold">{incident.status}</div></div>
-      <div><div className="text-slate-500">Sentinel / RM support</div><div className="font-semibold">{incident.isSentinel ? "Sentinel" : "Non-sentinel"} / {incident.needRmSupport ? "Need support" : "No support"}</div></div>
+      <div><div className="text-slate-500">Sentinel / RM support</div><div className="font-semibold">{incident.isSentinel ? "Sentinel" : "ไม่ใช่ Sentinel"} / {incident.needRmSupport ? "ต้องการ support" : "ไม่ต้องการ support"}</div></div>
     </div>
-    <Button type="button" className="mt-3" onClick={() => setEditing(true)}>Edit RM classification</Button>
+    <Button type="button" className="mt-3" onClick={() => setEditing(true)}>แก้ไข RM classification</Button>
   </div>;
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
     <label className="space-y-1 text-sm"><span className="font-medium">Severity</span><select className="h-10 w-full rounded-md border px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{severityOptions.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">Status</span><select className="h-10 w-full rounded-md border px-3" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{incidentStatusValues.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Risk code</span><select className="h-10 w-full rounded-md border px-3" value={form.riskCodeId} onChange={e => { const risk = availableRiskCodes.find(r => r.id === e.target.value); setForm({ ...form, riskCodeId: e.target.value, simpleCategory: risk?.simpleCategory ?? form.simpleCategory }); }}>{availableRiskCodes.map(r => <option key={r.id} value={r.id}>{r.code} - {r.nameTh}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">SIMPLE category</span><input className="h-10 w-full rounded-md border px-3" value={form.simpleCategory} onChange={e => setForm({ ...form, simpleCategory: e.target.value })} /></label>
-    <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> Need RM support</label></div>
-    <div className="md:col-span-2 flex flex-wrap items-center gap-2"><Button type="button" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save classification"}</Button><Button type="button" className="bg-slate-700" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>{selected ? <span className="ml-3 text-xs text-slate-500">Selected: {selected.code}</span> : null}</div>
+    <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label></div>
+    <div className="md:col-span-2 flex flex-wrap items-center gap-2"><Button type="button" onClick={save} disabled={saving}>{saving ? "กำลังบันทึก..." : "บันทึก classification"}</Button><Button type="button" className="bg-slate-700" onClick={() => setEditing(false)} disabled={saving}>ยกเลิก</Button>{selected ? <span className="ml-3 text-xs text-slate-500">เลือกแล้ว: {selected.code}</span> : null}</div>
   </div>;
 }
 
@@ -156,7 +156,7 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Submit triage failed");
+      alert(data.error || "ส่ง Triage ไม่สำเร็จ");
       return;
     }
     router.push(backHref);
@@ -171,7 +171,7 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Reject failed");
+      alert(data.error || "Reject ไม่สำเร็จ");
       return;
     }
     router.push(backHref);
@@ -184,8 +184,8 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
     <label className="space-y-1 text-sm"><span className="font-medium">Need RCA?</span><select className="h-10 w-full rounded-md border bg-white px-3" value={mustRca ? "yes" : form.requireRca ? "yes" : "no"} disabled={mustRca} onChange={e => setForm({ ...form, requireRca: e.target.value === "yes" })}><option value="yes">ต้องทำ RCA</option><option value="no">ไม่ต้องทำ RCA</option></select>{mustRca ? <p className="text-xs text-red-700">Severity E-I บังคับทำ RCA ทุก incident</p> : null}</label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Risk code</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.riskCodeId} onChange={e => { const risk = availableRiskCodes.find(r => r.id === e.target.value); setForm({ ...form, riskCodeId: e.target.value, simpleCategory: risk?.simpleCategory ?? form.simpleCategory }); }}>{availableRiskCodes.map(r => <option key={r.id} value={r.id}>{r.code} - {r.nameTh}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">SIMPLE category</span><input className="h-10 w-full rounded-md border bg-white px-3" value={form.simpleCategory} onChange={e => setForm({ ...form, simpleCategory: e.target.value })} /></label>
-    <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> Need RM support</label></div>
-    <div className="md:col-span-2 flex flex-wrap items-center gap-2"><Button type="button" onClick={submit} disabled={saving}>{saving ? "Submitting..." : "Submit classification"}</Button><Button type="button" className="bg-red-700" onClick={rejectIncident} disabled={saving}>Reject incident</Button>{selected ? <span className="text-xs text-slate-600">Selected: {selected.code}</span> : null}</div>
+    <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label></div>
+    <div className="md:col-span-2 flex flex-wrap items-center gap-2"><Button type="button" onClick={submit} disabled={saving}>{saving ? "กำลังส่ง..." : "ส่ง classification"}</Button><Button type="button" className="bg-red-700" onClick={rejectIncident} disabled={saving}>Reject incident</Button>{selected ? <span className="text-xs text-slate-600">เลือกแล้ว: {selected.code}</span> : null}</div>
   </div>;
 }
 
@@ -198,9 +198,9 @@ export function AddCommentForm({ incidentId }: { incidentId: string }) {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
     setSaving(false);
-    if (!res.ok) alert("Comment failed"); else { setMessage(""); router.refresh(); }
+    if (!res.ok) alert("เพิ่ม comment ไม่สำเร็จ"); else { setMessage(""); router.refresh(); }
   }
-  return <div className="space-y-2 rounded-lg border bg-white p-4"><textarea className="min-h-24 w-full rounded-md border px-3 py-2 text-sm" value={message} onChange={e => setMessage(e.target.value)} placeholder="Add RM comment / note" /><Button type="button" onClick={submit} disabled={saving}>{saving ? "Saving..." : "Add comment"}</Button></div>;
+  return <div className="space-y-2 rounded-lg border bg-white p-4"><textarea className="min-h-24 w-full rounded-md border px-3 py-2 text-sm" value={message} onChange={e => setMessage(e.target.value)} placeholder="เพิ่ม RM comment / note" /><Button type="button" onClick={submit} disabled={saving}>{saving ? "กำลังบันทึก..." : "เพิ่ม comment"}</Button></div>;
 }
 
 type RcaValue = {
@@ -243,7 +243,7 @@ export function RcaForm({ incidentId, rca, users }: { incidentId: string; rca: R
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/rca`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, submit }) });
     setSaving(false);
-    if (!res.ok) alert("RCA save failed"); else router.refresh();
+    if (!res.ok) alert("บันทึก RCA ไม่สำเร็จ"); else router.refresh();
   }
   if (locked) return <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-600">RCA submitted/approved แล้ว ระบบล็อกไม่ให้แก้ไข หากต้องแก้ให้ RM request revision ก่อน</div>;
   return <div className="grid gap-3 rounded-lg border bg-white p-3">
@@ -261,8 +261,8 @@ export function RcaForm({ incidentId, rca, users }: { incidentId: string; rca: R
     </div>
     <label className="space-y-1 text-sm"><span className="font-medium">KPI</span><input className="h-10 w-full rounded-md border px-3" value={form.kpi} onChange={e => setForm({ ...form, kpi: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">KPI owner</span><select className="h-10 w-full rounded-md border px-3" value={form.kpiOwnerId} onChange={e => setForm({ ...form, kpiOwnerId: e.target.value })}><option value="">-</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}</select></label>
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> Need RM support</label>
-    <div className="flex flex-wrap gap-2"><Button type="button" className="bg-slate-700" onClick={() => save(false)} disabled={saving}>{saving ? "Saving..." : "Save draft"}</Button><Button type="button" onClick={() => save(true)} disabled={saving}>{saving ? "Submitting..." : "Submit RCA"}</Button></div>
+    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label>
+    <div className="flex flex-wrap gap-2"><Button type="button" className="bg-slate-700" onClick={() => save(false)} disabled={saving}>{saving ? "กำลังบันทึก..." : "บันทึก draft"}</Button><Button type="button" onClick={() => save(true)} disabled={saving}>{saving ? "กำลังส่ง..." : "ส่ง RCA"}</Button></div>
   </div>;
 }
 
@@ -273,9 +273,9 @@ export function RcaApprovalForm({ incidentId }: { incidentId: string }) {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/rca/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ approved }) });
     setSaving(false);
-    if (!res.ok) alert("RCA approval failed"); else router.refresh();
+    if (!res.ok) alert("อนุมัติ RCA ไม่สำเร็จ"); else router.refresh();
   }
-  return <div className="flex flex-wrap gap-2 rounded-lg border bg-white p-3"><Button type="button" onClick={() => decide(true)} disabled={saving}>Approve RCA</Button><Button type="button" className="bg-slate-700" onClick={() => decide(false)} disabled={saving}>Request revision</Button></div>;
+  return <div className="flex flex-wrap gap-2 rounded-lg border bg-white p-3"><Button type="button" onClick={() => decide(true)} disabled={saving}>อนุมัติ RCA</Button><Button type="button" className="bg-slate-700" onClick={() => decide(false)} disabled={saving}>Request revision</Button></div>;
 }
 
 export function ActionPlanForm({ incidentId, users }: { incidentId: string; users: UserOption[] }) {
@@ -286,17 +286,17 @@ export function ActionPlanForm({ incidentId, users }: { incidentId: string; user
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     setSaving(false);
-    if (!res.ok) alert("Action create failed"); else router.refresh();
+    if (!res.ok) alert("สร้าง Action ไม่สำเร็จ"); else router.refresh();
   }
   return <div className="grid gap-3 rounded-lg border bg-white p-3">
     <label className="space-y-1 text-sm"><span className="font-medium">Action title</span><input className="h-10 w-full rounded-md border px-3" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></label>
     <TextArea label="Description" value={form.description} onChange={value => setForm({ ...form, description: value })} />
     <div className="grid gap-3 md:grid-cols-2">
-      <label className="space-y-1 text-sm"><span className="font-medium">Owner</span><select className="h-10 w-full rounded-md border px-3" value={form.ownerId} onChange={e => setForm({ ...form, ownerId: e.target.value })}><option value="">Select owner</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}</select></label>
-      <label className="space-y-1 text-sm"><span className="font-medium">Due date</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></label>
+      <label className="space-y-1 text-sm"><span className="font-medium">Owner</span><select className="h-10 w-full rounded-md border px-3" value={form.ownerId} onChange={e => setForm({ ...form, ownerId: e.target.value })}><option value="">เลือก owner</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}</select></label>
+      <label className="space-y-1 text-sm"><span className="font-medium">กำหนดส่ง</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></label>
     </div>
     <div className="grid gap-3 md:grid-cols-2"><label className="space-y-1 text-sm"><span className="font-medium">KPI name</span><input className="h-10 w-full rounded-md border px-3" value={form.kpiName} onChange={e => setForm({ ...form, kpiName: e.target.value })} /></label><label className="space-y-1 text-sm"><span className="font-medium">KPI target</span><input className="h-10 w-full rounded-md border px-3" value={form.kpiTarget} onChange={e => setForm({ ...form, kpiTarget: e.target.value })} /></label></div>
-    <Button type="button" onClick={submit} disabled={saving}>{saving ? "Creating..." : "Create action"}</Button>
+    <Button type="button" onClick={submit} disabled={saving}>{saving ? "กำลังสร้าง..." : "สร้าง action"}</Button>
   </div>;
 }
 
@@ -308,13 +308,13 @@ export function ActionUpdateForm({ action, canVerify }: { action: { id: string; 
     setSaving(true);
     const res = await fetch(`/api/actions/${action.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     setSaving(false);
-    if (!res.ok) alert("Action update failed"); else router.refresh();
+    if (!res.ok) alert("อัปเดต Action ไม่สำเร็จ"); else router.refresh();
   }
   async function verify(verified: boolean) {
     setSaving(true);
     const res = await fetch(`/api/actions/${action.id}/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verified, effectivenessReview: form.effectivenessReview }) });
     setSaving(false);
-    if (!res.ok) alert("Action verification failed"); else router.refresh();
+    if (!res.ok) alert("Verification ไม่สำเร็จ"); else router.refresh();
   }
   return <div className="grid gap-2 rounded-md bg-slate-50 p-3">
     <label className="space-y-1 text-xs"><span className="font-medium">Status</span><select className="h-9 w-full rounded-md border px-2" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{actionPlanStatusValues.filter(s => s !== "Verified").map(s => <option key={s} value={s}>{s}</option>)}</select></label>
@@ -322,7 +322,7 @@ export function ActionUpdateForm({ action, canVerify }: { action: { id: string; 
     <label className="space-y-1 text-xs"><span className="font-medium">Evidence URL</span><input className="h-9 w-full rounded-md border px-2" value={form.evidenceUrl} onChange={e => setForm({ ...form, evidenceUrl: e.target.value })} /></label>
     <TextArea label="KPI result" value={form.kpiResult} onChange={value => setForm({ ...form, kpiResult: value })} compact />
     <TextArea label="Effectiveness review" value={form.effectivenessReview} onChange={value => setForm({ ...form, effectivenessReview: value })} compact />
-    <div className="flex flex-wrap gap-2"><Button type="button" className="bg-slate-700" onClick={save} disabled={saving}>{saving ? "Saving..." : "Update action"}</Button>{canVerify ? <><Button type="button" onClick={() => verify(true)} disabled={saving}>Verify</Button><Button type="button" className="bg-slate-700" onClick={() => verify(false)} disabled={saving}>Send back</Button></> : null}</div>
+    <div className="flex flex-wrap gap-2"><Button type="button" className="bg-slate-700" onClick={save} disabled={saving}>{saving ? "กำลังบันทึก..." : "อัปเดต action"}</Button>{canVerify ? <><Button type="button" onClick={() => verify(true)} disabled={saving}>Verify</Button><Button type="button" className="bg-slate-700" onClick={() => verify(false)} disabled={saving}>ส่งกลับ</Button></> : null}</div>
   </div>;
 }
 

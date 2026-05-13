@@ -8,14 +8,14 @@ export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">Profile</h1><p className="text-sm text-slate-600">Authentication and account status.</p></div>
+    <div><h1 className="text-2xl font-bold">Profile</h1><p className="text-sm text-slate-600">สถานะ authentication และ account</p></div>
     <Card><CardHeader><CardTitle>{user.name}</CardTitle></CardHeader><CardContent className="grid gap-3 text-sm md:grid-cols-2">
       <Info label="Email" value={user.email} />
       <Info label="Role" value={user.role} />
       <Info label="Auth provider" value={user.authProvider ?? "CREDENTIALS"} />
-      <Info label="Google linked" value={user.googleId ? "Linked" : "Not linked"} />
-      <Info label="Last login" value={user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-"} />
-      <Info label="Status" value={user.isActive ? "Active" : "Inactive"} />
+      <Info label="Google linked" value={user.googleId ? "เชื่อมแล้ว" : "ยังไม่เชื่อม"} />
+      <Info label="Login ล่าสุด" value={user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-"} />
+      <Info label="Status" value={user.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"} />
     </CardContent></Card>
   </div></AppShell>;
 }

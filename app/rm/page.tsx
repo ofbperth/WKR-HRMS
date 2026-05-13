@@ -17,7 +17,7 @@ export default async function Page() {
     prisma.incident.count({ where: { status: "RCARequired" } }),
     prisma.incident.count({ where: { isSentinel: true } }),
   ]);
-  return <AppShell user={user}><RoleHome title="RM Team Workbench" description="Triage incident, ค้นหา, ติดตาม RCA และบริหาร Risk Log">
+  return <AppShell user={user}><RoleHome title="พื้นที่ทำงานทีม RM" description="จัดคิว Triage, ค้นหา incident, ติดตาม RCA และดูแล Risk Log">
     <div className="grid gap-4 md:grid-cols-3">
       <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
       <Link href="/rm/search?status=RCARequired" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>RCA Required</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card></Link>
@@ -25,13 +25,13 @@ export default async function Page() {
     </div>
     <div className="grid gap-4 md:grid-cols-3">
       <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
-      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/rm/search" className={actionClass}><div className="font-semibold text-slate-900">Search/Export Incident</div><p className="mt-1 text-sm text-slate-600">Find, filter, open, and export incidents</p></Link>
-      <Link href="/rm/triage" className={actionClass}><div className="font-semibold text-slate-900">Triage</div><p className="mt-1 text-sm text-slate-600">Review and classify new incidents</p></Link>
-      <Link href="/rm/rca" className={actionClass}><div className="font-semibold text-slate-900">RCA Review</div><p className="mt-1 text-sm text-slate-600">Approve RCA or request revision</p></Link>
-      <Link href="/rm/actions" className={actionClass}><div className="font-semibold text-slate-900">Actions</div><p className="mt-1 text-sm text-slate-600">Track action plans and verification</p></Link>
-      <Link href="/rm/heatmap" className={actionClass}><div className="font-semibold text-slate-900">Heatmap</div><p className="mt-1 text-sm text-slate-600">Unit and severity heatmap from incident data</p></Link>
-      <Link href="/rm/reports" className={actionClass}><div className="font-semibold text-slate-900">Reports</div><p className="mt-1 text-sm text-slate-600">Review RM reports and analytics outputs</p></Link>
+      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">รายงานของฉัน</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
+      <Link href="/rm/search" className={actionClass}><div className="font-semibold text-slate-900">ค้นหา/Export Incident</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export incident</p></Link>
+      <Link href="/rm/triage" className={actionClass}><div className="font-semibold text-slate-900">Triage</div><p className="mt-1 text-sm text-slate-600">Review และจัดประเภท incident ใหม่</p></Link>
+      <Link href="/rm/rca" className={actionClass}><div className="font-semibold text-slate-900">Review RCA</div><p className="mt-1 text-sm text-slate-600">อนุมัติ RCA หรือ request revision</p></Link>
+      <Link href="/rm/actions" className={actionClass}><div className="font-semibold text-slate-900">Action plan</div><p className="mt-1 text-sm text-slate-600">ติดตาม action plan และ verification</p></Link>
+      <Link href="/rm/heatmap" className={actionClass}><div className="font-semibold text-slate-900">Heatmap</div><p className="mt-1 text-sm text-slate-600">ดูความเสี่ยงตามหน่วยงานและ severity</p></Link>
+      <Link href="/rm/reports" className={actionClass}><div className="font-semibold text-slate-900">Report</div><p className="mt-1 text-sm text-slate-600">ดู RM report และผล analytics</p></Link>
     </div>
     <Card><CardHeader><CardTitle>Monthly report</CardTitle></CardHeader><CardContent><MonthlyReportButton /></CardContent></Card>
   </RoleHome></AppShell>;

@@ -25,13 +25,13 @@ export function Pagination({ basePath, searchParams, page, total, pageSize = PAG
   const pages = pageWindow(page, totalPages);
 
   return <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 text-sm">
-    <div className="text-slate-600">Showing {start}-{end} of {total}</div>
+    <div className="text-slate-600">แสดง {start}-{end} จาก {total} รายการ</div>
     <div className="flex flex-wrap items-center gap-1">
-      <PageLink basePath={basePath} searchParams={searchParams} page={Math.max(1, page - 1)} disabled={page === 1}>Previous</PageLink>
+      <PageLink basePath={basePath} searchParams={searchParams} page={Math.max(1, page - 1)} disabled={page === 1}>ก่อนหน้า</PageLink>
       {pages[0] > 1 ? <><PageLink basePath={basePath} searchParams={searchParams} page={1}>1</PageLink><span className="px-2 text-slate-400">...</span></> : null}
       {pages.map((item) => <PageLink key={item} basePath={basePath} searchParams={searchParams} page={item} active={item === page}>{item}</PageLink>)}
       {pages[pages.length - 1] < totalPages ? <><span className="px-2 text-slate-400">...</span><PageLink basePath={basePath} searchParams={searchParams} page={totalPages}>{totalPages}</PageLink></> : null}
-      <PageLink basePath={basePath} searchParams={searchParams} page={Math.min(totalPages, page + 1)} disabled={page === totalPages}>Next</PageLink>
+      <PageLink basePath={basePath} searchParams={searchParams} page={Math.min(totalPages, page + 1)} disabled={page === totalPages}>ถัดไป</PageLink>
     </div>
   </div>;
 }
