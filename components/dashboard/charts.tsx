@@ -66,7 +66,7 @@ export function TopRiskCodeBarChart({ title, data, dataKey = "value", labelKey =
             tickFormatter={compactChartLabel}
             interval={0}
           />
-          <Tooltip formatter={(value) => [value, "Count"]} labelFormatter={(label) => String(label)} />
+          <Tooltip formatter={(value) => [value, "จำนวน"]} labelFormatter={(label) => String(label)} />
           <Bar dataKey={dataKey} fill="#10b981" radius={[0, 6, 6, 0]} onClick={open} className={drilldown ? "cursor-pointer" : ""} />
         </BarChart>
       </ResponsiveContainer>
@@ -82,7 +82,7 @@ export function SentinelEventList({ title, data }: { title: string; data: Array<
   return <ChartCard title={title} className="dashboard-chart-wide">
     {data.length === 0 ? <Empty /> : <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="border-b text-xs uppercase text-slate-500"><tr><th className="py-2 pr-3">Incident</th><th className="py-2 pr-3">Unit</th><th className="py-2 pr-3">Severity</th><th className="py-2 pr-3">Risk</th><th className="py-2 pr-3">Title</th><th className="py-2 pr-3">Status</th></tr></thead>
+        <thead className="border-b text-xs uppercase text-slate-500"><tr><th className="py-2 pr-3">Incident</th><th className="py-2 pr-3">หน่วยงาน</th><th className="py-2 pr-3">Severity</th><th className="py-2 pr-3">Risk</th><th className="py-2 pr-3">ชื่อเหตุการณ์</th><th className="py-2 pr-3">Status</th></tr></thead>
         <tbody className="divide-y">{data.map(item => <tr key={item.id}><td className="py-3 pr-3 font-semibold"><Link className="text-blue-700 underline" href={`/rm/search/${item.id}`}>{item.incidentNo}</Link></td><td className="py-3 pr-3">{item.unit}</td><td className="py-3 pr-3">{item.severity}</td><td className="py-3 pr-3">{item.riskCode}</td><td className="py-3 pr-3">{item.title}</td><td className="py-3 pr-3">{item.status}</td></tr>)}</tbody>
       </table>
     </div>}
@@ -94,7 +94,7 @@ function ChartCard({ title, children, className, contentClassName }: { title: st
 }
 
 function Empty() {
-  return <div className="flex h-48 items-center justify-center rounded-lg border bg-slate-50 text-sm text-slate-500">No data</div>;
+  return <div className="flex h-48 items-center justify-center rounded-lg border bg-slate-50 text-sm text-slate-500">ไม่มีข้อมูล</div>;
 }
 
 function compactChartLabel(value: unknown) {

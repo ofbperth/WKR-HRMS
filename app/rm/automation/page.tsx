@@ -9,7 +9,7 @@ export default async function Page() {
   if (!user) redirect("/login");
   const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, take: 50 });
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">RM Automation</h1><p className="mt-2 text-slate-600">Protected manual jobs for overdue actions, due soon notifications, status sync, and cleanup.</p></div>
+    <div><h1 className="text-2xl font-bold">RM Automation</h1><p className="mt-2 text-slate-600">Protected manual job สำหรับ overdue action, due soon notification, status sync และ cleanup</p></div>
     <AutomationPanel initialRuns={runs} />
   </div></AppShell>;
 }

@@ -22,14 +22,19 @@ export function DashboardFilter({ units = [], categories = [], showUnit = true }
   }
 
   return <form action={apply} className="dashboard-filter-form grid grid-cols-1 gap-3 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-    <label className="grid min-w-0 gap-1 text-sm font-medium">Period<select name="preset" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" value={preset} onChange={e => setPreset(e.target.value)}><option value="thisMonth">This month</option><option value="fiscalYear">Fiscal year</option><option value="last12">Last 12 months</option><option value="custom">Custom date</option></select></label>
-    <label className="grid min-w-0 gap-1 text-sm font-medium">Start<DateField name="startDate" defaultValue={search.get("startDate") || ""} disabled={preset !== "custom"} /></label>
-    <label className="grid min-w-0 gap-1 text-sm font-medium">End<DateField name="endDate" defaultValue={search.get("endDate") || ""} disabled={preset !== "custom"} /></label>
-    {showUnit ? <label className="grid min-w-0 gap-1 text-sm font-medium">Unit<select name="unitId" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("unitId") || ""}><option value="">All</option>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label> : null}
-    <label className="grid min-w-0 gap-1 text-sm font-medium">Clinical/General<select name="clinicalOrGeneral" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("clinicalOrGeneral") || ""}><option value="">All</option><option>Clinical</option><option>General</option></select></label>
-    <label className="grid min-w-0 gap-1 text-sm font-medium">SIMPLE<select name="simpleCategory" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("simpleCategory") || ""}><option value="">All</option>{categories.map(category => <option key={category}>{category}</option>)}</select></label>
-    <label className="flex items-center gap-2 text-sm font-medium md:col-span-2"><input name="includeClosed" type="checkbox" defaultChecked={search.get("includeClosed") === "true"} /> Include closed incidents</label>
-    <div className="flex items-end"><Button type="submit">Apply filter</Button></div>
+    <label className="grid min-w-0 gap-1 text-sm font-medium">ช่วงเวลา<select name="preset" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" value={preset} onChange={e => setPreset(e.target.value)}><option value="thisMonth">เดือนนี้</option><option value="fiscalYear">ปีงบประมาณ</option><option value="last12">12 เดือนล่าสุด</option><option value="custom">กำหนดวันที่เอง</option></select></label>
+    <label className="grid min-w-0 gap-1 text-sm font-medium">เริ่มต้น<DateField name="startDate" defaultValue={search.get("startDate") || ""} disabled={preset !== "custom"} /></label>
+    <label className="grid min-w-0 gap-1 text-sm font-medium">สิ้นสุด<DateField name="endDate" defaultValue={search.get("endDate") || ""} disabled={preset !== "custom"} /></label>
+    {showUnit ? <label className="grid min-w-0 gap-1 text-sm font-medium">หน่วยงาน<select name="unitId" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("unitId") || ""}><option value="">ทั้งหมด</option>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label> : null}
+    <label className="grid min-w-0 gap-1 text-sm font-medium">Clinical/General<select name="clinicalOrGeneral" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("clinicalOrGeneral") || ""}><option value="">ทั้งหมด</option><option>Clinical</option><option>General</option></select></label>
+    <label className="grid min-w-0 gap-1 text-sm font-medium">SIMPLE<select name="simpleCategory" className="h-10 w-full min-w-0 rounded-md border px-3 text-sm" defaultValue={search.get("simpleCategory") || ""}><option value="">ทั้งหมด</option>{categories.map(category => <option key={category}>{category}</option>)}</select></label>
+    <div className="dashboard-filter-actions flex flex-wrap items-center justify-end gap-4">
+      <label className="dashboard-filter-checkbox-label inline-flex min-h-10 items-center gap-2 text-sm font-medium">
+        <input className="h-4 w-4 shrink-0" name="includeClosed" type="checkbox" defaultChecked={search.get("includeClosed") === "true"} />
+        <span className="whitespace-nowrap leading-5">รวม incident ที่ปิดแล้ว</span>
+      </label>
+      <Button className="h-10" type="submit">ใช้ filter</Button>
+    </div>
   </form>;
 }
 

@@ -45,12 +45,12 @@ export function NotificationBell() {
   }
 
   return <div className="relative">
-    <button type="button" onClick={() => setOpen((v) => !v)} className="relative rounded-full border p-2 hover:bg-slate-50" aria-label="notifications">
+    <button type="button" onClick={() => setOpen((v) => !v)} className="relative rounded-full border p-2 hover:bg-slate-50" aria-label="notification">
       <Bell size={18} />
       {unread > 0 ? <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">{unread}</span> : null}
     </button>
     {open ? <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border bg-white p-3 shadow-xl">
-      <div className="mb-2 flex items-center justify-between"><div className="font-semibold">Notifications</div><button className="text-xs text-slate-500" onClick={load}>refresh</button></div>
+      <div className="mb-2 flex items-center justify-between"><div className="font-semibold">Notification</div><button className="text-xs text-slate-500" onClick={load}>refresh</button></div>
       <div className="max-h-96 space-y-2 overflow-auto">
         {items.length === 0 ? <div className="p-4 text-center text-sm text-slate-500">ยังไม่มี notification</div> : items.map((item) => <button type="button" onClick={() => openNotification(item)} key={item.id} className={`block w-full rounded-lg border p-3 text-left text-sm ${item.isRead ? "bg-white" : "bg-blue-50"} hover:bg-slate-50`}>
           <div className="font-semibold">{item.title}</div>

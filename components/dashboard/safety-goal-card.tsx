@@ -16,16 +16,16 @@ export function SafetyGoalCard({ goal }: { goal: any }) {
     <CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><CardTitle>{goal.title}</CardTitle><span className={`rounded-full border px-2 py-1 text-xs font-semibold ${tone[goal.status]}`}>{goal.status}</span></div></CardHeader>
     <CardContent className="space-y-4 text-sm">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Info label="Incidents" value={goal.count} />
-        <Info label="Highest severity" value={goal.highestSeverity} />
-        <Info label="Open RCA" value={goal.openRca} />
-        <Info label="Overdue action" value={goal.overdueActions} />
+        <Info label="Incident" value={goal.count} />
+        <Info label="Severity สูงสุด" value={goal.highestSeverity} />
+        <Info label="RCA ที่เปิดอยู่" value={goal.openRca} />
+        <Info label="Action overdue" value={goal.overdueActions} />
       </div>
       <div>
-        <div className="mb-2 text-xs font-semibold uppercase text-slate-500">12-month trend</div>
-        <div className="h-28 rounded-lg bg-slate-50 p-2">{goal.trend.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={goal.trend}><Tooltip /><Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-xs text-slate-500">No trend</div>}</div>
+        <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Trend 12 เดือน</div>
+        <div className="h-28 rounded-lg bg-slate-50 p-2">{goal.trend.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={goal.trend}><Tooltip /><Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-xs text-slate-500">ไม่มี trend</div>}</div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-500">Related risk codes: {goal.relatedRiskCodes.join(", ")}</div><Link className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-slate-50" href={`/rm/search?${query}`}>View related incidents</Link></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-500">Risk code ที่เกี่ยวข้อง: {goal.relatedRiskCodes.join(", ")}</div><Link className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-slate-50" href={`/rm/search?${query}`}>ดู incident ที่เกี่ยวข้อง</Link></div>
     </CardContent>
   </Card>;
 }
@@ -43,8 +43,8 @@ export function SafetyGoalSummaryCard({ goal, detailHref }: { goal: any; detailH
         <Mini label="RCA" value={goal.openRca} />
         <Mini label="OD" value={goal.overdueActions} />
       </div>
-      <div className="h-12 rounded-md bg-slate-50 p-1">{goal.trend.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={goal.trend}><Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-[11px] text-slate-400">No trend</div>}</div>
-      <div className="flex justify-end"><Link className="text-xs font-medium text-blue-700 hover:underline" href={detailHref}>View details</Link></div>
+      <div className="h-12 rounded-md bg-slate-50 p-1">{goal.trend.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={goal.trend}><Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-[11px] text-slate-400">ไม่มี trend</div>}</div>
+      <div className="flex justify-end"><Link className="text-xs font-medium text-blue-700 hover:underline" href={detailHref}>ดูรายละเอียด</Link></div>
     </CardContent>
   </Card>;
 }

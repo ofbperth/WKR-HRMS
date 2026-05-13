@@ -17,14 +17,14 @@ export function MonthlyReportButton() {
     });
     setSaving(false);
     if (!res.ok) {
-      setMessage("Monthly report failed");
+      setMessage("สร้าง monthly report ไม่สำเร็จ");
       return;
     }
     const report = await res.json();
-    setMessage(`Monthly report generated: ${report.year}-${String(report.month).padStart(2, "0")}`);
+    setMessage(`สร้าง monthly report แล้ว: ${report.year}-${String(report.month).padStart(2, "0")}`);
   }
   return <div className="flex flex-wrap items-center gap-3">
-    <Button type="button" onClick={generate} disabled={saving}>{saving ? "Generating..." : "Generate monthly report"}</Button>
+    <Button type="button" onClick={generate} disabled={saving}>{saving ? "กำลังสร้าง..." : "สร้าง monthly report"}</Button>
     {message ? <span className="text-sm text-slate-600">{message}</span> : null}
   </div>;
 }

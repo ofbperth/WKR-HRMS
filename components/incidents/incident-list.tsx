@@ -63,11 +63,11 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก Risk code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุก Status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">Need RM support</option><option value="false">ไม่ต้องการ</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">ต้องการ RM support</option><option value="false">ไม่ต้องการ</option></select>
       <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="Keyword / incident no / risk code" defaultValue={asString(searchParams.q)} />
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">Filter</Button>
-        <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>Clear</Link>
+        <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
         <a className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={`/api/incidents/export?${query.toString()}`}>Export CSV</a>
       </div>
     </form>
@@ -84,21 +84,21 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <div className="text-xs uppercase text-slate-500">Occurred</div>
+              <div className="text-xs uppercase text-slate-500">วันที่เกิดเหตุ</div>
               <div className="text-sm font-medium">{formatDateOnly(incident.occurredAt)}</div>
             </div>
             <div className="min-w-0">
-              <div className="text-xs uppercase text-slate-500">Reported</div>
+              <div className="text-xs uppercase text-slate-500">วันที่รายงาน</div>
               <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <div className="text-xs uppercase text-slate-500">Incident unit</div>
+              <div className="text-xs uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>
               <div className="break-words text-sm">{incident.incidentUnit.name}</div>
             </div>
             <div className="min-w-0">
-              <div className="text-xs uppercase text-slate-500">Reporter unit</div>
+              <div className="text-xs uppercase text-slate-500">หน่วยงานผู้รายงาน</div>
               <div className="break-words text-sm">{incident.reporterUnit.name}</div>
             </div>
           </div>
@@ -107,11 +107,11 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="break-words text-sm"><span className="break-all font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
           </div>
           <div>
-            <div className="text-xs uppercase text-slate-500">Type</div>
+            <div className="text-xs uppercase text-slate-500">ประเภท</div>
             <div className="break-words text-sm">{incident.clinicalOrGeneral} / {incident.simpleCategory}</div>
           </div>
           <div>
-            <div className="text-xs uppercase text-slate-500">Title</div>
+            <div className="text-xs uppercase text-slate-500">ชื่อเหตุการณ์</div>
             <div className="break-words text-sm font-medium text-blue-700 underline-offset-2">{incident.title}</div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -128,11 +128,11 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="break-words font-semibold">{incident.incidentNo}</div>
           </div>
           <div className="col-span-3 min-w-0 xl:col-span-2">
-            <div className="text-xs font-semibold uppercase text-slate-500">Occurred</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">วันที่เกิดเหตุ</div>
             <div>{formatDateOnly(incident.occurredAt)}</div>
           </div>
           <div className="col-span-6 min-w-0 xl:col-span-3">
-            <div className="text-xs font-semibold uppercase text-slate-500">Incident unit</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>
             <div className="break-words">{incident.incidentUnit.name}</div>
           </div>
           <div className="col-span-12 flex min-w-0 flex-wrap items-start gap-2 xl:col-span-5 xl:justify-end">
@@ -142,7 +142,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <StatusBadge status={incident.status} />
           </div>
           <div className="col-span-12 min-w-0 xl:col-span-7">
-            <div className="text-xs font-semibold uppercase text-slate-500">Title</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">ชื่อเหตุการณ์</div>
             <div className="break-words font-medium text-blue-700 underline-offset-2 group-hover:underline [overflow-wrap:anywhere]">{incident.title}</div>
           </div>
           <div className="col-span-12 min-w-0 xl:col-span-5">

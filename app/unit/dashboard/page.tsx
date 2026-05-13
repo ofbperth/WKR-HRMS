@@ -20,24 +20,24 @@ export default async function UnitDashboardPage({ searchParams }: { searchParams
   const data = await getDashboardAnalytics({ ...normalizeDashboardSearchParams(searchParams), scopeUnitId: user.unitId });
   const basePath = "/unit/incidents";
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">Unit Dashboard</h1><p className="text-sm text-slate-600">Incidents, RCA, and action status for your unit only.</p></div>
+    <div><h1 className="text-2xl font-bold">Unit Dashboard</h1><p className="text-sm text-slate-600">Incident, RCA และ action status เฉพาะหน่วยงานของคุณ</p></div>
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} showUnit={false} />
     <div className="dashboard-stat-grid">
-      <LinkedStatCard title="This month" value={data.cards.totalThisMonth} href={rangeHref(basePath, getThisMonthRange())} />
-      <LinkedStatCard title="Fiscal year" value={data.cards.totalFiscalYear} href={rangeHref(basePath, getFiscalYearRange())} />
-      <LinkedStatCard title="Open RCA" value={data.cards.openRca} href={`${basePath}?status=RCARequired`} />
+      <LinkedStatCard title="เดือนนี้" value={data.cards.totalThisMonth} href={rangeHref(basePath, getThisMonthRange())} />
+      <LinkedStatCard title="ปีงบประมาณ" value={data.cards.totalFiscalYear} href={rangeHref(basePath, getFiscalYearRange())} />
+      <LinkedStatCard title="RCA ที่เปิดอยู่" value={data.cards.openRca} href={`${basePath}?status=RCARequired`} />
       <LinkedStatCard title="RCA revision" value={data.cards.rcaRevisionRequired} href="/unit/rca" />
-      <LinkedStatCard title="Open actions" value={data.cards.openActions} href="/unit/actions" />
-      <LinkedStatCard title="Overdue actions" value={data.cards.overdueActions} href="/unit/actions" />
-      <LinkedStatCard title="Highest severity" value={data.cards.highestSeverity || "-"} href={`${basePath}?severity=${data.cards.highestSeverityLabel || ""}`} />
-      <LinkedStatCard title="Closed case rate" value={`${data.cards.closedCaseRate}%`} href={`${basePath}?status=Closed`} />
+      <LinkedStatCard title="Action ที่เปิดอยู่" value={data.cards.openActions} href="/unit/actions" />
+      <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/unit/actions" />
+      <LinkedStatCard title="Severity สูงสุด" value={data.cards.highestSeverity || "-"} href={`${basePath}?severity=${data.cards.highestSeverityLabel || ""}`} />
+      <LinkedStatCard title="อัตราปิดเคส" value={`${data.cards.closedCaseRate}%`} href={`${basePath}?status=Closed`} />
     </div>
     <div className="dashboard-chart-grid">
-      <TrendLineChart title="Unit incident trend by month" data={data.charts.trend} />
-      <SeverityBarChart title="Unit severity distribution" data={data.charts.severity} drilldown={{ basePath, param: "severity", field: "name" }} />
-      <TopRiskCodeBarChart title="Unit top risk codes" data={data.charts.topRiskCodes} drilldown={{ basePath, param: "riskCodeId", field: "riskCodeId" }} />
-      <CategoryPieChart title="Unit action status" data={data.charts.actionStatus} />
-      <CategoryPieChart title="Unit RCA status" data={data.charts.rcaStatus} />
+      <TrendLineChart title="Trend incident รายเดือนของหน่วยงาน" data={data.charts.trend} />
+      <SeverityBarChart title="Severity distribution ของหน่วยงาน" data={data.charts.severity} drilldown={{ basePath, param: "severity", field: "name" }} />
+      <TopRiskCodeBarChart title="Top risk code ของหน่วยงาน" data={data.charts.topRiskCodes} drilldown={{ basePath, param: "riskCodeId", field: "riskCodeId" }} />
+      <CategoryPieChart title="Action status ของหน่วยงาน" data={data.charts.actionStatus} />
+      <CategoryPieChart title="RCA status ของหน่วยงาน" data={data.charts.rcaStatus} />
     </div>
   </div></AppShell>;
 }

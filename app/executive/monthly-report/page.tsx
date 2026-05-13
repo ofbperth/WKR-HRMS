@@ -31,7 +31,7 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
     return {
       start: new Date(fiscalYear - 1, 9, 1),
       end: new Date(fiscalYear, 9, 1),
-      label: `Fiscal year ${fiscalYear + 543} (${fiscalYear - 1}-10 to ${fiscalYear}-09)`,
+      label: `ปีงบประมาณ ${fiscalYear + 543} (${fiscalYear - 1}-10 ถึง ${fiscalYear}-09)`,
       mode,
     };
   }
@@ -39,7 +39,7 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
     const start = parseMonth(typeof searchParams.startMonth === "string" ? searchParams.startMonth : undefined, now);
     const endBase = parseMonth(typeof searchParams.endMonth === "string" ? searchParams.endMonth : undefined, now);
     const end = new Date(endBase.getFullYear(), endBase.getMonth() + 1, 1);
-    return { start, end: end < start ? new Date(start.getFullYear(), start.getMonth() + 1, 1) : end, label: `${start.toISOString().slice(0, 7)} to ${endBase.toISOString().slice(0, 7)}`, mode };
+    return { start, end: end < start ? new Date(start.getFullYear(), start.getMonth() + 1, 1) : end, label: `${start.toISOString().slice(0, 7)} ถึง ${endBase.toISOString().slice(0, 7)}`, mode };
   }
   const month = parseMonth(typeof searchParams.month === "string" ? searchParams.month : undefined, now);
   return { start: month, end: new Date(month.getFullYear(), month.getMonth() + 1, 1), label: month.toISOString().slice(0, 7), mode: "month" };
@@ -92,14 +92,14 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const endMonth = range.mode === "range" ? new Date(range.end.getFullYear(), range.end.getMonth() - 1, 1).toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
   const fiscalYear = range.end.getFullYear() + 543;
   return <AppShell user={user}><div className="print-page space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">Summary Report</h1><p className="mt-2 text-slate-600">Printable hospital risk summary by month range or Thai fiscal year.</p></div><SavePdfButton /></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">Summary Report</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลแบบ printable ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
     <SummaryReportFilter defaults={{ mode: range.mode, month: currentMonth, startMonth, endMonth, fiscalYear: String(fiscalYear) }} />
-    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">Hospital Risk Summary Report</h2><p className="mt-1 text-sm text-slate-600">Period: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">Scope: your unit only</p> : null}<p className="text-sm text-slate-600">Generated at {new Date().toLocaleString()}</p></div>
-    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Total incidents" value={summary.total} /><Metric label="Closed" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="RCA submitted" value={summary.rcaSubmitted} /><Metric label="Overdue actions" value={summary.overdueActions} /></div>
-    <Card className="border-red-200"><CardHeader><CardTitle>Sentinel alerts</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="No sentinel events in this period" /></CardContent></Card>
+    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">Hospital Risk Summary Report</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {new Date().toLocaleString("th-TH")}</p></div>
+    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Incident ทั้งหมด" value={summary.total} /><Metric label="ปิดเคสแล้ว" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="ส่ง RCA แล้ว" value={summary.rcaSubmitted} /><Metric label="Action overdue" value={summary.overdueActions} /></div>
+    <Card className="border-red-200"><CardHeader><CardTitle>Sentinel alert</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="ไม่มี sentinel event ในช่วงเวลานี้" /></CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card><CardHeader><CardTitle>Top 5 units by incident count</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByCount} columns={["unit", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 units by weighted risk score</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByScore} columns={["unit", "score", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตามจำนวน incident</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByCount} columns={["unit", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตาม weighted risk score</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByScore} columns={["unit", "score", "count"]} /></CardContent></Card>
       <Card><CardHeader><CardTitle>Top 5 Clinical risk</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topClinicalRisk} columns={["riskCode", "count"]} /></CardContent></Card>
       <Card><CardHeader><CardTitle>Top 5 General risk</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topGeneralRisk} columns={["riskCode", "count"]} /></CardContent></Card>
       <Card><CardHeader><CardTitle>Top 5 in 9 Safety Goals</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topSafetyGoals} columns={["title", "count"]} /></CardContent></Card>
@@ -111,7 +111,7 @@ function Metric({ label, value }: { label: string; value: number }) {
   return <Card><CardHeader><CardTitle>{label}</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{value}</CardContent></Card>;
 }
 
-function SimpleTable({ rows, columns, empty = "No data" }: { rows: any[]; columns: string[]; empty?: string }) {
+function SimpleTable({ rows, columns, empty = "ไม่มีข้อมูล" }: { rows: any[]; columns: string[]; empty?: string }) {
   if (!rows.length) return <div className="text-sm text-slate-500">{empty}</div>;
   return <div className="overflow-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="px-3 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-3 py-2">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
 }

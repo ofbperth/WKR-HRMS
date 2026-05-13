@@ -1,9 +1,10 @@
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
-import { cache } from "react";
+import { cache as reactCache } from "react";
 
 type IncidentWhereInput = Record<string, unknown>;
+const cache = typeof reactCache === "function" ? reactCache : <T extends (...args: any[]) => any>(fn: T) => fn;
 
 export type IncidentFilterParams = {
   from?: string;
