@@ -1,5 +1,7 @@
 import { getAuthSettings } from "@/lib/auth-settings";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const settings = await getAuthSettings();

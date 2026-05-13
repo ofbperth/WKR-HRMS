@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "prisma:studio": "prisma studio",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
     "seed:prod": "tsx prisma/seed.prod.ts",
     "test": "vitest run",

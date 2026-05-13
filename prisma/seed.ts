@@ -2,6 +2,23 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { nrlsRiskCodes } from "../lib/nrls-risk-codes";
 
+function normalizeSeedDatabaseUrl() {
+  const value = process.env.DATABASE_URL;
+  if (!value) return;
+  try {
+    const url = new URL(value);
+    const isPooler = url.hostname.includes("pooler.supabase.com") || url.port === "6543";
+    if (!isPooler) return;
+    if (!url.searchParams.has("pgbouncer")) url.searchParams.set("pgbouncer", "true");
+    if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "1");
+    process.env.DATABASE_URL = url.toString();
+  } catch {
+    // Prisma will report invalid DATABASE_URL with its native validation.
+  }
+}
+
+normalizeSeedDatabaseUrl();
+
 const prisma = new PrismaClient();
 
 const units = [
@@ -100,7 +117,10 @@ async function seedDevUsers() {
 
 async function main() {
   await seedMasterData();
-  if (process.env.SEED_DEV_USERS !== "false") await seedDevUsers();
+  const shouldSeedDevUsers =
+    process.env.SEED_DEV_USERS === "true" ||
+    (process.env.NODE_ENV !== "production" && process.env.SEED_DEV_USERS !== "false");
+  if (shouldSeedDevUsers) await seedDevUsers();
   console.log("Seed completed");
 }
 

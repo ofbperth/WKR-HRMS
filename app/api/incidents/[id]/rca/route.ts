@@ -8,6 +8,11 @@ import { canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 
+function removeSensitiveRcaStorage<T extends Record<string, any>>(rca: T) {
+  const { rcaEncrypted, ...rest } = rca;
+  return rest;
+}
+
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser(["UnitManager", "Admin"]);
@@ -67,7 +72,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       await notifyRmTeam({ type: "rca-submitted", title: "RCA submitted", message: `${incident.incidentNo} is ready for RM approval`, relatedIncidentId: params.id });
     }
     await invalidateSmartCache();
-    return Response.json(rca);
+    return Response.json(removeSensitiveRcaStorage(rca));
   } catch (error) {
     return apiError(error);
   }

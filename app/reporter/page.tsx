@@ -11,10 +11,11 @@ const actionClass = "rounded-lg border border-emerald-100 bg-white p-5 shadow-[0
 export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const reporterScope = { reportedById: user.id };
   const [total, rcaRequired, sentinel] = await Promise.all([
-    prisma.incident.count(),
-    prisma.incident.count({ where: { status: "RCARequired" } }),
-    prisma.incident.count({ where: { isSentinel: true } }),
+    prisma.incident.count({ where: reporterScope }),
+    prisma.incident.count({ where: { ...reporterScope, status: "RCARequired" } }),
+    prisma.incident.count({ where: { ...reporterScope, isSentinel: true } }),
   ]);
   return <AppShell user={user}><RoleHome title="Reporter Workspace" description="รายงาน incident ใหม่ และติดตามรายงานของตนเอง">
     <div className="grid gap-4 md:grid-cols-3">

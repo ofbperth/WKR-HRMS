@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, RoleBadge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   const endpoint = `/api/admin/${mode}`;
   const title = useMemo(() => mode === "users" ? "User management" : mode === "units" ? "Unit management" : "Risk code management", [mode]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const [data, unitData] = await Promise.all([
       fetch(endpoint).then(r => r.json()),
@@ -29,9 +29,9 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     setItems(Array.isArray(data) ? data : []);
     setUnits(Array.isArray(unitData) ? unitData : []);
     setLoading(false);
-  }
+  }, [endpoint]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

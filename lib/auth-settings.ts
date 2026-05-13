@@ -20,6 +20,14 @@ function parseList(value: string | null | undefined) {
   }
 }
 
+function normalizeDomain(domain: string) {
+  return domain.trim().toLowerCase().replace(/^@+/, "");
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values));
+}
+
 export async function getAuthSettings(): Promise<AuthSettingsValue> {
   const settings = await prisma.authSettings.upsert({
     where: { id: "default" },
@@ -28,7 +36,7 @@ export async function getAuthSettings(): Promise<AuthSettingsValue> {
   });
   return {
     googleEnabled: settings.googleEnabled,
-    allowedDomains: parseList(settings.allowedDomains),
+    allowedDomains: unique(parseList(settings.allowedDomains).map(normalizeDomain).filter(Boolean)),
     allowedEmails: parseList(settings.allowedEmails),
     allowAutoProvision: settings.allowAutoProvision,
     defaultRole: settings.defaultRole as Role,
@@ -41,8 +49,8 @@ export async function saveAuthSettings(input: AuthSettingsValue) {
     where: { id: "default" },
     update: {
       googleEnabled: input.googleEnabled,
-      allowedDomains: JSON.stringify(input.allowedDomains),
-      allowedEmails: JSON.stringify(input.allowedEmails),
+      allowedDomains: JSON.stringify(unique(input.allowedDomains.map(normalizeDomain).filter(Boolean))),
+      allowedEmails: JSON.stringify(unique(input.allowedEmails.map(email => email.trim().toLowerCase()).filter(Boolean))),
       allowAutoProvision: input.allowAutoProvision,
       defaultRole: input.defaultRole,
       defaultIsActive: input.defaultIsActive,
@@ -50,8 +58,8 @@ export async function saveAuthSettings(input: AuthSettingsValue) {
     create: {
       id: "default",
       googleEnabled: input.googleEnabled,
-      allowedDomains: JSON.stringify(input.allowedDomains),
-      allowedEmails: JSON.stringify(input.allowedEmails),
+      allowedDomains: JSON.stringify(unique(input.allowedDomains.map(normalizeDomain).filter(Boolean))),
+      allowedEmails: JSON.stringify(unique(input.allowedEmails.map(email => email.trim().toLowerCase()).filter(Boolean))),
       allowAutoProvision: input.allowAutoProvision,
       defaultRole: input.defaultRole,
       defaultIsActive: input.defaultIsActive,
@@ -62,6 +70,7 @@ export async function saveAuthSettings(input: AuthSettingsValue) {
 export function isGoogleEmailAllowed(email: string, settings: Pick<AuthSettingsValue, "allowedDomains" | "allowedEmails">) {
   const normalized = email.trim().toLowerCase();
   const domain = normalized.split("@")[1] ?? "";
-  return settings.allowedEmails.includes(normalized) || settings.allowedDomains.includes(domain);
+  const allowedDomains = settings.allowedDomains.map(normalizeDomain);
+  return settings.allowedEmails.includes(normalized) || allowedDomains.includes(domain);
 }
 
