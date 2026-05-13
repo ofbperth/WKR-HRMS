@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { apiError, requireUser } from "@/lib/auth";
 import { riskCodeSchema } from "@/lib/validators";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
 function normalize(data: any) {
   return {
@@ -11,8 +12,17 @@ function normalize(data: any) {
   };
 }
 
-export async function GET() {
-  try { await requireUser(["Admin"]); return Response.json(await prisma.riskCode.findMany({ orderBy: { code: "asc" } })); }
+export async function GET(req: Request) {
+  try {
+    await requireUser(["Admin"]);
+    const url = new URL(req.url);
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    const [data, total] = await prisma.$transaction([
+      prisma.riskCode.findMany({ orderBy: { code: "asc" }, skip, take }),
+      prisma.riskCode.count(),
+    ]);
+    return Response.json({ data, meta: buildPageMeta(page, pageSize, total) });
+  }
   catch (error) { return apiError(error); }
 }
 export async function POST(req: Request) {

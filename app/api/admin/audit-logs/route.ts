@@ -1,6 +1,7 @@
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { signedExportRedirect } from "@/lib/export-route";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
 export async function GET(request: Request) {
   try {
@@ -13,13 +14,20 @@ export async function GET(request: Request) {
       ...(action ? { action: { contains: action } } : {}),
       ...(entityType ? { entityType } : {}),
     };
-    const logs = await prisma.auditLog.findMany({
-      where,
-      include: { user: { select: { name: true, email: true, role: true } } },
-      orderBy: { createdAt: "desc" },
-      take: exportCsv ? 1000 : 200,
-    });
-    if (!exportCsv) return Response.json(logs);
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    if (!exportCsv) {
+      const [data, total] = await prisma.$transaction([
+        prisma.auditLog.findMany({
+          where,
+          include: { user: { select: { name: true, email: true, role: true } } },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take,
+        }),
+        prisma.auditLog.count({ where }),
+      ]);
+      return Response.json({ data, meta: buildPageMeta(page, pageSize, total) });
+    }
     return signedExportRedirect(request, { kind: "audit-log-csv", user, filters: { ...(action ? { action } : {}), ...(entityType ? { entityType } : {}) } });
   } catch (error) {
     return apiError(error);
