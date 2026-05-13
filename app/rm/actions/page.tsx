@@ -5,25 +5,31 @@ import { AppShell } from "@/components/layout/sidebar";
 import { prisma } from "@/lib/prisma";
 import { formatDateOnly } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
+import { getPage, Pagination } from "@/components/ui/pagination";
 
 export default async function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const actions = await prisma.actionPlan.findMany({
-    include: { incident: { include: { incidentUnit: true } }, owner: { select: { name: true, email: true } } },
-    orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    take: 300,
-  });
-  const page = getPage(searchParams.page, actions.length);
-  const visibleActions = pageSlice(actions, page);
-  const overdue = actions.filter((action) => action.status !== "Verified" && action.dueDate < new Date()).length;
+  const pageSize = 10;
+  const total = await prisma.actionPlan.count();
+  const page = getPage(searchParams.page, total, pageSize);
+  const [actions, openCount, overdue, doneCount] = await prisma.$transaction([
+    prisma.actionPlan.findMany({
+      include: { incident: { include: { incidentUnit: true } }, owner: { select: { name: true, email: true } } },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.actionPlan.count({ where: { status: { not: "Verified" } } }),
+    prisma.actionPlan.count({ where: { status: { not: "Verified" }, dueDate: { lt: new Date() } } }),
+    prisma.actionPlan.count({ where: { status: "Done" } }),
+  ]);
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">RM Actions</h1><p className="mt-2 text-slate-600">ติดตาม action plan, owner progress, งาน overdue และคิว verification</p></div>
-    <div className="grid gap-4 md:grid-cols-3"><Card><CardHeader><CardTitle>Action ที่เปิดอยู่</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{actions.filter((a) => a.status !== "Verified").length}</CardContent></Card><Card><CardHeader><CardTitle>Overdue</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-700">{overdue}</CardContent></Card><Card><CardHeader><CardTitle>รอ verification</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{actions.filter((a) => a.status === "Done").length}</CardContent></Card></div>
+    <div className="grid gap-4 md:grid-cols-3"><Card><CardHeader><CardTitle>Action ที่เปิดอยู่</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{openCount}</CardContent></Card><Card><CardHeader><CardTitle>Overdue</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-700">{overdue}</CardContent></Card><Card><CardHeader><CardTitle>รอ verification</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{doneCount}</CardContent></Card></div>
     <div className="flex gap-2"><a className="rounded-md border bg-white px-3 py-2 text-sm" href="/api/actions/export">Export Action CSV</a></div>
-    <ActionTable actions={visibleActions} detailBase="/rm/search" />
-    <Pagination basePath="/rm/actions" searchParams={searchParams} page={page} total={actions.length} />
+    <ActionTable actions={actions} detailBase="/rm/search" />
+    <Pagination basePath="/rm/actions" searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div></AppShell>;
 }
 

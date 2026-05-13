@@ -27,7 +27,7 @@ export function AutomationPanel({ initialRuns }: { initialRuns: Run[] }) {
       return;
     }
     const run = await res.json();
-    setRuns((current) => [run, ...current].slice(0, 50));
+    setRuns((current) => [run, ...current].slice(0, 10));
     setMessage(run.message ?? "Automation เสร็จแล้ว");
   }
 

@@ -1,11 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { apiError, requireUser } from "@/lib/auth";
 import { unitSchema } from "@/lib/validators";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await requireUser(["Admin"]);
-    return Response.json(await prisma.unit.findMany({ orderBy: { name: "asc" } }));
+    const url = new URL(req.url);
+    if (url.searchParams.get("all") === "1") {
+      const activeOnly = url.searchParams.get("active") === "1";
+      return Response.json(await prisma.unit.findMany({ where: activeOnly ? { isActive: true } : undefined, orderBy: { name: "asc" } }));
+    }
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    const [data, total] = await prisma.$transaction([
+      prisma.unit.findMany({ orderBy: { name: "asc" }, skip, take }),
+      prisma.unit.count(),
+    ]);
+    return Response.json({ data, meta: buildPageMeta(page, pageSize, total) });
   } catch (error) {
     return apiError(error);
   }

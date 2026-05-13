@@ -29,6 +29,12 @@ export function apiError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
     return Response.json({ error: "CONFLICT" }, { status: 409 });
   }
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+    return Response.json({ error: "DB_RELATION_BLOCKED" }, { status: 409 });
+  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2011", "P2014"].includes(error.code)) {
+    return Response.json({ error: "DB_SCHEMA_NOT_READY" }, { status: 409 });
+  }
   const message = error instanceof Error ? error.message : "UNKNOWN";
   if (message === "UNAUTHORIZED") return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
   if (message === "FORBIDDEN") return Response.json({ error: "FORBIDDEN" }, { status: 403 });

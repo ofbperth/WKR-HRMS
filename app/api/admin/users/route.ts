@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError, requireUser } from "@/lib/auth";
 import { adminUserSchema } from "@/lib/validators";
 import { encryptToStorage } from "@/lib/encryption";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
 const protectedAdminEmail = "ofbperth@gmail.com";
 
@@ -20,11 +21,18 @@ function isProtectedAdmin(email?: string | null) {
   return email?.trim().toLowerCase() === protectedAdminEmail;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await requireUser(["Admin"]);
-    const users = await prisma.user.findMany({ include: { unit: true }, orderBy: { createdAt: "desc" } });
-    return Response.json(users.map(stripPassword));
+    const url = new URL(req.url);
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    const authProvider = url.searchParams.get("authProvider")?.trim();
+    const where = authProvider ? { authProvider } : {};
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({ where, include: { unit: true }, orderBy: { createdAt: "desc" }, skip, take }),
+      prisma.user.count({ where }),
+    ]);
+    return Response.json({ data: users.map(stripPassword), meta: buildPageMeta(page, pageSize, total) });
   } catch (error) { return apiError(error); }
 }
 
@@ -98,7 +106,7 @@ export async function DELETE(req: Request) {
         await tx.notification.deleteMany({ where: { userId: id } });
         await tx.userInvite.updateMany({ where: { invitedById: id }, data: { invitedById: null } as any });
         await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } as any });
-        await tx.auditLog.create({ data: { userId: actor.id, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } });
+        await tx.auditLog.create({ data: { userId: actor.id, userRole: actor.role, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } as any });
         await tx.user.delete({ where: { id } });
       });
       return Response.json({ ok: true, id });

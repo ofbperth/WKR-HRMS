@@ -12,6 +12,7 @@ const cgOptions = ["Clinical", "General"];
 const unitTypeOptions = ["หน่วยงาน", "ทีม"];
 const protectedAdminEmail = "ofbperth@gmail.com";
 const userPageSize = 10;
+type PageMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage?: boolean };
 
 export function AdminCrud({ mode }: { mode: Mode }) {
   const [items, setItems] = useState<any[]>([]);
@@ -20,22 +21,31 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   const [loading, setLoading] = useState(true);
   const [authFilter, setAuthFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [meta, setMeta] = useState<PageMeta>({ page: 1, pageSize: userPageSize, total: 0, totalPages: 1 });
   const endpoint = `/api/admin/${mode}`;
   const title = useMemo(() => mode === "users" ? "จัดการ User" : mode === "units" ? "จัดการหน่วยงาน" : "จัดการ Risk code", [mode]);
 
   const load = useCallback(async () => {
     setLoading(true);
+    const query = new URLSearchParams({ page: String(currentPage), pageSize: String(userPageSize) });
+    if (mode === "users" && authFilter) query.set("authProvider", authFilter);
     const [data, unitData] = await Promise.all([
-      fetch(endpoint).then(r => r.json()),
-      fetch("/api/admin/units").then(r => r.json()).catch(() => []),
+      fetch(`${endpoint}?${query.toString()}`).then(r => r.json()),
+      fetch("/api/admin/units?all=1").then(r => r.json()).catch(() => []),
     ]);
-    setItems(Array.isArray(data) ? data : []);
+    const nextItems = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+    const nextMeta = data?.meta && typeof data.meta.total === "number" ? data.meta : { page: currentPage, pageSize: userPageSize, total: nextItems.length, totalPages: 1 };
+    setItems(nextItems);
+    setMeta(nextMeta);
     setUnits(Array.isArray(unitData) ? unitData : []);
     setLoading(false);
-  }, [endpoint]);
+  }, [endpoint, currentPage, authFilter, mode]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setCurrentPage(1); }, [authFilter, mode]);
+  useEffect(() => {
+    if (!loading && currentPage > meta.totalPages) setCurrentPage(meta.totalPages || 1);
+  }, [currentPage, loading, meta.totalPages]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,10 +92,9 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     await load();
   }
 
-  const visibleItems = mode === "users" && authFilter ? items.filter(item => item.authProvider === authFilter) : items;
-  const totalPages = mode === "users" ? Math.max(1, Math.ceil(visibleItems.length / userPageSize)) : 1;
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pagedItems = mode === "users" ? visibleItems.slice((safeCurrentPage - 1) * userPageSize, safeCurrentPage * userPageSize) : visibleItems;
+  const totalPages = meta.totalPages || 1;
+  const safeCurrentPage = meta.page || currentPage;
+  const pagedItems = items;
   const formEditing = mode === "users" ? null : editing;
 
   return <div className="space-y-6">
@@ -115,8 +124,8 @@ export function AdminCrud({ mode }: { mode: Mode }) {
 
     <AdminMobileCards mode={mode} items={pagedItems} loading={loading} onEdit={setEditing} onUnlinkGoogle={unlinkGoogle} />
     <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm md:block"><div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : pagedItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="px-3 py-3 align-top"><div className="min-w-0 break-words">{cell}</div></td>)}<td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
-    {mode === "users" && !loading && visibleItems.length > userPageSize ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm shadow-sm">
-      <div className="text-slate-600">Showing {(safeCurrentPage - 1) * userPageSize + 1}-{Math.min(safeCurrentPage * userPageSize, visibleItems.length)} of {visibleItems.length} users</div>
+    {!loading && meta.total > meta.pageSize ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm shadow-sm">
+      <div className="text-slate-600">Showing {(safeCurrentPage - 1) * meta.pageSize + 1}-{Math.min(safeCurrentPage * meta.pageSize, meta.total)} of {meta.total} items</div>
       <div className="flex items-center gap-2">
         <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}>Previous</button>
         <span className="text-slate-600">Page {safeCurrentPage} / {totalPages}</span>
@@ -163,6 +172,8 @@ function UserEditDialog({ user, units, onClose, onSaved, onDeactivate, onHardDel
 }
 
 function deleteErrorMessage(error?: string) {
+  if (error === "DB_RELATION_BLOCKED") return "ยังลบไม่ได้เพราะมีข้อมูลอื่นผูกกับ user นี้อยู่ กรุณาตรวจ constraint ในฐานข้อมูล";
+  if (error === "DB_SCHEMA_NOT_READY") return "ยังลบไม่ได้เพราะฐานข้อมูลจริงยังไม่ได้ apply migration สำหรับ hard delete user";
   if (error === "PROTECTED_ADMIN") return `${protectedAdminEmail} เป็น Admin หลักและไม่สามารถลบหรือปิดใช้งานได้`;
   if (error === "CANNOT_DELETE_SELF") return "ไม่สามารถลบ user ที่กำลังใช้งานอยู่ได้";
   if (error === "NOT_FOUND") return "ไม่พบ user นี้แล้ว";
