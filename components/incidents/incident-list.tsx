@@ -5,7 +5,7 @@ import { type MouseEvent } from "react";
 import { formatDateOnly } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pagination } from "@/components/ui/pagination";
+import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
 import { incidentStatusValues, severityValues } from "@/lib/validators";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
 
@@ -29,23 +29,27 @@ type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: stri
 type SearchParams = Record<string, string | string[] | undefined>;
 type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
-export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
   const query = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
     if (typeof value === "string" && value && key !== "page" && key !== "cursor") query.set(key, value);
   });
+  const page = meta?.page ?? getPage(searchParams.page, incidents.length);
+  const pageSize = meta?.pageSize;
+  const total = meta?.total ?? incidents.length;
+  const visibleIncidents = meta ? incidents : pageSlice(incidents, page);
 
   return <div className="space-y-4">
     <form className="grid grid-cols-1 gap-3 overflow-hidden rounded-xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4" action={basePath}>
       <DateFilterField name="from" defaultValue={asString(searchParams.from)} />
       <DateFilterField name="to" defaultValue={asString(searchParams.to)} />
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">All units</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">All severity</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">All SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">All risk codes</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">All status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">All sentinel</option><option value="true">Sentinel</option><option value="false">Non-sentinel</option></select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">All RM support</option><option value="true">Need RM support</option><option value="false">No RM support</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุก Severity</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">ทุก SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก Risk code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุก Status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">Need RM support</option><option value="false">ไม่ต้องการ</option></select>
       <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="Keyword / incident no / risk code" defaultValue={asString(searchParams.q)} />
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">Filter</Button>
@@ -55,32 +59,93 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
     </form>
 
     <div className="overflow-hidden rounded-xl border bg-white">
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1200px] text-left text-sm">
+      <div className="divide-y md:hidden">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <Link key={incident.id} className="block space-y-3 p-4 transition hover:bg-slate-50" href={`${detailBasePath ?? basePath}/${incident.id}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Incident No</div>
+              <div className="break-words text-sm font-semibold">{incident.incidentNo}</div>
+            </div>
+            <StatusBadge status={incident.status} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Occurred</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.occurredAt)}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Reported</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Incident unit</div>
+              <div className="break-words text-sm">{incident.incidentUnit.name}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Reporter unit</div>
+              <div className="break-words text-sm">{incident.reporterUnit.name}</div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Risk code</div>
+            <div className="break-words text-sm"><span className="font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Type</div>
+            <div className="break-words text-sm">{incident.clinicalOrGeneral} / {incident.simpleCategory}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Title</div>
+            <div className="break-words text-sm font-medium text-blue-700 underline-offset-2">{incident.title}</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SeverityBadge severity={incident.severity} />
+            <SentinelBadge value={incident.isSentinel} />
+            <RmSupportBadge value={incident.needRmSupport} />
+          </div>
+        </Link>)}
+      </div>
+      <div className="hidden overflow-auto md:block">
+        <table className="w-full min-w-[1180px] table-fixed text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th className="px-4 py-3">Action</th><th className="px-4 py-3">Incident No</th><th className="px-4 py-3">Occurred</th><th className="px-4 py-3">Reported</th><th className="px-4 py-3">Incident unit</th><th className="px-4 py-3">Reporter unit</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Risk code</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Badge</th><th className="px-4 py-3">Status</th></tr>
+            <tr>
+              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Incident No</th>
+              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Occurred</th>
+              <th className="w-[7.5rem] px-3 py-3 sm:px-4">Reported</th>
+              <th className="w-[13%] px-3 py-3 sm:px-4">Incident unit</th>
+              <th className="w-[13%] px-3 py-3 sm:px-4">Reporter unit</th>
+              <th className="px-3 py-3 sm:px-4">Title</th>
+              <th className="w-[12%] px-3 py-3 sm:px-4">Risk code</th>
+              <th className="w-[10%] px-3 py-3 sm:px-4">Type</th>
+              <th className="w-[6rem] px-3 py-3 sm:px-4">Severity</th>
+              <th className="w-[8.5rem] px-3 py-3 sm:px-4">Badge</th>
+              <th className="w-[9rem] px-3 py-3 sm:px-4">Status</th>
+            </tr>
           </thead>
           <tbody className="divide-y">
-            {incidents.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={12}>No incident found</td></tr> : incidents.map((incident) => <tr key={incident.id} className="hover:bg-slate-50">
-              <td className="px-4 py-3"><Link className="rounded-md border px-3 py-2 text-xs hover:bg-slate-100" href={`${detailBasePath ?? basePath}/${incident.id}`}>View</Link></td>
-              <td className="px-4 py-3 font-semibold">{incident.incidentNo}</td>
-              <td className="px-4 py-3">{formatDateOnly(incident.occurredAt)}</td>
-              <td className="px-4 py-3">{formatDateOnly(incident.reportedAt)}</td>
-              <td className="px-4 py-3">{incident.incidentUnit.name}</td>
-              <td className="px-4 py-3">{incident.reporterUnit.name}</td>
-              <td className="px-4 py-3"><div className="font-medium">{incident.title}</div></td>
-              <td className="px-4 py-3"><span className="font-semibold">{incident.riskCode.code}</span><div className="text-xs text-slate-500">{incident.riskCode.nameTh}</div></td>
-              <td className="px-4 py-3"><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></td>
-              <td className="px-4 py-3"><SeverityBadge severity={incident.severity} /></td>
-              <td className="space-x-1 px-4 py-3"><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></td>
-              <td className="px-4 py-3"><StatusBadge status={incident.status} /></td>
+            {incidents.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={11}>ไม่พบข้อมูล</td></tr> : visibleIncidents.map((incident) => <tr key={incident.id} className="group hover:bg-slate-50">
+              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 font-semibold sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentNo}</Link></td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.occurredAt)}</Link></td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{formatDateOnly(incident.reportedAt)}</Link></td>
+              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.incidentUnit.name}</Link></td>
+              <td className="p-0 align-top"><Link className="block h-full break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.reporterUnit.name}</Link></td>
+              <td className="p-0 align-top">
+                <Link className="block h-full px-3 py-3 font-medium text-blue-700 underline-offset-2 group-hover:underline sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.title}</Link>
+              </td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><span className="font-semibold">{incident.riskCode.code}</span><div className="text-xs text-slate-500">{incident.riskCode.nameTh}</div></Link></td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></Link></td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SeverityBadge severity={incident.severity} /></Link></td>
+              <td className="p-0 align-top"><Link className="block h-full space-y-1 px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></Link></td>
+              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><StatusBadge status={incident.status} /></Link></td>
             </tr>)}
           </tbody>
         </table>
       </div>
     </div>
 
-    <Pagination basePath={basePath} searchParams={searchParams} page={meta.page} total={meta.total} pageSize={meta.pageSize} />
+    <Pagination basePath={basePath} searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div>;
 }
 
