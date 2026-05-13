@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
+import { getLookupData } from "@/lib/incident-query";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
 import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
 
@@ -62,45 +63,23 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   return and.length ? { AND: and } : {};
 }
 
-async function loadData(filters: AnalyticsFilters = {}) {
-  const where = buildIncidentWhere(filters);
-  const incidents = await prisma.incident.findMany({
-    where,
-    include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
-    orderBy: { occurredAt: "desc" },
-  });
-  const units = await prisma.unit.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });
-  const categories = await prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } });
-  return { incidents: incidents as any[], units, categories: categories.map((item: any) => item.simpleCategory) };
+function withExtra(base: any, extra: any) {
+  return { AND: [base, extra] };
 }
 
-function monthKey(date: Date | string) {
-  return new Date(date).toISOString().slice(0, 7);
-}
-
-function countBy<T extends string>(items: any[], keys: readonly T[], selector: (item: any) => string) {
-  return keys.map(key => ({ name: key, value: items.filter(item => selector(item) === key).length }));
-}
-
-function topMap(items: any[], keyFn: (item: any) => string, label = "name", extraFn?: (item: any) => Record<string, unknown>) {
-  const map = new Map<string, { name: string; value: number; score: number; openRca: number; overdueActions: number; extra: Record<string, unknown> }>();
-  for (const item of items) {
-    const name = keyFn(item) || "Unclassified";
-    const current = map.get(name) ?? { name, value: 0, score: 0, openRca: 0, overdueActions: 0, extra: extraFn?.(item) ?? {} };
-    current.value += 1;
-    current.score += severityWeights[item.severity] ?? 0;
-    if (item.rca && item.rca.status !== "Approved") current.openRca += 1;
-    current.overdueActions += (item.actionPlans ?? []).filter((action: any) => action.status !== "Verified" && new Date(action.dueDate) < new Date()).length;
-    map.set(name, current);
-  }
-  return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 10).map(({ extra, ...item }) => ({ [label]: item.name, ...item, ...extra }));
+function groupValue(rows: Array<{ [key: string]: any; _count: number }>, key: string, name: string) {
+  return rows.find((item) => item[key] === name)?._count ?? 0;
 }
 
 function percent(numerator: number, denominator: number) {
   return denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
 }
 
-function trend(items: any[]) {
+function monthKey(date: Date | string) {
+  return new Date(date).toISOString().slice(0, 7);
+}
+
+function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: boolean }>) {
   const map = new Map<string, { month: string; total: number; high: number; sentinel: number; nearMiss: number; nearMissRate: number }>();
   for (const item of items) {
     const key = monthKey(item.occurredAt);
@@ -115,126 +94,199 @@ function trend(items: any[]) {
   return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
 }
 
-function closedRate(items: any[]) {
-  if (items.length === 0) return 0;
-  return Math.round((items.filter(item => item.status === "Closed").length / items.length) * 100);
+function summarizeDimension(rows: Array<{ severity: string; _count: number; [key: string]: any }>, key: string, label: string, names: Map<string, string>, extras?: Map<string, Record<string, unknown>>) {
+  const map = new Map<string, { name: string; value: number; score: number; openRca: number; overdueActions: number; extra: Record<string, unknown> }>();
+  for (const row of rows) {
+    const id = row[key] ?? "Unclassified";
+    const current = map.get(id) ?? { name: names.get(id) ?? id, value: 0, score: 0, openRca: 0, overdueActions: 0, extra: extras?.get(id) ?? {} };
+    current.value += row._count;
+    current.score += (severityWeights[row.severity] ?? 0) * row._count;
+    map.set(id, current);
+  }
+  return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 10).map(({ extra, ...item }) => ({ [label]: item.name, ...item, ...extra }));
+}
+
+async function commonLookups() {
+  const lookup = await getLookupData();
+  const unitNames = new Map(lookup.units.map((unit) => [unit.id, unit.name]));
+  const riskNames = new Map(lookup.riskCodes.map((risk) => [risk.id, `${risk.code} ${risk.nameTh}`]));
+  const riskExtras = new Map(lookup.riskCodes.map((risk) => [risk.id, { riskCodeId: risk.id }]));
+  const unitExtras = new Map(lookup.units.map((unit) => [unit.id, { unitId: unit.id }]));
+  return { lookup, unitNames, riskNames, riskExtras, unitExtras };
 }
 
 export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
-  const { incidents, units, categories } = await loadData(filters);
+  const started = Date.now();
+  const where = buildIncidentWhere(filters);
   const now = new Date();
   const month = getThisMonthRange(now);
   const fiscal = getFiscalYearRange(now);
-  const overdueActions = incidents.flatMap(item => item.actionPlans ?? []).filter((action: any) => action.status !== "Verified" && new Date(action.dueDate) < now);
-  const openRca = incidents.filter(item => item.rca && item.rca.status !== "Approved");
-  const rcaScope = incidents.filter(item => ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(item.status) || item.rca);
-  const rcaSubmitted = rcaScope.filter(item => ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"].includes(item.status) || ["Submitted", "Approved"].includes(item.rca?.status ?? ""));
-  const highestSeverityItem = incidents.slice().sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0];
+  const { lookup, unitNames, riskNames, riskExtras, unitExtras } = await commonLookups();
+
+  const [
+    total,
+    totalThisMonth,
+    totalFiscalYear,
+    statusRows,
+    severityRows,
+    clinicalRows,
+    categorySeverityRows,
+    riskSeverityRows,
+    unitSeverityRows,
+    rcaStatusRows,
+    actionStatusRows,
+    openActions,
+    overdueActions,
+    openRca,
+    rcaRevisionRequired,
+    rcaScope,
+    rcaSubmitted,
+    sentinel,
+    needRmSupport,
+    highSeverityCount,
+    leadershipDecision,
+    trendRows,
+    sentinelRows,
+    openRcaRows,
+    overdueActionRows,
+  ] = await Promise.all([
+    prisma.incident.count({ where }),
+    prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: month.start, lte: month.end } }) }),
+    prisma.incident.count({ where: withExtra(where, { occurredAt: { gte: fiscal.start, lte: fiscal.end } }) }),
+    prisma.incident.groupBy({ by: ["status"], where, _count: true }),
+    prisma.incident.groupBy({ by: ["severity"], where, _count: true }),
+    prisma.incident.groupBy({ by: ["clinicalOrGeneral"], where, _count: true }),
+    prisma.incident.groupBy({ by: ["simpleCategory", "severity"], where, _count: true }),
+    prisma.incident.groupBy({ by: ["riskCodeId", "severity"], where, _count: true }),
+    prisma.incident.groupBy({ by: ["incidentUnitId", "severity"], where, _count: true }),
+    prisma.rCA.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
+    prisma.actionPlan.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
+    prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
+    prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
+    prisma.rCA.count({ where: { incident: where, status: { not: "Approved" } } }),
+    prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
+    prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
+    prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
+    prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
+    prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
+    prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
+    prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
+    prisma.incident.findMany({ where, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 2000 }),
+    prisma.incident.findMany({ where: withExtra(where, { isSentinel: true }), select: { id: true, incidentNo: true, occurredAt: true, incidentUnit: { select: { name: true } }, severity: true, riskCode: { select: { code: true } }, title: true, status: true }, orderBy: { occurredAt: "desc" }, take: 5 }),
+    prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
+    prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 2000 }),
+  ]);
+
+  const categoryNames = new Map(lookup.simpleCategories.map((category) => [category, category]));
+  const highestSeverityLabel = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "";
+  const dimensionFromIncidents = (rows: Array<{ incident: { incidentUnitId: string; severity: string } }>) => {
+    const grouped = rows.map((row) => ({ incidentUnitId: row.incident.incidentUnitId, severity: row.incident.severity, _count: 1 }));
+    return summarizeDimension(grouped, "incidentUnitId", "unit", unitNames, unitExtras);
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[perf] dashboard ${Date.now() - started}ms`);
+  }
+
   return {
-    filters: { units, categories },
+    filters: { units: lookup.units, categories: lookup.simpleCategories },
     cards: {
-      totalThisMonth: incidents.filter(item => new Date(item.occurredAt) >= month.start && new Date(item.occurredAt) <= month.end).length,
-      totalFiscalYear: incidents.filter(item => new Date(item.occurredAt) >= fiscal.start && new Date(item.occurredAt) <= fiscal.end).length,
-      total: incidents.length,
-      newIncidents: incidents.filter(item => item.status === "New").length,
-      underReview: incidents.filter(item => item.status === "UnderReview").length,
-      rcaRequired: incidents.filter(item => item.status === "RCARequired" && !item.rca).length,
-      rcaWaitingApproval: incidents.filter(item => item.status === "RCASubmitted" || item.rca?.status === "Submitted").length,
-      rcaSubmittedRate: percent(rcaSubmitted.length, rcaScope.length),
-      openRca: openRca.length,
-      rcaRevisionRequired: incidents.filter(item => item.rca?.status === "RevisionRequired").length,
-      openActions: incidents.flatMap(item => item.actionPlans ?? []).filter((action: any) => action.status !== "Verified").length,
-      overdueActions: overdueActions.length,
-      closedCaseRate: closedRate(incidents),
-      needLeadershipDecision: incidents.filter(item => item.isSentinel || ["G", "H", "I", "5"].includes(item.severity)).length,
-      needRmSupport: incidents.filter(item => item.needRmSupport).length,
-      sentinel: incidents.filter(item => item.isSentinel).length,
-      highSeverity: incidents.filter(item => highSeverity.includes(item.severity)).length,
-      waitingVerification: incidents.filter(item => item.status === "WaitingVerification").length,
-      highestSeverity: highestSeverityItem ? severityWeights[highestSeverityItem.severity] ?? 0 : 0,
-      highestSeverityLabel: highestSeverityItem?.severity ?? "",
+      totalThisMonth,
+      totalFiscalYear,
+      total,
+      newIncidents: groupValue(statusRows as any, "status", "New"),
+      underReview: groupValue(statusRows as any, "status", "UnderReview"),
+      rcaRequired: await prisma.incident.count({ where: withExtra(where, { status: "RCARequired", rca: null }) }),
+      rcaWaitingApproval: await prisma.incident.count({ where: withExtra(where, { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] }) }),
+      rcaSubmittedRate: percent(rcaSubmitted, rcaScope),
+      openRca,
+      rcaRevisionRequired,
+      openActions,
+      overdueActions,
+      closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
+      needLeadershipDecision: leadershipDecision,
+      needRmSupport,
+      sentinel,
+      highSeverity: highSeverityCount,
+      waitingVerification: groupValue(statusRows as any, "status", "WaitingVerification"),
+      highestSeverity: highestSeverityLabel ? severityWeights[highestSeverityLabel] ?? 0 : 0,
+      highestSeverityLabel,
     },
     charts: {
-      trend: trend(incidents),
-      severity: countBy(incidents, SEVERITY_VALUES, item => item.severity),
-      status: countBy(incidents, INCIDENT_STATUS_VALUES, item => item.status),
-      clinicalGeneral: ["Clinical", "General"].map(name => ({ name, value: incidents.filter(item => item.clinicalOrGeneral === name).length })),
-      simpleCategory: topMap(incidents, item => item.simpleCategory, "category"),
-      topRiskCodes: topMap(incidents, item => `${item.riskCode?.code ?? "-"} ${item.riskCode?.nameTh ?? ""}`, "riskCode", item => ({ riskCodeId: item.riskCodeId })),
-      topRecurrentRiskCodes: topMap(incidents, item => `${item.riskCode?.code ?? "-"} ${item.riskCode?.nameTh ?? ""}`, "riskCode", item => ({ riskCodeId: item.riskCodeId })).slice(0, 5),
-      topUnits: topMap(incidents, item => item.incidentUnit?.name, "unit", item => ({ unitId: item.incidentUnitId })),
-      weightedUnits: topMap(incidents, item => item.incidentUnit?.name, "unit", item => ({ unitId: item.incidentUnitId })).sort((a, b) => b.score - a.score),
-      rcaStatus: ["Draft", "Submitted", "Approved", "RevisionRequired"].map(name => ({ name, value: incidents.filter(item => item.rca?.status === name).length })),
-      actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map(name => ({ name, value: incidents.flatMap(item => item.actionPlans ?? []).filter((action: any) => action.status === name).length })),
-      openRcaByUnit: topMap(incidents.filter(item => item.rca && item.rca.status !== "Approved"), item => item.incidentUnit?.name, "unit", item => ({ unitId: item.incidentUnitId })),
-      overdueActionByUnit: topMap(incidents.filter(item => (item.actionPlans ?? []).some((action: any) => action.status !== "Verified" && new Date(action.dueDate) < now)), item => item.incidentUnit?.name, "unit", item => ({ unitId: item.incidentUnitId })),
-      lastSentinelEvents: incidents
-        .filter(item => item.isSentinel)
-        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-        .slice(0, 5)
-        .map(item => ({
-          id: item.id,
-          incidentNo: item.incidentNo,
-          occurredAt: item.occurredAt,
-          unit: item.incidentUnit?.name ?? "-",
-          severity: item.severity,
-          riskCode: item.riskCode?.code ?? "-",
-          title: item.title,
-          status: item.status,
-        })),
+      trend: trend(trendRows),
+      severity: SEVERITY_VALUES.map((name) => ({ name, value: groupValue(severityRows as any, "severity", name) })),
+      status: INCIDENT_STATUS_VALUES.map((name) => ({ name, value: groupValue(statusRows as any, "status", name) })),
+      clinicalGeneral: ["Clinical", "General"].map((name) => ({ name, value: groupValue(clinicalRows as any, "clinicalOrGeneral", name) })),
+      simpleCategory: summarizeDimension(categorySeverityRows as any, "simpleCategory", "category", categoryNames),
+      topRiskCodes: summarizeDimension(riskSeverityRows as any, "riskCodeId", "riskCode", riskNames, riskExtras),
+      topRecurrentRiskCodes: summarizeDimension(riskSeverityRows as any, "riskCodeId", "riskCode", riskNames, riskExtras).slice(0, 5),
+      topUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras),
+      weightedUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras).sort((a, b) => b.score - a.score),
+      rcaStatus: ["Draft", "Submitted", "Approved", "RevisionRequired"].map((name) => ({ name, value: groupValue(rcaStatusRows as any, "status", name) })),
+      actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map((name) => ({ name, value: groupValue(actionStatusRows as any, "status", name) })),
+      openRcaByUnit: dimensionFromIncidents(openRcaRows),
+      overdueActionByUnit: dimensionFromIncidents(overdueActionRows),
+      lastSentinelEvents: sentinelRows.map((item) => ({
+        id: item.id,
+        incidentNo: item.incidentNo,
+        occurredAt: item.occurredAt,
+        unit: item.incidentUnit?.name ?? "-",
+        severity: item.severity,
+        riskCode: item.riskCode?.code ?? "-",
+        title: item.title,
+        status: item.status,
+      })),
     },
   };
 }
 
 export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
-  const { incidents, units, categories } = await loadData(filters);
-  const orderedUnits = [...units].sort((a: { id: string }, b: { id: string }) => {
-    const scoreA = incidents.filter(item => item.incidentUnitId === a.id).reduce((sum, item) => sum + (severityWeights[item.severity] ?? 0), 0);
-    const scoreB = incidents.filter(item => item.incidentUnitId === b.id).reduce((sum, item) => sum + (severityWeights[item.severity] ?? 0), 0);
-    return scoreB - scoreA;
-  });
+  const where = buildIncidentWhere(filters);
+  const { lookup, unitNames } = await commonLookups();
   const yMode = filters.simpleCategory === "__Y_SIMPLE__" ? "simpleCategory" : "severity";
-  const yValues = yMode === "simpleCategory" ? categories : [...SEVERITY_VALUES];
-  const rows = yValues.map((row: string) => ({
+  const yValues = yMode === "simpleCategory" ? lookup.simpleCategories : [...SEVERITY_VALUES];
+  const grouped = await prisma.incident.groupBy({
+    by: yMode === "simpleCategory" ? ["incidentUnitId", "simpleCategory", "severity"] : ["incidentUnitId", "severity"],
+    where,
+    _count: true,
+  } as any);
+  const unitScores = new Map<string, number>();
+  for (const row of grouped as any[]) {
+    unitScores.set(row.incidentUnitId, (unitScores.get(row.incidentUnitId) ?? 0) + (severityWeights[row.severity] ?? 0) * row._count);
+  }
+  const orderedUnits = [...lookup.units].sort((a, b) => (unitScores.get(b.id) ?? 0) - (unitScores.get(a.id) ?? 0));
+  const rows = yValues.map((row) => ({
     row,
-      cells: orderedUnits.map((unit: { id: string; name: string }) => {
-      const scoped = incidents.filter(item => item.incidentUnitId === unit.id && (yMode === "simpleCategory" ? item.simpleCategory === row : item.severity === row));
-      const score = scoped.reduce((sum, item) => sum + (severityWeights[item.severity] ?? 0), 0);
-      return {
-        unitId: unit.id,
-        unit: unit.name,
-        row,
-        count: scoped.length,
-        score,
-        highestSeverity: scoped.sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-",
-        openRca: scoped.filter(item => item.rca && item.rca.status !== "Approved").length,
-        overdueActions: scoped.flatMap(item => item.actionPlans ?? []).filter((action: any) => action.status !== "Verified" && new Date(action.dueDate) < new Date()).length,
-      };
+    cells: orderedUnits.map((unit) => {
+      const scoped = (grouped as any[]).filter((item) => item.incidentUnitId === unit.id && (yMode === "simpleCategory" ? item.simpleCategory === row : item.severity === row));
+      const count = scoped.reduce((sum, item) => sum + item._count, 0);
+      const score = scoped.reduce((sum, item) => sum + (severityWeights[item.severity] ?? 0) * item._count, 0);
+      const highestSeverity = scoped.sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
+      return { unitId: unit.id, unit: unitNames.get(unit.id) ?? unit.name, row, count, score, highestSeverity, openRca: 0, overdueActions: 0 };
     }),
   }));
   return { units: orderedUnits, yMode, rows };
 }
 
 export async function getSafetyGoalAnalytics(filters: AnalyticsFilters = {}) {
-  const { incidents } = await loadData({ ...filters, includeClosed: "true" });
-  return safetyGoals.map(goal => {
-    const scoped = incidents.filter(item => goal.codes.includes(item.riskCode?.code));
-    const overdue = scoped.flatMap(item => item.actionPlans ?? []).filter((action: any) => action.status !== "Verified" && new Date(action.dueDate) < new Date()).length;
-    const openRca = scoped.filter(item => item.rca && item.rca.status !== "Approved").length;
-    const highest = scoped.sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
-    const monthly = trend(scoped);
+  const where = buildIncidentWhere({ ...filters, includeClosed: "true" });
+  const { lookup } = await commonLookups();
+  const riskByCode = new Map(lookup.riskCodes.map((risk) => [risk.code, risk.id]));
+  return Promise.all(safetyGoals.map(async (goal) => {
+    const riskCodeIds = goal.codes.map((code) => riskByCode.get(code)).filter(Boolean) as string[];
+    const scopedWhere = withExtra(where, { riskCodeId: { in: riskCodeIds.length ? riskCodeIds : ["__NO_RISK__"] } });
+    const [count, severityRows, openRca, overdueActions, trendRows] = await Promise.all([
+      prisma.incident.count({ where: scopedWhere }),
+      prisma.incident.groupBy({ by: ["severity"], where: scopedWhere, _count: true }),
+      prisma.rCA.count({ where: { incident: scopedWhere, status: { not: "Approved" } } }),
+      prisma.actionPlan.count({ where: { incident: scopedWhere, status: { not: "Verified" }, dueDate: { lt: new Date() } } }),
+      prisma.incident.findMany({ where: scopedWhere, select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 500 }),
+    ]);
+    const highestSeverity = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
+    const monthly = trend(trendRows);
     const increasing = monthly.length >= 2 && monthly[monthly.length - 1].total > monthly[monthly.length - 2].total;
-    const critical = scoped.some(item => ["G", "H", "I", "5"].includes(item.severity) || item.isSentinel) || overdue > 0;
-    const watch = !critical && (scoped.some(item => ["E", "F", "3", "4"].includes(item.severity)) || openRca > 0 || increasing);
-    return {
-      ...goal,
-      count: scoped.length,
-      highestSeverity: highest,
-      trend: monthly,
-      openRca,
-      overdueActions: overdue,
-      status: critical ? "Critical" : watch ? "Watch" : "Good",
-      relatedRiskCodes: goal.codes,
-    };
-  });
+    const critical = ["G", "H", "I", "5"].includes(highestSeverity) || overdueActions > 0;
+    const watch = !critical && (["E", "F", "3", "4"].includes(highestSeverity) || openRca > 0 || increasing);
+    return { ...goal, count, highestSeverity, trend: monthly, openRca, overdueActions, status: critical ? "Critical" : watch ? "Watch" : "Good", relatedRiskCodes: goal.codes };
+  }));
 }

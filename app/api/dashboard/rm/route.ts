@@ -4,6 +4,7 @@ import { getOrSetCachedValue } from "@/lib/smart-cache";
 
 export async function GET(request: Request) {
   try {
+    const started = Date.now();
     const user = await requireUser(["RMTeam", "Admin"]);
     const params = Object.fromEntries(new URL(request.url).searchParams.entries());
     const data = await getOrSetCachedValue({
@@ -15,7 +16,8 @@ export async function GET(request: Request) {
       filters: params,
       loader: () => getDashboardAnalytics(params),
     });
-    return Response.json(data);
+    if (process.env.NODE_ENV === "development") console.info(`[perf] dashboard-api rm ${Date.now() - started}ms`);
+    return Response.json({ data, meta: { cached: true } });
   } catch (error) {
     return apiError(error);
   }

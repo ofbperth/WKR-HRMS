@@ -1,7 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { getIncidentList } from "@/lib/incident-query";
-import { maskHn } from "@/lib/format";
+import { getIncidentExportRows } from "@/lib/incident-query";
 
 type ExportUser = { id: string; role: string; unitId: string | null };
 
@@ -22,9 +21,9 @@ function csvResponse(filename: string, header: string[], rows: unknown[][]) {
 }
 
 export async function buildIncidentCsv(user: ExportUser, filters: Record<string, string>) {
-  const incidents = await getIncidentList(user as any, filters) as any[];
-  const header = ["Incident No", "Occurred At", "Unit", "Title", "Risk Code", "Medication 6 Rights", "Severity", "Sentinel", "Need RM Support", "Status", "Reporter", "Patient HN", "Patient AN", "Updated At"];
-  const rows = incidents.map((i) => [i.incidentNo, i.occurredAt.toISOString(), i.incidentUnit.name, i.title, i.riskCode.code, i.medicationRight ?? "", i.severity, i.isSentinel ? "Yes" : "No", i.needRmSupport ? "Yes" : "No", i.status, "Restricted", maskHn(i.patientHn), maskHn(i.patientAn ?? null), i.updatedAt.toISOString()]);
+  const incidents = await getIncidentExportRows(user as any, filters, 1000);
+  const header = ["Incident No", "Occurred At", "Reported At", "Incident Unit", "Reporter Unit", "Title", "Risk Code", "Clinical/General", "SIMPLE Category", "Severity", "Sentinel", "Need RM Support", "Status", "Reporter", "Patient HN", "Patient AN"];
+  const rows = incidents.map((i) => [i.incidentNo, i.occurredAt.toISOString(), i.reportedAt.toISOString(), i.incidentUnit.name, i.reporterUnit.name, i.title, i.riskCode.code, i.clinicalOrGeneral, i.simpleCategory, i.severity, i.isSentinel ? "Yes" : "No", i.needRmSupport ? "Yes" : "No", i.status, "Restricted", "Restricted", "Restricted"]);
   return { ...csvResponse(`incident-export-${Date.now()}.csv`, header, rows), count: incidents.length };
 }
 

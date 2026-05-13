@@ -1,25 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { type MouseEvent } from "react";
+import { useRouter } from "next/navigation";
+import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
 import { formatDateOnly } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
 import { incidentStatusValues, severityValues } from "@/lib/validators";
-import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
+import type { DbRiskCode, DbUnit } from "@/lib/types";
 
-type IncidentRow = DbIncident & { incidentUnit: DbUnit; reporterUnit: DbUnit; riskCode: DbRiskCode; reportedBy: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId"> };
+type IncidentRow = {
+  id: string;
+  incidentNo: string;
+  occurredAt: Date;
+  reportedAt: Date;
+  title: string;
+  severity: string;
+  status: string;
+  isSentinel: boolean;
+  needRmSupport: boolean;
+  clinicalOrGeneral: string;
+  simpleCategory: string;
+  incidentUnit: Pick<DbUnit, "id" | "name" | "type" | "isActive">;
+  reporterUnit: Pick<DbUnit, "id" | "name" | "type" | "isActive">;
+  riskCode: Pick<DbRiskCode, "id" | "code" | "nameTh" | "nameEn" | "clinicalOrGeneral" | "simpleCategory" | "isActive">;
+};
 type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: string[] };
 type SearchParams = Record<string, string | string[] | undefined>;
+type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
-export function IncidentList({ incidents, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+  const router = useRouter();
   const query = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
-    if (typeof value === "string" && value && key !== "page") query.set(key, value);
+    if (typeof value === "string" && value && key !== "page" && key !== "cursor") query.set(key, value);
   });
-  const page = getPage(searchParams.page, incidents.length);
-  const visibleIncidents = pageSlice(incidents, page);
+  const page = meta?.page ?? getPage(searchParams.page, incidents.length);
+  const pageSize = meta?.pageSize;
+  const total = meta?.total ?? incidents.length;
+  const visibleIncidents = meta ? incidents : pageSlice(incidents, page);
+  const getDetailHref = (incidentId: string) => `${detailBasePath ?? basePath}/${incidentId}`;
+
+  function openIncidentDetail(incidentId: string) {
+    router.push(getDetailHref(incidentId));
+  }
+
+  function handleRowKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, incidentId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openIncidentDetail(incidentId);
+    }
+  }
 
   return <div className="space-y-4">
     <form className="grid grid-cols-1 gap-3 overflow-hidden rounded-xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4" action={basePath}>
@@ -41,43 +73,87 @@ export function IncidentList({ incidents, lookup, basePath, searchParams, detail
     </form>
 
     <div className="overflow-hidden rounded-xl border bg-white">
-      <div className="hidden w-full gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase text-slate-500 md:grid md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)]">
-        <div>วันที่เกิดเหตุ</div>
-        <div>หน่วยงาน</div>
-        <div>ชื่อเหตุการณ์</div>
-        <div>Risk code / Badges / Status</div>
+      <div className="divide-y md:hidden">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <Link key={incident.id} className="block space-y-3 p-4 transition hover:bg-slate-50" href={getDetailHref(incident.id)}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">Incident No</div>
+              <div className="break-words text-sm font-semibold">{incident.incidentNo}</div>
+            </div>
+            <StatusBadge status={incident.status} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">วันที่เกิดเหตุ</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.occurredAt)}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">วันที่รายงาน</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>
+              <div className="break-words text-sm">{incident.incidentUnit.name}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">หน่วยงานผู้รายงาน</div>
+              <div className="break-words text-sm">{incident.reporterUnit.name}</div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">Risk code</div>
+            <div className="break-words text-sm"><span className="break-all font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">ประเภท</div>
+            <div className="break-words text-sm">{incident.clinicalOrGeneral} / {incident.simpleCategory}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase text-slate-500">ชื่อเหตุการณ์</div>
+            <div className="break-words text-sm font-medium text-blue-700 underline-offset-2">{incident.title}</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SeverityBadge severity={incident.severity} />
+            <SentinelBadge value={incident.isSentinel} />
+            <RmSupportBadge value={incident.needRmSupport} />
+          </div>
+        </Link>)}
       </div>
-      {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : <div className="divide-y">
-        {visibleIncidents.map((incident) => <Link key={incident.id} className="grid w-full gap-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:grid-cols-[9rem_minmax(8rem,12rem)_minmax(0,1fr)_minmax(8rem,12rem)] md:items-start" href={`${detailBasePath ?? basePath}/${incident.id}`}>
-          <ListField label="วันที่เกิดเหตุ" className="md:row-span-2" value={formatDateOnly(incident.occurredAt)} />
-          <ListField label="หน่วยงาน" className="md:row-span-2" value={incident.incidentUnit.name} />
-          <div className="min-w-0 md:row-span-2">
-            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">ชื่อเหตุการณ์</div>
-            <div className="mt-1 break-words font-semibold leading-6 text-slate-950 md:mt-0">{incident.title}</div>
+      <div className="hidden divide-y md:block">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <div key={incident.id} role="link" tabIndex={0} aria-label={`Open incident ${incident.incidentNo}`} onClick={() => openIncidentDetail(incident.id)} onKeyDown={(event) => handleRowKeyDown(event, incident.id)} className="group grid cursor-pointer grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+          <div className="col-span-3 min-w-0 xl:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">Incident No</div>
+            <div className="break-words font-semibold">{incident.incidentNo}</div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">Risk code</div>
-            <div className="mt-1 break-words font-semibold text-slate-900 md:mt-0">{incident.riskCode.code}</div>
-            <div className="mt-0.5 break-words text-xs leading-5 text-slate-500">{incident.riskCode.nameTh}</div>
+          <div className="col-span-3 min-w-0 xl:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">วันที่เกิดเหตุ</div>
+            <div>{formatDateOnly(incident.occurredAt)}</div>
           </div>
-          <div className="flex min-w-0 flex-wrap gap-2 md:col-start-4">
+          <div className="col-span-6 min-w-0 xl:col-span-3">
+            <div className="text-xs font-semibold uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>
+            <div className="break-words">{incident.incidentUnit.name}</div>
+          </div>
+          <div className="col-span-12 flex min-w-0 flex-wrap items-start gap-2 xl:col-span-5 xl:justify-end">
             <SeverityBadge severity={incident.severity} />
             <SentinelBadge value={incident.isSentinel} />
             <RmSupportBadge value={incident.needRmSupport} />
             <StatusBadge status={incident.status} />
           </div>
-        </Link>)}
-      </div>}
+          <div className="col-span-12 min-w-0 xl:col-span-7">
+            <div className="text-xs font-semibold uppercase text-slate-500">ชื่อเหตุการณ์</div>
+            <div className="break-words font-medium text-blue-700 underline-offset-2 group-hover:underline [overflow-wrap:anywhere]">{incident.title}</div>
+          </div>
+          <div className="col-span-12 min-w-0 xl:col-span-5">
+            <div className="text-xs font-semibold uppercase text-slate-500">Risk code</div>
+            <div className="break-words [overflow-wrap:anywhere]"><span className="font-semibold">{incident.riskCode.code}</span> - <span className="text-slate-600">{incident.riskCode.nameTh}</span></div>
+          </div>
+        </div>)}
+      </div>
     </div>
 
-    <Pagination basePath={basePath} searchParams={searchParams} page={page} total={incidents.length} />
-  </div>;
-}
-
-function ListField({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
-  return <div className={className}>
-    <div className="text-xs font-semibold uppercase text-slate-500 md:hidden">{label}</div>
-    <div className="mt-1 break-words font-medium leading-6 text-slate-900 md:mt-0">{value}</div>
+    <Pagination basePath={basePath} searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div>;
 }
 

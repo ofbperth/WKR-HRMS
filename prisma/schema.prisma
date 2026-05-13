@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-  // For PostgreSQL later: change provider to "postgresql" and set DATABASE_URL accordingly.
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 
@@ -134,6 +134,12 @@ model Incident {
   @@index([lifecycleStatus])
   @@index([isSentinel])
   @@index([needRmSupport])
+  @@index([occurredAt, status])
+  @@index([occurredAt, severity])
+  @@index([occurredAt, incidentUnitId])
+  @@index([incidentUnitId, status])
+  @@index([clinicalOrGeneral, occurredAt])
+  @@index([simpleCategory, occurredAt])
 }
 
 model RCA {
@@ -196,6 +202,7 @@ model ActionPlan {
   @@index([dueDate])
   @@index([status])
   @@index([ownerId])
+  @@index([incidentId])
 }
 
 model Comment {
@@ -206,6 +213,8 @@ model Comment {
   user       User     @relation(fields: [userId], references: [id])
   message    String
   createdAt  DateTime @default(now())
+
+  @@index([incidentId])
 }
 
 model Attachment {
@@ -218,6 +227,8 @@ model Attachment {
   fileUrl      String
   fileType     String?
   createdAt    DateTime @default(now())
+
+  @@index([incidentId])
 }
 
 model Notification {

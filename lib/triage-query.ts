@@ -1,5 +1,6 @@
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
+import { INCIDENT_PAGE_SIZE, incidentListSelect } from "@/lib/incident-query";
 
 export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
   const where: any = { reviewedAt: null, status: { notIn: ["Closed", "Rejected"] } };
@@ -25,15 +26,29 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
       { riskCode: { nameTh: { contains: q } } },
     ];
   }
-  return prisma.incident.findMany({
-    where,
-    include: {
-      incidentUnit: true,
-      reporterUnit: true,
-      riskCode: true,
-      reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
+  const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+  const [total, rows] = await Promise.all([
+    prisma.incident.count({ where }),
+    prisma.incident.findMany({
+      where,
+      select: incidentListSelect,
+      orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { reportedAt: "asc" }, { id: "asc" }],
+      skip: (page - 1) * INCIDENT_PAGE_SIZE,
+      take: INCIDENT_PAGE_SIZE + 1,
+    }),
+  ]);
+  const hasNextPage = rows.length > INCIDENT_PAGE_SIZE;
+  const data = rows.slice(0, INCIDENT_PAGE_SIZE);
+  return {
+    data,
+    meta: {
+      page,
+      pageSize: INCIDENT_PAGE_SIZE,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / INCIDENT_PAGE_SIZE)),
+      hasNextPage,
+      nextCursor: hasNextPage ? data[data.length - 1]?.id ?? null : null,
     },
-    orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { reportedAt: "asc" }],
-    take: 300,
-  });
+  };
 }
