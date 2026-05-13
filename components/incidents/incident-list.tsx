@@ -90,7 +90,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">Risk code</div>
-            <div className="break-words text-sm"><span className="font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
+            <div className="break-words text-sm"><span className="break-all font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">Type</div>
@@ -108,7 +108,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
         </Link>)}
       </div>
       <div className="hidden overflow-auto md:block">
-        <table className="w-full min-w-[1180px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[1320px] table-fixed text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="w-[7.5rem] px-3 py-3 sm:px-4">Incident No</th>
@@ -117,8 +117,8 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
               <th className="w-[13%] px-3 py-3 sm:px-4">Incident unit</th>
               <th className="w-[13%] px-3 py-3 sm:px-4">Reporter unit</th>
               <th className="px-3 py-3 sm:px-4">Title</th>
-              <th className="w-[12%] px-3 py-3 sm:px-4">Risk code</th>
-              <th className="w-[10%] px-3 py-3 sm:px-4">Type</th>
+              <th className="w-[15rem] px-3 py-3 sm:px-4">Risk code</th>
+              <th className="w-[9rem] px-3 py-3 sm:px-4">Type</th>
               <th className="w-[6rem] px-3 py-3 sm:px-4">Severity</th>
               <th className="w-[8.5rem] px-3 py-3 sm:px-4">Badge</th>
               <th className="w-[9rem] px-3 py-3 sm:px-4">Status</th>
@@ -134,7 +134,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
               <td className="p-0 align-top">
                 <Link className="block h-full px-3 py-3 font-medium text-blue-700 underline-offset-2 group-hover:underline sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}>{incident.title}</Link>
               </td>
-              <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><span className="font-semibold">{incident.riskCode.code}</span><div className="text-xs text-slate-500">{incident.riskCode.nameTh}</div></Link></td>
+              <td className="p-0 align-top"><Link className="block h-full min-w-0 break-words px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><span className="break-all font-semibold">{incident.riskCode.code}</span><div className="mt-1 break-words text-xs leading-5 text-slate-500">{incident.riskCode.nameTh}</div></Link></td>
               <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><div>{incident.clinicalOrGeneral}</div><div className="text-xs text-slate-500">{incident.simpleCategory}</div></Link></td>
               <td className="p-0 align-top"><Link className="block h-full px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SeverityBadge severity={incident.severity} /></Link></td>
               <td className="p-0 align-top"><Link className="block h-full space-y-1 px-3 py-3 sm:px-4" href={`${detailBasePath ?? basePath}/${incident.id}`}><SentinelBadge value={incident.isSentinel} /> <RmSupportBadge value={incident.needRmSupport} /></Link></td>
