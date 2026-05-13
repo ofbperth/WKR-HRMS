@@ -216,10 +216,8 @@ export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>
 }
 
 export const getLookupData = cache(async function getLookupData() {
-  const [units, riskCodes, simpleCategories] = await Promise.all([
-    prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } }),
-    prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } }),
-    prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } }),
-  ]);
+  const units = await prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
+  const riskCodes = await prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } });
+  const simpleCategories = await prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } });
   return { units, riskCodes, simpleCategories: simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory) };
 });
