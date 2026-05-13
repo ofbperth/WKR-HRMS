@@ -4,15 +4,16 @@ import { AppShell } from "@/components/layout/sidebar";
 import { RoleHome } from "@/components/role-home";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 export default async function ExecutivePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const [total, high, sentinel, rmSupport] = await Promise.all([
-    prisma.incident.count(),
-    prisma.incident.count({ where: { severity: { in: ["E", "F", "G", "H", "I"] } } }),
-    prisma.incident.count({ where: { isSentinel: true } }),
-    prisma.incident.count({ where: { needRmSupport: true } }),
+    prisma.incident.count({ where: countableIncidentFilter() }),
+    prisma.incident.count({ where: countableIncidentFilter({ severity: { in: ["E", "F", "G", "H", "I"] } }) }),
+    prisma.incident.count({ where: countableIncidentFilter({ isSentinel: true }) }),
+    prisma.incident.count({ where: countableIncidentFilter({ needRmSupport: true }) }),
   ]);
   return <AppShell user={user}><RoleHome title="Executive Dashboard" description="Phase 2 placeholder: แสดง count ภาพรวมแบบไม่ลง sensitive detail">
     <div className="grid gap-4 md:grid-cols-4">

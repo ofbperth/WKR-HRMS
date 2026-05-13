@@ -5,17 +5,18 @@ import { AppShell } from "@/components/layout/sidebar";
 import { RoleHome } from "@/components/role-home";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 const actionClass = "rounded-lg border border-emerald-100 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:bg-emerald-50";
 
 export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const unitScope = { incidentUnitId: user.unitId ?? "__NO_UNIT__" };
+  const unitScope = countableIncidentFilter({ incidentUnitId: user.unitId ?? "__NO_UNIT__" });
   const [total, rcaRequired, sentinel] = await Promise.all([
     prisma.incident.count({ where: unitScope }),
-    prisma.incident.count({ where: { ...unitScope, status: "RCARequired" } }),
-    prisma.incident.count({ where: { ...unitScope, isSentinel: true } }),
+    prisma.incident.count({ where: countableIncidentFilter({ incidentUnitId: user.unitId ?? "__NO_UNIT__", status: "RCARequired" }) }),
+    prisma.incident.count({ where: countableIncidentFilter({ incidentUnitId: user.unitId ?? "__NO_UNIT__", isSentinel: true }) }),
   ]);
 
   return <AppShell user={user}><RoleHome title="Unit Manager Workspace" description="ติดตาม incident ที่เกิดในหน่วยงานของตนเอง">

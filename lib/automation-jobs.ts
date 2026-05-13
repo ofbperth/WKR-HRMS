@@ -55,6 +55,7 @@ export async function runOverdueActionCheck(user?: AutomationUser) {
     for (const action of actions) {
       await prisma.actionPlan.update({ where: { id: action.id }, data: { status: "Delayed" } });
       delayed += 1;
+      if (!action.ownerId) continue;
       const created = await createNotificationOnce({
         userId: action.ownerId,
         type: "action-overdue",
@@ -82,6 +83,7 @@ export async function runDueSoonNotification(user?: AutomationUser) {
     });
     let notifications = 0;
     for (const action of actions) {
+      if (!action.ownerId) continue;
       const created = await createNotificationOnce({
         userId: action.ownerId,
         type: "action-due-soon",

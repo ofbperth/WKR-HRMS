@@ -10,7 +10,7 @@ import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 
-function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string; incidentUnitId: string }) {
+function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
 }
 
@@ -54,23 +54,21 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     if (existing.reviewedAt && user.role === "UnitManager") return Response.json({ error: "TRIAGE_ALREADY_SUBMITTED" }, { status: 409 });
 
     await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany({ where: { relatedIncidentId: existing.id } });
+      await tx.actionPlan.deleteMany({ where: { incidentId: existing.id } });
+      await tx.rCA.deleteMany({ where: { incidentId: existing.id } });
+      await tx.comment.deleteMany({ where: { incidentId: existing.id } });
+      await tx.attachment.deleteMany({ where: { incidentId: existing.id } });
       await tx.auditLog.create({
         data: {
           userId: user.id,
-          action: "REJECT_DELETE_INCIDENT",
+          action: "REJECT_HARD_DELETE_INCIDENT",
           entityType: "Incident",
           entityId: existing.id,
           oldValue: JSON.stringify({ incidentNo: existing.incidentNo, title: existing.title, status: existing.status, severity: existing.severity }),
         },
       });
-      await tx.incident.update({
-        where: { id: existing.id },
-        data: {
-          status: "Rejected",
-          lifecycleStatus: "SOFT_DELETED",
-          deletedAt: new Date(),
-        } as any,
-      });
+      await tx.incident.delete({ where: { id: existing.id } });
     });
     await invalidateSmartCache();
     return Response.json({ ok: true });

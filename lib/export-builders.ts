@@ -45,7 +45,7 @@ export async function buildActionCsv(user: ExportUser) {
     action.incident.incidentNo,
     action.incident.incidentUnit.name,
     action.title,
-    action.owner.email,
+    action.owner?.email ?? "Unassigned",
     action.dueDate.toISOString().slice(0, 10),
     action.status,
     action.verifiedBy?.name ?? "",

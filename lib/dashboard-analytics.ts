@@ -52,6 +52,7 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   const and: any[] = [];
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
+  and.push({ status: { not: "Rejected" } });
   const start = toDate(filters.startDate);
   const end = toDate(filters.endDate, true);
   if (start || end) and.push({ occurredAt: { ...(start ? { gte: start } : {}), ...(end ? { lte: end } : {}) } });
@@ -59,7 +60,7 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
   if (filters.simpleCategory) and.push({ simpleCategory: filters.simpleCategory });
-  if (filters.includeClosed !== "true") and.push({ status: { notIn: ["Closed", "Rejected"] } });
+  if (filters.includeClosed !== "true") and.push({ status: { not: "Closed" } });
   return and.length ? { AND: and } : {};
 }
 

@@ -107,6 +107,7 @@ export const actionPlanSchema = z.object({
 
 export const actionUpdateSchema = z.object({
   status: z.enum(actionPlanStatusValues),
+  ownerId: z.string().optional().nullable(),
   evidenceText: z.string().optional().nullable(),
   evidenceUrl: z.string().optional().nullable(),
   kpiResult: z.string().optional().nullable(),

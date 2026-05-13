@@ -62,7 +62,7 @@ export type DbIncident = {
   incidentNo: string;
   reportedAt: Date;
   occurredAt: Date;
-  reportedById: string;
+  reportedById: string | null;
   reporterUnitId: string;
   incidentUnitId: string;
   location: string | null;
@@ -90,7 +90,7 @@ export type DbIncident = {
 export type DbComment = {
   id: string;
   incidentId: string;
-  userId: string;
+  userId: string | null;
   message: string;
   createdAt: Date;
 };

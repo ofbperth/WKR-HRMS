@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, requireUser } from "@/lib/auth";
 import { adminUserSchema } from "@/lib/validators";
+import { encryptToStorage } from "@/lib/encryption";
 
 const protectedAdminEmail = "ofbperth@gmail.com";
 
@@ -17,37 +18,6 @@ function auditUserValue(user: { email: string; role: string; isActive: boolean; 
 
 function isProtectedAdmin(email?: string | null) {
   return email?.trim().toLowerCase() === protectedAdminEmail;
-}
-
-async function countUserHistory(userId: string) {
-  const [
-    reportedIncidents,
-    reviewedIncidents,
-    closedIncidents,
-    rcaKpiOwner,
-    rcaApproved,
-    actionOwned,
-    actionVerified,
-    comments,
-    attachments,
-    notifications,
-    auditLogs,
-    invitesSent,
-  ] = await Promise.all([
-    prisma.incident.count({ where: { reportedById: userId } }),
-    prisma.incident.count({ where: { reviewedById: userId } }),
-    prisma.incident.count({ where: { closedById: userId } }),
-    prisma.rCA.count({ where: { kpiOwnerId: userId } }),
-    prisma.rCA.count({ where: { approvedById: userId } }),
-    prisma.actionPlan.count({ where: { ownerId: userId } }),
-    prisma.actionPlan.count({ where: { verifiedById: userId } }),
-    prisma.comment.count({ where: { userId } }),
-    prisma.attachment.count({ where: { uploadedById: userId } }),
-    prisma.notification.count({ where: { userId } }),
-    prisma.auditLog.count({ where: { userId } }),
-    prisma.userInvite.count({ where: { invitedById: userId } }),
-  ]);
-  return reportedIncidents + reviewedIncidents + closedIncidents + rcaKpiOwner + rcaApproved + actionOwned + actionVerified + comments + attachments + notifications + auditLogs + invitesSent;
 }
 
 export async function GET() {
@@ -111,10 +81,24 @@ export async function DELETE(req: Request) {
     if (!old) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
     if (isProtectedAdmin(old.email)) return Response.json({ error: "PROTECTED_ADMIN" }, { status: 403 });
     if (hardDelete) {
-      const historyCount = await countUserHistory(id);
-      if (historyCount > 0) return Response.json({ error: "USER_HAS_HISTORY" }, { status: 409 });
-      await prisma.user.delete({ where: { id } });
-      await prisma.auditLog.create({ data: { userId: actor.id, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } });
+      await prisma.$transaction(async (tx) => {
+        await tx.incident.updateMany({
+          where: { reportedById: id, reporterNameEncrypted: null },
+          data: { reporterNameEncrypted: encryptToStorage(old.name) },
+        });
+        await tx.incident.updateMany({ where: { reviewedById: id }, data: { reviewedById: null } as any });
+        await tx.incident.updateMany({ where: { closedById: id }, data: { closedById: null } as any });
+        await tx.rCA.updateMany({ where: { kpiOwnerId: id }, data: { kpiOwnerId: null } });
+        await tx.rCA.updateMany({ where: { approvedById: id }, data: { approvedById: null } });
+        await tx.actionPlan.updateMany({ where: { ownerId: id }, data: { ownerId: null } as any });
+        await tx.actionPlan.updateMany({ where: { verifiedById: id }, data: { verifiedById: null } as any });
+        await tx.comment.updateMany({ where: { userId: id }, data: { userId: null } as any });
+        await tx.attachment.updateMany({ where: { uploadedById: id }, data: { uploadedById: null } as any });
+        await tx.notification.deleteMany({ where: { userId: id } });
+        await tx.userInvite.updateMany({ where: { invitedById: id }, data: { invitedById: null } as any });
+        await tx.auditLog.create({ data: { userId: actor.id, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } });
+        await tx.user.delete({ where: { id } });
+      });
       return Response.json({ ok: true, id });
     }
     const item = await prisma.user.update({ where: { id }, data: { isActive: false }, include: { unit: true } });
