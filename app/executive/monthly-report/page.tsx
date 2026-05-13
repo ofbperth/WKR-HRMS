@@ -114,5 +114,5 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 function SimpleTable({ rows, columns, empty = "ไม่มีข้อมูล" }: { rows: any[]; columns: string[]; empty?: string }) {
   if (!rows.length) return <div className="text-sm text-slate-500">{empty}</div>;
-  return <div className="overflow-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="px-3 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-3 py-2">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="break-words px-2 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-2 py-2 align-top">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
 }

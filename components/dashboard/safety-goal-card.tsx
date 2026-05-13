@@ -31,20 +31,20 @@ export function SafetyGoalCard({ goal }: { goal: any }) {
 }
 
 export function SafetyGoalSummaryCard({ goal, detailHref }: { goal: any; detailHref: string }) {
-  return <Card className="h-full">
-    <CardContent className="space-y-3 p-4 text-sm">
+  return <Card className="h-full overflow-hidden">
+    <CardContent className="flex h-full min-w-0 flex-col gap-3 p-4 text-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0"><div className="line-clamp-2 font-semibold leading-snug">{goal.title}</div><div className="mt-1 text-xs text-slate-500">{goal.relatedRiskCodes.join(", ")}</div></div>
+        <div className="min-w-0 flex-1"><div className="line-clamp-3 break-words font-semibold leading-snug">{goal.title}</div><div className="mt-1 line-clamp-2 break-words text-xs text-slate-500">{goal.relatedRiskCodes.join(", ")}</div></div>
         <span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-semibold ${tone[goal.status]}`}>{goal.status}</span>
       </div>
-      <div className="grid grid-cols-4 gap-2 text-center">
+      <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Mini label="Inc" value={goal.count} />
         <Mini label="High" value={goal.highestSeverity} />
         <Mini label="RCA" value={goal.openRca} />
         <Mini label="OD" value={goal.overdueActions} />
       </div>
       <div className="h-12 rounded-md bg-slate-50 p-1">{goal.trend.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={goal.trend}><Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-[11px] text-slate-400">ไม่มี trend</div>}</div>
-      <div className="flex justify-end"><Link className="text-xs font-medium text-blue-700 hover:underline" href={detailHref}>ดูรายละเอียด</Link></div>
+      <div className="mt-auto flex justify-end"><Link className="text-xs font-medium text-blue-700 hover:underline" href={detailHref}>ดูรายละเอียด</Link></div>
     </CardContent>
   </Card>;
 }
@@ -54,5 +54,5 @@ function Info({ label, value }: { label: string; value: string | number }) {
 }
 
 function Mini({ label, value }: { label: string; value: string | number }) {
-  return <div className="rounded-md border bg-white px-2 py-1"><div className="text-[10px] uppercase text-slate-400">{label}</div><div className="text-sm font-semibold">{value}</div></div>;
+  return <div className="min-w-0 rounded-md border bg-white px-2 py-1"><div className="text-[10px] uppercase text-slate-400">{label}</div><div className="truncate text-sm font-semibold">{value}</div></div>;
 }
