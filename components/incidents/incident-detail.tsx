@@ -11,8 +11,9 @@ type DetailIncident = DbIncident & {
   incidentUnit: DbUnit;
   reporterUnit: DbUnit;
   riskCode: DbRiskCode;
-  reportedBy: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
-  comments: Array<DbComment & { user: Pick<DbUser, "name" | "role"> }>;
+  reportedBy: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId"> | null;
+  reporterDisplayName?: string | null;
+  comments: Array<DbComment & { user: Pick<DbUser, "name" | "role"> | null }>;
   audits: Array<DbAuditLog & { user: Pick<DbUser, "name" | "role"> | null }>;
   rca?: {
     id: string;
@@ -38,8 +39,8 @@ type DetailIncident = DbIncident & {
     id: string;
     title: string;
     description: string | null;
-    ownerId: string;
-    owner: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
+    ownerId: string | null;
+    owner: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId"> | null;
     dueDate: Date;
     status: string;
     evidenceText: string | null;
@@ -69,7 +70,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
         <Info label="วันเวลาที่เกิดเหตุ" value={formatDateTime(incident.occurredAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
-        <Info label="ผู้รายงาน" value="จำกัดสิทธิ์" />
+        <Info label="ผู้รายงาน" value={incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "Deleted user"} />
         <div>
           <div className="font-medium text-slate-500">ข้อมูลระบุตัวผู้ป่วย</div>
           {canRevealSensitive
@@ -108,10 +109,10 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
 
       <Card><CardHeader><CardTitle>Action plan</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มี action plan</p> : incident.actionPlans.map(action => <div key={action.id} className="space-y-3 rounded-lg border p-3">
-          <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">Owner: {action.owner.name} · Due {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{action.status}</span></div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">Owner: {action.owner?.name ?? "รอ Unit Manager มอบหมายใหม่"} · Due {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{action.status}</span></div>
           <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
           {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">Evidence</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์ Evidence</a> : null}</div> : null}
-          {(action.ownerId === currentUser.id || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} /> : null}
+          {(action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
         </div>)}
         {(unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved" ? <ActionPlanForm incidentId={incident.id} users={users} /> : null}
       </CardContent></Card>
@@ -120,7 +121,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>Comments</CardTitle></CardHeader><CardContent className="space-y-3">
         {manage ? <AddCommentForm incidentId={incident.id} /> : null}
-        {incident.comments.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มี comment</p> : incident.comments.map(c => <div key={c.id} className="rounded-lg border p-3 text-sm"><div className="flex justify-between"><span className="font-semibold">{c.user.name}</span><span className="text-xs text-slate-500">{formatDateTime(c.createdAt)}</span></div><p className="mt-1 whitespace-pre-wrap text-slate-700">{c.message}</p></div>)}
+        {incident.comments.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มี comment</p> : incident.comments.map(c => <div key={c.id} className="rounded-lg border p-3 text-sm"><div className="flex justify-between"><span className="font-semibold">{c.user?.name ?? "Deleted user"}</span><span className="text-xs text-slate-500">{formatDateTime(c.createdAt)}</span></div><p className="mt-1 whitespace-pre-wrap text-slate-700">{c.message}</p></div>)}
       </CardContent></Card>
       <Card><CardHeader><CardTitle>Audit trail</CardTitle></CardHeader><CardContent className="space-y-2">
         {incident.audits.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มี audit</p> : incident.audits.map(a => <div key={a.id} className="rounded-lg border p-3 text-xs"><div className="flex justify-between gap-3"><span className="font-semibold">{a.action}</span><span className="text-slate-500">{formatDateTime(a.createdAt)}</span></div><div className="mt-1 text-slate-500">โดย {a.user?.name ?? "System"}</div></div>)}

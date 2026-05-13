@@ -62,7 +62,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   }
 
   async function hardDeleteUser(id: string, email: string) {
-    if (!confirm(`Hard delete user ${email}? การลบนี้ย้อนกลับไม่ได้ และจะทำได้เฉพาะ user ที่ไม่มีประวัติ incident/RCA/action/audit ผูกอยู่`)) return;
+    if (!confirm(`Hard delete user ${email}? การลบนี้ย้อนกลับไม่ได้ ถ้ามี incident เดิม ระบบจะเก็บชื่อไว้เป็น reporter history และ action ที่เคยเป็น owner จะรอ Unit Manager มอบหมายคนใหม่`)) return;
     const res = await fetch("/api/admin/users", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, hardDelete: true }) });
     if (!res.ok) {
       const json = await res.json().catch(() => null);
@@ -140,7 +140,7 @@ function UserEditDialog({ user, units, onClose, onSaved, onDeactivate, onHardDel
           <Field label="Auth provider"><select name="authProvider" defaultValue={user.authProvider || "CREDENTIALS"} className="h-10 rounded-md border px-3 text-sm">{authProviderOptions.map(r => <option key={r}>{r}</option>)}</select></Field>
         </div>
         <label className="flex items-center gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={user.isActive ?? true} /> เปิดใช้งาน</label>
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">การเปลี่ยน role, unit, status และ auth provider จะถูกบันทึกใน audit log Hard delete จะทำได้เฉพาะ user ที่ไม่มีประวัติผูกอยู่ และ {protectedAdminEmail} จะยังเป็น Admin เสมอ</div>
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">การเปลี่ยน role, unit, status และ auth provider จะถูกบันทึกใน audit log Hard delete จะลบ user ออกจากระบบ แต่ incident เดิมจะยังเก็บชื่อผู้รายงานไว้ และ action ที่ไม่มี owner จะให้ Unit Manager มอบหมายคนใหม่ ส่วน {protectedAdminEmail} จะยังเป็น Admin เสมอ</div>
         <div className="flex flex-wrap justify-between gap-2"><div className="flex gap-2"><Button type="submit">บันทึกการแก้ไข</Button><button type="button" className="rounded-md border px-4 text-sm" onClick={onClose}>ยกเลิก</button></div><div className="flex flex-wrap gap-2">{user.isActive && !isProtectedAdmin ? <button type="button" className="rounded-md border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50" onClick={() => onDeactivate(user.id)}>ปิดใช้งาน user</button> : null}{!isProtectedAdmin ? <button type="button" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700" onClick={() => onHardDelete(user.id, user.email)}>Hard delete</button> : null}</div></div>
       </form>
     </div>
@@ -150,7 +150,6 @@ function UserEditDialog({ user, units, onClose, onSaved, onDeactivate, onHardDel
 function deleteErrorMessage(error?: string) {
   if (error === "PROTECTED_ADMIN") return `${protectedAdminEmail} เป็น Admin หลักและไม่สามารถลบหรือปิดใช้งานได้`;
   if (error === "CANNOT_DELETE_SELF") return "ไม่สามารถลบ user ที่กำลังใช้งานอยู่ได้";
-  if (error === "USER_HAS_HISTORY") return "ลบถาวรไม่ได้ เพราะ user นี้มีประวัติ incident/RCA/action/audit ผูกอยู่ ให้ใช้ปิดใช้งานแทน";
   if (error === "NOT_FOUND") return "ไม่พบ user นี้แล้ว";
   return "ดำเนินการไม่สำเร็จ กรุณาลองใหม่";
 }

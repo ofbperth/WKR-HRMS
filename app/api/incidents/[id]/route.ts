@@ -10,7 +10,7 @@ import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 
-function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string; incidentUnitId: string }) {
+function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
 }
 
