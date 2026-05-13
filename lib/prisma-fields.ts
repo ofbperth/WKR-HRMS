@@ -9,3 +9,11 @@ export function prismaModelHasField(modelName: string, fieldName: string) {
 export function activeIncidentFilter() {
   return prismaModelHasField("Incident", "deletedAt") ? { deletedAt: null } : null;
 }
+
+export function countableIncidentFilter(extra?: object) {
+  const filters: object[] = [{ status: { not: "Rejected" } }];
+  const activeFilter = activeIncidentFilter();
+  if (activeFilter) filters.unshift(activeFilter);
+  if (extra) filters.push(extra);
+  return { AND: filters };
+}

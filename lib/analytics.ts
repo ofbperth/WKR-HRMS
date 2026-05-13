@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { SEVERITY_VALUES } from "@/lib/types";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 const highSeverity = ["E", "F", "G", "H", "I"];
 
 export async function getIncidentAnalytics() {
   const incidents = await prisma.incident.findMany({
+    where: countableIncidentFilter(),
     include: { incidentUnit: true, riskCode: true },
     orderBy: { occurredAt: "desc" },
     take: 1000,

@@ -59,6 +59,7 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   const and = where.AND as IncidentWhereInput[];
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
+  and.push({ status: { not: "Rejected" } });
 
   if (params.from || params.to) {
     const occurredAt: Record<string, Date> = {};
@@ -138,7 +139,7 @@ export async function getIncidentForUser(id: string, user: { id: string; role: R
   const started = Date.now();
   const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
-    where: { id, AND: [scopeWhereForUser(user), ...(activeFilter ? [activeFilter] : [])] } as any,
+    where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,
     include: {
       incidentUnit: true,
       reporterUnit: true,

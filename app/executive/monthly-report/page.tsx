@@ -7,6 +7,7 @@ import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
 import { severityWeights } from "@/lib/severity";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 type ReportRange = { start: Date; end: Date; label: string; mode: string };
 
@@ -47,7 +48,7 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
 
 async function buildSummary(start: Date, end: Date, scopeUnitId?: string | null) {
   const incidents = await prisma.incident.findMany({
-    where: { occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) },
+    where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
     include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
     orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { occurredAt: "desc" }],
   });

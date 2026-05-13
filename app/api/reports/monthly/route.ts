@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { safetyGoals } from "@/lib/dashboard-analytics";
 import { severityWeights } from "@/lib/severity";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 function monthRange(year: number, month: number) {
   return { start: new Date(year, month - 1, 1), end: new Date(year, month, 1) };
@@ -30,19 +31,20 @@ export async function POST(request: Request) {
     const month = Number(body.month ?? new Date().getMonth() + 1);
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return Response.json({ error: "INVALID_MONTH" }, { status: 400 });
     const { start, end } = monthRange(year, month);
+    const monthWhere = countableIncidentFilter({ occurredAt: { gte: start, lt: end } });
     const incidents = await prisma.incident.findMany({
-      where: { occurredAt: { gte: start, lt: end } },
+      where: monthWhere,
       include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
       orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { occurredAt: "desc" }],
     });
     const [total, closed, sentinel, rcaRequired, bySeverity, byUnit, topRiskCodes] = await Promise.all([
-      prisma.incident.count({ where: { occurredAt: { gte: start, lt: end } } }),
-      prisma.incident.count({ where: { occurredAt: { gte: start, lt: end }, status: "Closed" } }),
-      prisma.incident.count({ where: { occurredAt: { gte: start, lt: end }, isSentinel: true } }),
-      prisma.incident.count({ where: { occurredAt: { gte: start, lt: end }, status: "RCARequired" } }),
-      prisma.incident.groupBy({ by: ["severity"], where: { occurredAt: { gte: start, lt: end } }, _count: true }),
-      prisma.incident.groupBy({ by: ["incidentUnitId"], where: { occurredAt: { gte: start, lt: end } }, _count: true }),
-      prisma.incident.groupBy({ by: ["riskCodeId"], where: { occurredAt: { gte: start, lt: end } }, _count: true }),
+      prisma.incident.count({ where: monthWhere }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, status: "Closed" }) }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, isSentinel: true }) }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, status: "RCARequired" }) }),
+      prisma.incident.groupBy({ by: ["severity"], where: monthWhere, _count: true }),
+      prisma.incident.groupBy({ by: ["incidentUnitId"], where: monthWhere, _count: true }),
+      prisma.incident.groupBy({ by: ["riskCodeId"], where: monthWhere, _count: true }),
     ]);
     const unitMap = new Map(incidents.map(i => [i.incidentUnitId, i.incidentUnit.name]));
     const riskMap = new Map(incidents.map(i => [i.riskCodeId, `${i.riskCode.code} ${i.riskCode.nameTh}`]));

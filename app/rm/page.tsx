@@ -6,6 +6,7 @@ import { RoleHome } from "@/components/role-home";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MonthlyReportButton } from "@/components/reports/monthly-report-button";
 import { prisma } from "@/lib/prisma";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 const actionClass = "rounded-lg border border-emerald-100 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:bg-emerald-50";
 
@@ -13,9 +14,9 @@ export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const [total, rcaRequired, sentinel] = await Promise.all([
-    prisma.incident.count(),
-    prisma.incident.count({ where: { status: "RCARequired" } }),
-    prisma.incident.count({ where: { isSentinel: true } }),
+    prisma.incident.count({ where: countableIncidentFilter() }),
+    prisma.incident.count({ where: countableIncidentFilter({ status: "RCARequired" }) }),
+    prisma.incident.count({ where: countableIncidentFilter({ isSentinel: true }) }),
   ]);
 
   return <AppShell user={user}><RoleHome title="พื้นที่ทำงานทีม RM" description="จัดคิว Triage, ค้นหา incident, ติดตาม RCA และบริหาร workflow ความเสี่ยง">
