@@ -1,14 +1,20 @@
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { runAutomationJob } from "@/lib/automation-jobs";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
 const jobs = ["overdue-action-check", "due-soon-notification", "status-sync", "notification-cleanup", "retention-cleanup"] as const;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await requireUser(["RMTeam", "Admin"]);
-    const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, take: 50 });
-    return Response.json({ jobs, runs });
+    const url = new URL(request.url);
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    const [runs, total] = await prisma.$transaction([
+      (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, skip, take }),
+      (prisma as any).automationRun.count(),
+    ]);
+    return Response.json({ jobs, runs, meta: buildPageMeta(page, pageSize, total) });
   } catch (error) {
     return apiError(error);
   }

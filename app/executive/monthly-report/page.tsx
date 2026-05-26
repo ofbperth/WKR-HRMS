@@ -7,6 +7,7 @@ import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
 import { severityWeights } from "@/lib/severity";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 type ReportRange = { start: Date; end: Date; label: string; mode: string };
 
@@ -47,7 +48,7 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
 
 async function buildSummary(start: Date, end: Date, scopeUnitId?: string | null) {
   const incidents = await prisma.incident.findMany({
-    where: { occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) },
+    where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
     include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
     orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { occurredAt: "desc" }],
   });
@@ -113,5 +114,5 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 function SimpleTable({ rows, columns, empty = "ไม่มีข้อมูล" }: { rows: any[]; columns: string[]; empty?: string }) {
   if (!rows.length) return <div className="text-sm text-slate-500">{empty}</div>;
-  return <div className="overflow-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="px-3 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-3 py-2">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="break-words px-2 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-2 py-2 align-top">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
 }

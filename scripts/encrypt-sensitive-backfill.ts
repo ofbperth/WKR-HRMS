@@ -18,7 +18,7 @@ async function main() {
     const encrypted = encryptedIncidentIdentifiers({
       patientHn: incident.patientHn,
       patientAn: incident.patientAn,
-      reporterName: incident.reportedBy.name,
+      reporterName: incident.reportedBy?.name,
     });
     if (encrypted.hnEncrypted && decrypt(encrypted.hnEncrypted) !== incident.patientHn) {
       throw new Error(`HN encryption validation failed for incident ${incident.id}`);

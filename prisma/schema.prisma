@@ -78,8 +78,9 @@ model Incident {
   incidentNo        String             @unique
   reportedAt        DateTime           @default(now())
   occurredAt        DateTime
-  reportedById      String
-  reportedBy        User               @relation("ReportedIncidents", fields: [reportedById], references: [id])
+  rcaDueAt          DateTime?          @map("rca_due_at")
+  reportedById      String?
+  reportedBy        User?              @relation("ReportedIncidents", fields: [reportedById], references: [id], onDelete: SetNull)
   reporterUnitId    String
   reporterUnit      Unit               @relation("ReporterUnit", fields: [reporterUnitId], references: [id])
   incidentUnitId    String
@@ -124,11 +125,14 @@ model Incident {
   attachments Attachment[]
 
   @@index([incidentNo])
+  @@index([createdAt])
   @@index([occurredAt])
+  @@index([reportedById])
   @@index([incidentUnitId])
   @@index([riskCodeId])
   @@index([severity])
   @@index([status])
+  @@index([rcaDueAt])
   @@index([archivedAt])
   @@index([deletedAt])
   @@index([lifecycleStatus])
@@ -138,6 +142,7 @@ model Incident {
   @@index([occurredAt, severity])
   @@index([occurredAt, incidentUnitId])
   @@index([incidentUnitId, status])
+  @@index([riskCodeId, occurredAt])
   @@index([clinicalOrGeneral, occurredAt])
   @@index([simpleCategory, occurredAt])
 }
@@ -182,8 +187,8 @@ model ActionPlan {
   rca                 RCA?             @relation(fields: [rcaId], references: [id])
   title               String
   description         String?
-  ownerId             String
-  owner               User             @relation("ActionOwner", fields: [ownerId], references: [id])
+  ownerId             String?
+  owner               User?            @relation("ActionOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   coOwnerText         String?
   dueDate             DateTime
   status              String           @default("NotStarted")
@@ -209,8 +214,8 @@ model Comment {
   id         String   @id @default(cuid())
   incidentId String
   incident   Incident @relation(fields: [incidentId], references: [id])
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   message    String
   createdAt  DateTime @default(now())
 
@@ -221,8 +226,8 @@ model Attachment {
   id           String   @id @default(cuid())
   incidentId   String
   incident     Incident @relation(fields: [incidentId], references: [id])
-  uploadedById String
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   fileName     String
   fileUrl      String
   fileType     String?
@@ -291,8 +296,8 @@ model UserInvite {
   role        String
   unitId      String?
   unit        Unit?     @relation(fields: [unitId], references: [id])
-  invitedById String
-  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById String?
+  invitedBy   User?     @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
   status      String    @default("Pending")
   expiresAt   DateTime
   createdAt   DateTime  @default(now())

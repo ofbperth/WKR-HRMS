@@ -3,6 +3,7 @@ import { auditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { severityOptionsFor } from "@/lib/severity";
 import { triageClassificationSchema } from "@/lib/validators";
+import { calculateRcaDueAt } from "@/lib/rca-due-date";
 
 const rcaRequiredSeverity = ["E", "F", "G", "H", "I"];
 const sentinelSeverity = ["G", "H", "I"];
@@ -35,6 +36,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         isSentinel: sentinelSeverity.includes(input.severity) || input.isSentinel,
         needRmSupport: input.needRmSupport,
         status: requireRca ? "RCARequired" : "UnderReview",
+        rcaDueAt: requireRca ? calculateRcaDueAt(input.severity, existing.reportedAt) : null,
         reviewedById: user.id,
         reviewedAt: new Date(),
       },

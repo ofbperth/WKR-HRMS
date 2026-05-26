@@ -5,26 +5,17 @@ import { AppShell } from "@/components/layout/sidebar";
 import { RoleHome } from "@/components/role-home";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MonthlyReportButton } from "@/components/reports/monthly-report-button";
-import { prisma } from "@/lib/prisma";
 
 const actionClass = "rounded-lg border border-emerald-100 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:bg-emerald-50";
 
 export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const [total, rcaNotStarted, rcaSubmitted, sentinel] = await Promise.all([
-    prisma.incident.count(),
-    prisma.incident.count({ where: { status: "RCARequired", rca: null } }),
-    prisma.incident.count({ where: { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] } }),
-    prisma.incident.count({ where: { isSentinel: true } }),
-  ]);
   return <AppShell user={user}><RoleHome title="Admin Console" description="ศูนย์กลางสำหรับงาน RM และการดูแลระบบ">
-    <div className="grid gap-4 md:grid-cols-4">
-      <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
-      <Card><CardHeader><CardTitle>RCA ยังไม่ทำ</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaNotStarted}</CardContent></Card>
-      <Card><CardHeader><CardTitle>RCA Submitted</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-blue-700">{rcaSubmitted}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Sentinel</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card>
-    </div>
+    <Link href="/rm/dashboard" className="block rounded-lg border border-emerald-100 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:bg-emerald-50">
+      <div className="font-semibold text-slate-900">RM/Admin Dashboard</div>
+      <p className="mt-1 text-sm text-slate-600">ดูตัวชี้วัดกลางของ RM, RCA, Sentinel และแผนการแก้ไขจาก dashboard เดียวกัน</p>
+    </Link>
 
     <div className="grid gap-4 md:grid-cols-3">
       <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">สร้าง incident ด้วยสิทธิ์ระดับ RM</p></Link>

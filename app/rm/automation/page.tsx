@@ -3,13 +3,18 @@ import { getCurrentUser } from "@/lib/auth";
 import { AppShell } from "@/components/layout/sidebar";
 import { AutomationPanel } from "@/components/automation-panel";
 import { prisma } from "@/lib/prisma";
+import { getPage, Pagination } from "@/components/ui/pagination";
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, take: 50 });
+  const pageSize = 10;
+  const total = await (prisma as any).automationRun.count();
+  const page = getPage(searchParams.page, total, pageSize);
+  const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize });
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">RM Automation</h1><p className="mt-2 text-slate-600">Protected manual job สำหรับ overdue action, due soon notification, status sync และ cleanup</p></div>
     <AutomationPanel initialRuns={runs} />
+    <Pagination basePath="/rm/automation" searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div></AppShell>;
 }

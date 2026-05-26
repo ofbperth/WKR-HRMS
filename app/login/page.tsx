@@ -1,14 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Activity, Eye, Hospital, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@hospital.local");
-  const [password, setPassword] = useState("password");
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -51,6 +53,8 @@ export default function LoginPage() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
+    const started = performance.now();
     setError("");
     setIsSubmitting(true);
 
@@ -68,7 +72,10 @@ export default function LoginPage() {
         return;
       }
 
-      window.location.assign(json?.redirectTo || "/dashboard");
+      if (process.env.NODE_ENV === "development") {
+        console.info(`[perf] login-submit ${Math.round(performance.now() - started)}ms`);
+      }
+      router.replace(json?.redirectTo || "/dashboard");
     } catch (err) {
       console.error("Login failed", err);
       setError("เชื่อมต่อ login service ไม่ได้ กรุณาลองใหม่");
@@ -119,15 +126,12 @@ export default function LoginPage() {
                 </div>
               </div>
               {error ? <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting} aria-busy={isSubmitting}>
                 {isSubmitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </Button>
               {googleEnabled && googleConfigured
                 ? <a className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-emerald-50" href="/api/auth/google">เข้าสู่ระบบด้วย Google</a>
                 : <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">{googleNeedsMigration ? "Google login ต้อง migration ก่อน" : googleEnabled ? "ยังไม่ได้ตั้งค่า Google Client ID/Secret" : "Admin ปิด Google login ไว้"}</div>}
-              <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-slate-600">
-                ตัวอย่าง login: admin@hospital.local / password
-              </div>
             </form>
           </CardContent>
         </Card>

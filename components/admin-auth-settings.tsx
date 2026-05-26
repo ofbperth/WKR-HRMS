@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const roles = ["Reporter", "UnitManager", "RMTeam", "Executive", "Admin"];
+const invitePageSize = 10;
 
 function listToText(value: string[]) {
   return value.join("\n");
@@ -19,7 +20,7 @@ export function AdminAuthSettings() {
   const [settings, setSettings] = useState({ googleEnabled: false, allowedDomains: "", allowedEmails: "", allowAutoProvision: false, defaultRole: "Reporter", defaultIsActive: false });
   const [message, setMessage] = useState("");
 
-  async function load() {
+  const load = useCallback(async function load() {
     setLoading(true);
     const data = await fetch("/api/admin/auth-settings").then(r => r.json());
     setSettings({
@@ -31,9 +32,9 @@ export function AdminAuthSettings() {
       defaultIsActive: Boolean(data.defaultIsActive),
     });
     setLoading(false);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,10 +73,18 @@ export function AdminAuthSettings() {
 export function AdminInvites({ units }: { units: Array<{ id: string; name: string }> }) {
   const [items, setItems] = useState<any[]>([]);
   const [message, setMessage] = useState("");
-  async function load() {
-    setItems(await fetch("/api/admin/invites").then(r => r.json()));
-  }
-  useEffect(() => { load(); }, []);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ page: 1, pageSize: invitePageSize, total: 0, totalPages: 1 });
+  const load = useCallback(async function load() {
+    const data = await fetch(`/api/admin/invites?page=${page}&pageSize=${invitePageSize}`).then(r => r.json());
+    const nextItems = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+    setItems(nextItems);
+    setMeta(data?.meta && typeof data.meta.total === "number" ? data.meta : { page, pageSize: invitePageSize, total: nextItems.length, totalPages: 1 });
+  }, [page]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (page > meta.totalPages) setPage(meta.totalPages || 1);
+  }, [page, meta.totalPages]);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
@@ -99,5 +108,13 @@ export function AdminInvites({ units }: { units: Array<{ id: string; name: strin
     <div className="overflow-auto">
       <table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2">Email</th><th className="px-3 py-2">Role</th><th className="px-3 py-2">หน่วยงาน</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">หมดอายุ</th><th className="px-3 py-2">Action</th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-t"><td className="px-3 py-2">{item.email}</td><td className="px-3 py-2">{item.role}</td><td className="px-3 py-2">{item.unit?.name || "-"}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{new Date(item.expiresAt).toLocaleDateString("th-TH")}</td><td className="px-3 py-2"><button className="rounded-md border px-3 py-1 text-red-600" type="button" onClick={() => revoke(item.id)}>ยกเลิก</button></td></tr>)}</tbody></table>
     </div>
+    {meta.total > meta.pageSize ? <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm">
+      <div className="text-slate-600">Showing {(meta.page - 1) * meta.pageSize + 1}-{Math.min(meta.page * meta.pageSize, meta.total)} of {meta.total} invites</div>
+      <div className="flex items-center gap-2">
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page <= 1} onClick={() => setPage(Math.max(1, meta.page - 1))}>Previous</button>
+        <span className="text-slate-600">Page {meta.page} / {meta.totalPages}</span>
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page >= meta.totalPages} onClick={() => setPage(Math.min(meta.totalPages, meta.page + 1))}>Next</button>
+      </div>
+    </div> : null}
   </div>;
 }

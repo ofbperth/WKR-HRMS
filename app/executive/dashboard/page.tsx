@@ -1,36 +1,16 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { AppShell } from "@/components/layout/sidebar";
-import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
-import { CategoryPieChart, LinkedStatCard, SeverityBarChart, TopRiskCodeBarChart, TrendLineChart, UnitRankingChart } from "@/components/dashboard/charts";
-import { getDashboardAnalytics, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
-import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
-
-function dateOnly(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function rangeHref(range: { start: Date; end: Date }) {
-  return `/rm/search?from=${dateOnly(range.start)}&to=${dateOnly(range.end)}`;
-}
+import { DashboardSummarySkeleton, ExecutiveDashboardSummary } from "@/components/dashboard/dashboard-summary-sections";
 
 export default async function ExecutiveDashboardPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const data = await getDashboardAnalytics(normalizeDashboardSearchParams(searchParams));
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">Executive Dashboard</h1><p className="text-sm text-slate-600">ภาพรวมตัวชี้วัดความเสี่ยง โดยปกปิดข้อมูล sensitive</p></div>
-    <DashboardFilter units={data.filters.units} categories={data.filters.categories} />
-    <div className="dashboard-stat-grid">
-      <LinkedStatCard title="เดือนนี้" value={data.cards.totalThisMonth} href={rangeHref(getThisMonthRange())} />
-      <LinkedStatCard title="ปีงบประมาณ" value={data.cards.totalFiscalYear} href={rangeHref(getFiscalYearRange())} />
-      <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
-      <LinkedStatCard title="RCA ที่เปิดอยู่" value={data.cards.openRca} href="/rm/search?status=RCARequired" />
-      <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
-      <LinkedStatCard title="อัตราปิดเคส" value={`${data.cards.closedCaseRate}%`} href="/rm/search?status=Closed" />
-      <LinkedStatCard title="ต้องตัดสินใจระดับบริหาร" value={data.cards.needLeadershipDecision} href="/rm/search?sentinel=true" />
-      <LinkedStatCard title="Severity E-I" value={data.cards.highSeverity} href="/rm/search?severity=E" />
-    </div>
-    <div className="dashboard-chart-grid"><TrendLineChart title="Trend incident รายเดือน" data={data.charts.trend} /><SeverityBarChart title="การกระจาย Severity A-I" data={data.charts.severity} drilldown={{ basePath: "/rm/search", param: "severity", field: "name" }} /><CategoryPieChart title="Clinical vs General" data={data.charts.clinicalGeneral} drilldown={{ basePath: "/rm/search", param: "clinicalOrGeneral", field: "name" }} /><TopRiskCodeBarChart title="Top 10 risk code" data={data.charts.topRiskCodes} drilldown={{ basePath: "/rm/search", param: "riskCodeId", field: "riskCodeId" }} /><UnitRankingChart title="Top 10 หน่วยงานตามจำนวน incident" data={data.charts.topUnits} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} /><UnitRankingChart title="Top 10 หน่วยงานตาม weighted risk score" data={data.charts.weightedUnits} score drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} /><UnitRankingChart title="RCA ที่เปิดอยู่ตามหน่วยงาน" data={data.charts.openRcaByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} /><UnitRankingChart title="Action overdue ตามหน่วยงาน" data={data.charts.overdueActionByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} /></div>
+    <Suspense fallback={<DashboardSummarySkeleton cards={8} />}>
+      <ExecutiveDashboardSummary searchParams={searchParams} />
+    </Suspense>
   </div></AppShell>;
 }

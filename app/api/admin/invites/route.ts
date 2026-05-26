@@ -2,12 +2,18 @@ import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { userInviteSchema } from "@/lib/validators";
+import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await requireUser(["Admin"]);
-    const invites = await prisma.userInvite.findMany({ include: { unit: true, invitedBy: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" } });
-    return Response.json(invites);
+    const url = new URL(request.url);
+    const { page, pageSize, skip, take } = getPagingParams(url);
+    const [data, total] = await prisma.$transaction([
+      prisma.userInvite.findMany({ include: { unit: true, invitedBy: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" }, skip, take }),
+      prisma.userInvite.count(),
+    ]);
+    return Response.json({ data, meta: buildPageMeta(page, pageSize, total) });
   } catch (error) {
     return apiError(error);
   }

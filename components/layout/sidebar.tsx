@@ -44,7 +44,6 @@ const adminMenu: MenuSection[] = [
     title: "Admin",
     items: [
       { href: "/admin", label: "Console", icon: <Home size={18} /> },
-      { href: "/admin/dashboard", label: "Admin Dashboard", icon: <LayoutDashboard size={18} /> },
       { href: "/admin/users", label: "User", icon: <Users size={18} /> },
       { href: "/admin/units", label: "หน่วยงาน", icon: <Hospital size={18} /> },
       { href: "/admin/risk-codes", label: "Risk Codes", icon: <ShieldAlert size={18} /> },
@@ -63,7 +62,7 @@ const adminMenu: MenuSection[] = [
   {
     title: "Dashboards",
     items: [
-      { href: "/rm/dashboard", label: "RM Dashboard", icon: <LayoutDashboard size={18} /> },
+      { href: "/rm/dashboard", label: "RM/Admin Dashboard", icon: <LayoutDashboard size={18} /> },
       { href: "/rm/heatmap", label: "Heatmap", icon: <Grid3X3 size={18} /> },
       { href: "/rm/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
       { href: "/executive/dashboard", label: "Executive", icon: <BarChart3 size={18} /> },

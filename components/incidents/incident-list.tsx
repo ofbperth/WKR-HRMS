@@ -15,6 +15,7 @@ type IncidentRow = {
   incidentNo: string;
   occurredAt: Date;
   reportedAt: Date;
+  rcaDueAt?: Date | null;
   title: string;
   severity: string;
   status: string;
@@ -91,6 +92,10 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
               <div className="text-xs uppercase text-slate-500">วันที่รายงาน</div>
               <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
             </div>
+            <div className="min-w-0">
+              <div className="text-xs uppercase text-slate-500">กำหนดส่ง RCA</div>
+              <div className="text-sm font-medium">{formatDateOnly(incident.rcaDueAt)}</div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
@@ -130,6 +135,10 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           <div className="col-span-3 min-w-0 xl:col-span-2">
             <div className="text-xs font-semibold uppercase text-slate-500">วันที่เกิดเหตุ</div>
             <div>{formatDateOnly(incident.occurredAt)}</div>
+          </div>
+          <div className="col-span-3 min-w-0 xl:col-span-2">
+            <div className="text-xs font-semibold uppercase text-slate-500">กำหนดส่ง RCA</div>
+            <div>{formatDateOnly(incident.rcaDueAt)}</div>
           </div>
           <div className="col-span-6 min-w-0 xl:col-span-3">
             <div className="text-xs font-semibold uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>

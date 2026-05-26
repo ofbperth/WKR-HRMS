@@ -1,0 +1,19 @@
+ALTER TABLE "Incident" DROP CONSTRAINT IF EXISTS "Incident_reportedById_fkey";
+ALTER TABLE "Incident" ALTER COLUMN "reportedById" DROP NOT NULL;
+ALTER TABLE "Incident" ADD CONSTRAINT "Incident_reportedById_fkey" FOREIGN KEY ("reportedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "ActionPlan" DROP CONSTRAINT IF EXISTS "ActionPlan_ownerId_fkey";
+ALTER TABLE "ActionPlan" ALTER COLUMN "ownerId" DROP NOT NULL;
+ALTER TABLE "ActionPlan" ADD CONSTRAINT "ActionPlan_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "Comment" DROP CONSTRAINT IF EXISTS "Comment_userId_fkey";
+ALTER TABLE "Comment" ALTER COLUMN "userId" DROP NOT NULL;
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "Attachment" DROP CONSTRAINT IF EXISTS "Attachment_uploadedById_fkey";
+ALTER TABLE "Attachment" ALTER COLUMN "uploadedById" DROP NOT NULL;
+ALTER TABLE "Attachment" ADD CONSTRAINT "Attachment_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "UserInvite" DROP CONSTRAINT IF EXISTS "UserInvite_invitedById_fkey";
+ALTER TABLE "UserInvite" ALTER COLUMN "invitedById" DROP NOT NULL;
+ALTER TABLE "UserInvite" ADD CONSTRAINT "UserInvite_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -300,10 +300,10 @@ export function ActionPlanForm({ incidentId, users }: { incidentId: string; user
   </div>;
 }
 
-export function ActionUpdateForm({ action, canVerify }: { action: { id: string; status: string; evidenceText: string | null; evidenceUrl: string | null; kpiResult: string | null; effectivenessReview: string | null }; canVerify: boolean }) {
+export function ActionUpdateForm({ action, canVerify, users = [], canReassignOwner = false }: { action: { id: string; status: string; ownerId?: string | null; evidenceText: string | null; evidenceUrl: string | null; kpiResult: string | null; effectivenessReview: string | null }; canVerify: boolean; users?: UserOption[]; canReassignOwner?: boolean }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ status: action.status, evidenceText: action.evidenceText ?? "", evidenceUrl: action.evidenceUrl ?? "", kpiResult: action.kpiResult ?? "", effectivenessReview: action.effectivenessReview ?? "" });
+  const [form, setForm] = useState({ ownerId: action.ownerId ?? "", status: action.status, evidenceText: action.evidenceText ?? "", evidenceUrl: action.evidenceUrl ?? "", kpiResult: action.kpiResult ?? "", effectivenessReview: action.effectivenessReview ?? "" });
   async function save() {
     setSaving(true);
     const res = await fetch(`/api/actions/${action.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
@@ -317,6 +317,7 @@ export function ActionUpdateForm({ action, canVerify }: { action: { id: string; 
     if (!res.ok) alert("Verification ไม่สำเร็จ"); else router.refresh();
   }
   return <div className="grid gap-2 rounded-md bg-slate-50 p-3">
+    {canReassignOwner ? <label className="space-y-1 text-xs"><span className="font-medium">Owner</span><select className="h-9 w-full rounded-md border px-2" value={form.ownerId} onChange={e => setForm({ ...form, ownerId: e.target.value })}><option value="">รอ Unit Manager มอบหมายใหม่</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}</select></label> : null}
     <label className="space-y-1 text-xs"><span className="font-medium">Status</span><select className="h-9 w-full rounded-md border px-2" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{actionPlanStatusValues.filter(s => s !== "Verified").map(s => <option key={s} value={s}>{s}</option>)}</select></label>
     <TextArea label="Evidence" value={form.evidenceText} onChange={value => setForm({ ...form, evidenceText: value })} compact />
     <label className="space-y-1 text-xs"><span className="font-medium">Evidence URL</span><input className="h-9 w-full rounded-md border px-2" value={form.evidenceUrl} onChange={e => setForm({ ...form, evidenceUrl: e.target.value })} /></label>

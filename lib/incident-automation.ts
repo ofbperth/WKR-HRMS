@@ -7,6 +7,7 @@ import { isHighSeverityForType, isSentinelSeverity, severityOptionsFor } from "@
 import { createIncidentSchema } from "@/lib/validators";
 import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
+import { calculateRcaDueAt } from "@/lib/rca-due-date";
 
 function resolveAutomation(severity: Severity, clinicalOrGeneral: string) {
   if (isSentinelSeverity(severity, clinicalOrGeneral)) return { status: "RCARequired" as const, isSentinel: true };
@@ -39,14 +40,17 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
   const occurredAt = new Date(`${input.occurredDate}T${input.occurredTime}:00`);
   if (Number.isNaN(occurredAt.getTime())) throw new Error("INVALID_OCCURRED_AT");
   const auto = resolveAutomation(input.severity, input.clinicalOrGeneral);
+  const reportedAt = new Date();
+  const rcaDueAt = calculateRcaDueAt(input.severity, reportedAt);
 
   const incident = await prisma.$transaction(async (tx) => {
     const incidentNo = await generateIncidentNo(tx);
     const created = await tx.incident.create({
       data: {
         incidentNo,
-        reportedAt: new Date(),
+        reportedAt,
         occurredAt,
+        rcaDueAt,
         reportedById: currentUser.id,
         reporterUnitId: currentUser.unitId!,
         incidentUnitId: input.incidentUnitId,
@@ -79,7 +83,7 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
         action: "create incident",
         entityType: "Incident",
         entityId: created.id,
-        newValue: JSON.stringify({ incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport }),
+        newValue: JSON.stringify({ incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport, rcaDueAt: (created as any).rcaDueAt }),
       },
     });
     if (auto.isSentinel) {

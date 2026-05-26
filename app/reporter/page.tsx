@@ -5,17 +5,18 @@ import { AppShell } from "@/components/layout/sidebar";
 import { RoleHome } from "@/components/role-home";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 const actionClass = "rounded-lg border border-emerald-100 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:bg-emerald-50";
 
 export default async function Page() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const reporterScope = { reportedById: user.id };
+  const reporterScope = countableIncidentFilter({ reportedById: user.id });
   const [total, rcaRequired, sentinel] = await Promise.all([
     prisma.incident.count({ where: reporterScope }),
-    prisma.incident.count({ where: { ...reporterScope, status: "RCARequired" } }),
-    prisma.incident.count({ where: { ...reporterScope, isSentinel: true } }),
+    prisma.incident.count({ where: countableIncidentFilter({ reportedById: user.id, status: "RCARequired" }) }),
+    prisma.incident.count({ where: countableIncidentFilter({ reportedById: user.id, isSentinel: true }) }),
   ]);
   return <AppShell user={user}><RoleHome title="Reporter Workspace" description="รายงาน incident ใหม่ และติดตามรายงานของตนเอง">
     <div className="grid gap-4 md:grid-cols-3">

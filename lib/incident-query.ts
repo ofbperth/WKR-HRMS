@@ -14,6 +14,7 @@ export type IncidentFilterParams = {
   simpleCategory?: string;
   riskCodeId?: string;
   status?: string;
+  rcaDue?: string;
   sentinel?: string;
   needRmSupport?: string;
   q?: string;
@@ -21,7 +22,7 @@ export type IncidentFilterParams = {
   cursor?: string | string[];
 };
 
-export const INCIDENT_PAGE_SIZE = 25;
+export const INCIDENT_PAGE_SIZE = 20;
 
 export const incidentInclude = {
   incidentUnit: true,
@@ -35,6 +36,7 @@ export const incidentListSelect = {
   incidentNo: true,
   occurredAt: true,
   reportedAt: true,
+  rcaDueAt: true,
   title: true,
   severity: true,
   status: true,
@@ -59,6 +61,7 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   const and = where.AND as IncidentWhereInput[];
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
+  and.push({ status: { not: "Rejected" } });
 
   if (params.from || params.to) {
     const occurredAt: Record<string, Date> = {};
@@ -71,6 +74,13 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   if (params.simpleCategory) and.push({ simpleCategory: params.simpleCategory });
   if (params.riskCodeId) and.push({ riskCodeId: params.riskCodeId });
   if (params.status) and.push({ status: params.status });
+  if (params.rcaDue === "overdue") {
+    and.push({
+      status: "RCARequired",
+      rcaDueAt: { lt: new Date() },
+      OR: [{ rca: null }, { rca: { status: { in: ["Draft", "RevisionRequired"] } } }],
+    });
+  }
   if (params.sentinel === "true") and.push({ isSentinel: true });
   if (params.sentinel === "false") and.push({ isSentinel: false });
   if (params.needRmSupport === "true") and.push({ needRmSupport: true });
@@ -138,7 +148,7 @@ export async function getIncidentForUser(id: string, user: { id: string; role: R
   const started = Date.now();
   const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
-    where: { id, AND: [scopeWhereForUser(user), ...(activeFilter ? [activeFilter] : [])] } as any,
+    where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,
     include: {
       incidentUnit: true,
       reporterUnit: true,
@@ -182,7 +192,12 @@ export async function getIncidentForUser(id: string, user: { id: string; role: R
   if (process.env.NODE_ENV === "development") {
     console.info(`[perf] incident-detail ${Date.now() - started}ms`);
   }
-  return { ...incident, audits };
+  const { decryptIncidentIdentifier } = await import("@/lib/sensitive-fields");
+  return {
+    ...incident,
+    reporterDisplayName: incident.reportedBy?.name ?? decryptIncidentIdentifier((incident as any).reporterNameEncrypted, null) ?? "Deleted user",
+    audits,
+  };
 }
 
 export const getActiveUsers = cache(async function getActiveUsers() {
