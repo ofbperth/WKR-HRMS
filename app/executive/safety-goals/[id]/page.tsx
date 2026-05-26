@@ -17,7 +17,7 @@ export default async function SafetyGoalDetailPage({ params, searchParams }: { p
   const goal = goals[index];
   if (!goal) notFound();
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">{index + 1}. {goal.title}</h1><p className="text-sm text-slate-600">Detailed safety goal trend, RCA, overdue action, and related risk code summary.</p></div>
+    <div><h1 className="text-2xl font-bold">{index + 1}. {goal.title}</h1><p className="text-sm text-slate-600">รายละเอียดแนวโน้ม RCA แผนแก้ไขที่เกินกำหนด และ risk code ที่เกี่ยวข้อง</p></div>
     <DashboardFilter units={lookup.units} categories={lookup.simpleCategories} />
     <SafetyGoalCard goal={goal} />
   </div></AppShell>;

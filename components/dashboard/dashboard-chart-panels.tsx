@@ -28,7 +28,7 @@ export function DashboardChartPanels({ variant, data }: { variant: DashboardVari
       <UnitRankingChart title="Top 10 หน่วยงานตามจำนวน incident" data={data.charts.topUnits} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
       <UnitRankingChart title="Top 10 หน่วยงานตาม weighted risk score" data={data.charts.weightedUnits} score drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
       <UnitRankingChart title="RCA ที่เปิดอยู่ตามหน่วยงาน" data={data.charts.openRcaByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
-      <UnitRankingChart title="Action overdue ตามหน่วยงาน" data={data.charts.overdueActionByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
+      <UnitRankingChart title="แผนแก้ไขเกินกำหนดตามหน่วยงาน" data={data.charts.overdueActionByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
     </div>;
   }
 

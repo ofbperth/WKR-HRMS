@@ -46,7 +46,7 @@ export async function RmDashboardSummary({ searchParams }: { searchParams: Dashb
       <LinkedStatCard title="ส่ง RCA แล้ว" value={data.cards.rcaWaitingApproval} href="/rm/search?status=RCASubmitted" />
       <LinkedStatCard title="%RCA Submitted" value={`${data.cards.rcaSubmittedRate}%`} href="/rm/search?status=RCASubmitted" />
       <LinkedStatCard title="RCA เกินกำหนด" value={data.cards.overdueRca} href="/rm/search?rcaDue=overdue" caption="ยังไม่ส่ง RCA และเลยวันกำหนดส่ง" />
-      <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
+      <LinkedStatCard title="แผนแก้ไขเกินกำหนด" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
       <LinkedStatCard title="ต้องการ RM support" value={data.cards.needRmSupport} href="/rm/search?needRmSupport=true" />
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="รอ verification" value={data.cards.waitingVerification} href="/rm/search?status=WaitingVerification" />
@@ -68,7 +68,7 @@ export async function UnitDashboardSummary({ searchParams, unitId }: { searchPar
       <LinkedStatCard title="RCA ที่เปิดอยู่" value={data.cards.openRca} href={`${basePath}?status=RCARequired`} />
       <LinkedStatCard title="RCA revision" value={data.cards.rcaRevisionRequired} href="/unit/rca" />
       <LinkedStatCard title="Action ที่เปิดอยู่" value={data.cards.openActions} href="/unit/actions" />
-      <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/unit/actions" />
+      <LinkedStatCard title="แผนแก้ไขเกินกำหนด" value={data.cards.overdueActions} href="/unit/actions" />
       <LinkedStatCard title="Severity สูงสุด" value={data.cards.highestSeverity || "-"} href={`${basePath}?severity=${data.cards.highestSeverityLabel || ""}`} />
       <LinkedStatCard title="อัตราปิดเคส" value={`${data.cards.closedCaseRate}%`} href={`${basePath}?status=Closed`} />
     </div>
@@ -87,7 +87,7 @@ export async function ExecutiveDashboardSummary({ searchParams }: { searchParams
       <LinkedStatCard title="ปีงบประมาณ" value={data.cards.totalFiscalYear} href={rangeHref("/rm/search", getFiscalYearRange())} />
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="RCA ที่เปิดอยู่" value={data.cards.openRca} href="/rm/search?status=RCARequired" />
-      <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
+      <LinkedStatCard title="แผนแก้ไขเกินกำหนด" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
       <LinkedStatCard title="อัตราปิดเคส" value={`${data.cards.closedCaseRate}%`} href="/rm/search?status=Closed" />
       <LinkedStatCard title="ต้องตัดสินใจระดับบริหาร" value={data.cards.needLeadershipDecision} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="Severity E-I" value={data.cards.highSeverity} href="/rm/search?severity=E" />

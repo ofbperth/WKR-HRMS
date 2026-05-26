@@ -18,15 +18,15 @@ const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readon
 const fiscalYearStartMonth = 9;
 
 export const safetyGoals = [
-  { id: "safe-surgery", title: "Safe Surgery / Wrong Site Surgery", codes: ["CPS101", "CPS102", "CPS103"] },
-  { id: "infection", title: "Infection: CAUTI/VAP/CLABSI/SSI", codes: ["CPS111", "CPI201", "CPI202", "CPI203"] },
-  { id: "medication", title: "Medication Safety", codes: ["CPM201", "CPM202", "CPM203", "CPM204", "CPM205", "CPM206", "CPM207", "CPM208"] },
-  { id: "blood", title: "Blood Transfusion Safety", codes: ["CPM501"] },
-  { id: "patient-id", title: "Patient Identification", codes: ["CPP101"] },
-  { id: "communication", title: "Communication / Critical Result / Handover", codes: ["CPP201", "CPL201"] },
-  { id: "fall-pressure", title: "Fall / Pressure Injury / Common Complication", codes: ["CPP401"] },
-  { id: "refer-transfer", title: "Refer & Transfer / ER Safety", codes: ["CPE401", "CPE402"] },
-  { id: "deteriorating", title: "Deteriorating Patient / Sepsis / Emergency Response", codes: ["CPE101", "CPE201"] },
+  { id: "safe-surgery", title: "การผ่าตัดปลอดภัย / ผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง", codes: ["CPS101", "CPS102", "CPS103"] },
+  { id: "infection", title: "การป้องกันการติดเชื้อในโรงพยาบาล (CAUTI/VAP/CLABSI/SSI)", codes: ["CPS111", "CPI201", "CPI202", "CPI203"] },
+  { id: "medication", title: "ความปลอดภัยด้านยา", codes: ["CPM201", "CPM202", "CPM203", "CPM204", "CPM205", "CPM206", "CPM207", "CPM208"] },
+  { id: "blood", title: "ความปลอดภัยในการให้เลือด", codes: ["CPM501"] },
+  { id: "patient-id", title: "การระบุตัวผู้ป่วยถูกต้อง", codes: ["CPP101"] },
+  { id: "communication", title: "การสื่อสารผลวิกฤตและการส่งต่อข้อมูลการดูแล", codes: ["CPP201", "CPL201"] },
+  { id: "fall-pressure", title: "การพลัดตกหกล้ม แผลกดทับ และภาวะแทรกซ้อนสำคัญ", codes: ["CPP401"] },
+  { id: "refer-transfer", title: "ความปลอดภัยในการส่งต่อ เคลื่อนย้าย และห้องฉุกเฉิน", codes: ["CPE401", "CPE402"] },
+  { id: "deteriorating", title: "การดูแลผู้ป่วยอาการทรุดลง ภาวะฉุกเฉิน และ Sepsis", codes: ["CPE101", "CPE201"] },
 ];
 
 function toDate(value?: string, end = false) {

@@ -33,7 +33,7 @@ const rmTeamMenu: MenuSection[] = [
     items: [
       { href: "/rm/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
       { href: "/rm/heatmap", label: "Heatmap", icon: <Grid3X3 size={18} /> },
-      { href: "/rm/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
+      { href: "/rm/safety-goals", label: "9 เป้าหมายความปลอดภัย", icon: <ShieldAlert size={18} /> },
     ],
   },
   { title: "ตั้งค่า", items: [{ href: "/rm/automation", label: "Automation", icon: <Settings size={18} /> }, { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> }] },
@@ -64,9 +64,9 @@ const adminMenu: MenuSection[] = [
     items: [
       { href: "/rm/dashboard", label: "RM/Admin Dashboard", icon: <LayoutDashboard size={18} /> },
       { href: "/rm/heatmap", label: "Heatmap", icon: <Grid3X3 size={18} /> },
-      { href: "/rm/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
+      { href: "/rm/safety-goals", label: "9 เป้าหมายความปลอดภัย", icon: <ShieldAlert size={18} /> },
       { href: "/executive/dashboard", label: "Executive", icon: <BarChart3 size={18} /> },
-      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+      { href: "/executive/monthly-report", label: "รายงานสรุป", icon: <FileText size={18} /> },
     ],
   },
   {
@@ -102,7 +102,7 @@ const menus: Record<Role, MenuSection[]> = {
     { title: "ติดตามงาน", items: [
       { href: "/unit/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
       { href: "/unit/incidents", label: "ค้นหา / Export", icon: <Search size={18} /> },
-      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+      { href: "/executive/monthly-report", label: "รายงานสรุป", icon: <FileText size={18} /> },
       { href: "/my-reports", label: "รายงานของฉัน", icon: <FileText size={18} /> },
       { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
     ] },
@@ -112,8 +112,8 @@ const menus: Record<Role, MenuSection[]> = {
     { title: "Executive", items: [
       { href: "/executive", label: "หน้าหลัก", icon: <Home size={18} /> },
       { href: "/executive/dashboard", label: "Dashboard", icon: <BarChart3 size={18} /> },
-      { href: "/executive/safety-goals", label: "9 Safety Goals", icon: <ShieldAlert size={18} /> },
-      { href: "/executive/monthly-report", label: "Summary Report", icon: <FileText size={18} /> },
+      { href: "/executive/safety-goals", label: "9 เป้าหมายความปลอดภัย", icon: <ShieldAlert size={18} /> },
+      { href: "/executive/monthly-report", label: "รายงานสรุป", icon: <FileText size={18} /> },
       { href: "/profile", label: "Profile", icon: <UserCircle size={18} /> },
     ] },
   ],
