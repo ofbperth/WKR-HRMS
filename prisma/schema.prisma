@@ -78,6 +78,7 @@ model Incident {
   incidentNo        String             @unique
   reportedAt        DateTime           @default(now())
   occurredAt        DateTime
+  rcaDueAt          DateTime?          @map("rca_due_at")
   reportedById      String?
   reportedBy        User?              @relation("ReportedIncidents", fields: [reportedById], references: [id], onDelete: SetNull)
   reporterUnitId    String
@@ -131,6 +132,7 @@ model Incident {
   @@index([riskCodeId])
   @@index([severity])
   @@index([status])
+  @@index([rcaDueAt])
   @@index([archivedAt])
   @@index([deletedAt])
   @@index([lifecycleStatus])

@@ -62,6 +62,7 @@ export type DbIncident = {
   incidentNo: string;
   reportedAt: Date;
   occurredAt: Date;
+  rcaDueAt?: Date | null;
   reportedById: string | null;
   reporterUnitId: string;
   incidentUnitId: string;

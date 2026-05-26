@@ -9,7 +9,7 @@ export default async function RmDashboardPage({ searchParams }: { searchParams: 
   if (!user) redirect("/login");
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">RM Dashboard</h1><p className="text-sm text-slate-600">ติดตาม Triage, RCA, action follow-up และ Sentinel monitoring</p></div>
-    <Suspense fallback={<DashboardSummarySkeleton cards={9} />}>
+    <Suspense fallback={<DashboardSummarySkeleton cards={10} />}>
       <RmDashboardSummary searchParams={searchParams} />
     </Suspense>
   </div></AppShell>;

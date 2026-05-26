@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -20,7 +20,7 @@ export function AdminAuthSettings() {
   const [settings, setSettings] = useState({ googleEnabled: false, allowedDomains: "", allowedEmails: "", allowAutoProvision: false, defaultRole: "Reporter", defaultIsActive: false });
   const [message, setMessage] = useState("");
 
-  async function load() {
+  const load = useCallback(async function load() {
     setLoading(true);
     const data = await fetch("/api/admin/auth-settings").then(r => r.json());
     setSettings({
@@ -32,9 +32,9 @@ export function AdminAuthSettings() {
       defaultIsActive: Boolean(data.defaultIsActive),
     });
     setLoading(false);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,13 +75,13 @@ export function AdminInvites({ units }: { units: Array<{ id: string; name: strin
   const [message, setMessage] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ page: 1, pageSize: invitePageSize, total: 0, totalPages: 1 });
-  async function load() {
+  const load = useCallback(async function load() {
     const data = await fetch(`/api/admin/invites?page=${page}&pageSize=${invitePageSize}`).then(r => r.json());
     const nextItems = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
     setItems(nextItems);
     setMeta(data?.meta && typeof data.meta.total === "number" ? data.meta : { page, pageSize: invitePageSize, total: nextItems.length, totalPages: 1 });
-  }
-  useEffect(() => { load(); }, [page]);
+  }, [page]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (page > meta.totalPages) setPage(meta.totalPages || 1);
   }, [page, meta.totalPages]);

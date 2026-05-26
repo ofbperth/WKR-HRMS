@@ -14,6 +14,7 @@ export type IncidentFilterParams = {
   simpleCategory?: string;
   riskCodeId?: string;
   status?: string;
+  rcaDue?: string;
   sentinel?: string;
   needRmSupport?: string;
   q?: string;
@@ -35,6 +36,7 @@ export const incidentListSelect = {
   incidentNo: true,
   occurredAt: true,
   reportedAt: true,
+  rcaDueAt: true,
   title: true,
   severity: true,
   status: true,
@@ -72,6 +74,13 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   if (params.simpleCategory) and.push({ simpleCategory: params.simpleCategory });
   if (params.riskCodeId) and.push({ riskCodeId: params.riskCodeId });
   if (params.status) and.push({ status: params.status });
+  if (params.rcaDue === "overdue") {
+    and.push({
+      status: "RCARequired",
+      rcaDueAt: { lt: new Date() },
+      OR: [{ rca: null }, { rca: { status: { in: ["Draft", "RevisionRequired"] } } }],
+    });
+  }
   if (params.sentinel === "true") and.push({ isSentinel: true });
   if (params.sentinel === "false") and.push({ isSentinel: false });
   if (params.needRmSupport === "true") and.push({ needRmSupport: true });

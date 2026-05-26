@@ -9,6 +9,7 @@ import { canUnitManageIncident } from "@/lib/workflow-permissions";
 import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
+import { calculateRcaDueAt } from "@/lib/rca-due-date";
 
 function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
@@ -117,6 +118,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         simpleCategory: input.simpleCategory?.trim() ?? existing.simpleCategory,
         riskCodeId: input.riskCodeId ?? existing.riskCodeId,
         severity: input.severity ?? existing.severity,
+        rcaDueAt: input.severity ? calculateRcaDueAt(input.severity, existing.reportedAt) : existing.rcaDueAt,
         needRmSupport: input.needRmSupport ?? existing.needRmSupport,
       };
       const updated = await prisma.incident.update({ where: { id: params.id }, data: updateData });
@@ -141,6 +143,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           riskCodeId: input.riskCodeId,
           simpleCategory: input.simpleCategory,
           status: input.status,
+          rcaDueAt: calculateRcaDueAt(input.severity, existing.reportedAt),
           isSentinel: input.isSentinel,
           needRmSupport: input.needRmSupport,
           reviewedById: user.id,

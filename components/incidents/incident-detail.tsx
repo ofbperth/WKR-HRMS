@@ -68,6 +68,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
       <Card className="lg:col-span-2"><CardHeader><CardTitle>รายละเอียดเหตุการณ์</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         <Info label="วันที่รายงาน" value={formatDateTime(incident.reportedAt)} />
         <Info label="วันเวลาที่เกิดเหตุ" value={formatDateTime(incident.occurredAt)} />
+        <Info label="กำหนดส่ง RCA" value={formatDateTime(incident.rcaDueAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
         <Info label="ผู้รายงาน" value={incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "Deleted user"} />

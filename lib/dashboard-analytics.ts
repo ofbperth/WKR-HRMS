@@ -68,6 +68,14 @@ function withExtra(base: any, extra: any) {
   return { AND: [base, extra] };
 }
 
+export function buildOverdueRcaWhere(base: any, now = new Date()) {
+  return withExtra(base, {
+    status: "RCARequired",
+    rcaDueAt: { lt: now },
+    OR: [{ rca: null }, { rca: { status: { in: ["Draft", "RevisionRequired"] } } }],
+  });
+}
+
 function groupValue(rows: Array<{ [key: string]: any; _count: number }>, key: string, name: string) {
   return rows.find((item) => item[key] === name)?._count ?? 0;
 }
@@ -145,6 +153,7 @@ export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
     rcaRevisionRequired,
     rcaScope,
     rcaSubmitted,
+    overdueRca,
     sentinel,
     needRmSupport,
     highSeverityCount,
@@ -163,6 +172,7 @@ export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
     () => prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
+    () => prisma.incident.count({ where: buildOverdueRcaWhere(where, now) }),
     () => prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
     () => prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
     () => prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
@@ -188,6 +198,7 @@ export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
       rcaRequired,
       rcaWaitingApproval,
       rcaSubmittedRate: percent(rcaSubmitted, rcaScope),
+      overdueRca,
       openRca,
       rcaRevisionRequired,
       openActions,
@@ -231,6 +242,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     rcaRevisionRequired,
     rcaScope,
     rcaSubmitted,
+    overdueRca,
     sentinel,
     needRmSupport,
     highSeverityCount,
@@ -259,6 +271,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     () => prisma.rCA.count({ where: { incident: where, status: "RevisionRequired" } }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] } }, { rca: { isNot: null } }] }) }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: { in: ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"] } }, { rca: { status: { in: ["Submitted", "Approved"] } } }] }) }),
+    () => prisma.incident.count({ where: buildOverdueRcaWhere(where, now) }),
     () => prisma.incident.count({ where: withExtra(where, { isSentinel: true }) }),
     () => prisma.incident.count({ where: withExtra(where, { needRmSupport: true }) }),
     () => prisma.incident.count({ where: withExtra(where, { severity: { in: [...highSeverity] } }) }),
@@ -293,6 +306,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       rcaRequired,
       rcaWaitingApproval,
       rcaSubmittedRate: percent(rcaSubmitted, rcaScope),
+      overdueRca,
       openRca,
       rcaRevisionRequired,
       openActions,

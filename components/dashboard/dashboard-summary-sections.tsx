@@ -45,6 +45,7 @@ export async function RmDashboardSummary({ searchParams }: { searchParams: Dashb
       <LinkedStatCard title="ยังไม่เริ่ม RCA" value={data.cards.rcaRequired} href="/rm/search?status=RCARequired" />
       <LinkedStatCard title="ส่ง RCA แล้ว" value={data.cards.rcaWaitingApproval} href="/rm/search?status=RCASubmitted" />
       <LinkedStatCard title="%RCA Submitted" value={`${data.cards.rcaSubmittedRate}%`} href="/rm/search?status=RCASubmitted" />
+      <LinkedStatCard title="RCA เกินกำหนด" value={data.cards.overdueRca} href="/rm/search?rcaDue=overdue" caption="ยังไม่ส่ง RCA และเลยวันกำหนดส่ง" />
       <LinkedStatCard title="Action overdue" value={data.cards.overdueActions} href="/rm/search?status=ActionOngoing" />
       <LinkedStatCard title="ต้องการ RM support" value={data.cards.needRmSupport} href="/rm/search?needRmSupport=true" />
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
