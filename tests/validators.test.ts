@@ -22,6 +22,12 @@ describe("incident and RCA validation", () => {
     expect(createIncidentSchema.safeParse(validIncident).success).toBe(true);
   });
 
+  it("does not require SIMPLE category from the reporter payload", () => {
+    const payload: Partial<typeof validIncident> = { ...validIncident };
+    delete payload.simpleCategory;
+    expect(createIncidentSchema.safeParse(payload).success).toBe(true);
+  });
+
   it("rejects likely patient names in narrative fields for PDPA readiness", () => {
     const result = createIncidentSchema.safeParse({ ...validIncident, description: "Mr Somchai received the wrong medication." });
     expect(result.success).toBe(false);

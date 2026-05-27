@@ -59,17 +59,17 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <DateFilterField name="from" defaultValue={asString(searchParams.from)} />
       <DateFilterField name="to" defaultValue={asString(searchParams.to)} />
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุก Severity</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุกระดับความรุนแรง</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">ทุก SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก Risk code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุก Status</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก NRLS code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุกสถานะ</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">ต้องการ RM support</option><option value="false">ไม่ต้องการ</option></select>
-      <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="Keyword / incident no / risk code" defaultValue={asString(searchParams.q)} />
+      <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="ค้นหาเลขที่รายงาน / ชื่อเหตุการณ์ / NRLS code" defaultValue={asString(searchParams.q)} />
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
-        <Button type="submit">Filter</Button>
+        <Button type="submit">ค้นหา</Button>
         <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
-        <a className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={`/api/incidents/export?${query.toString()}`}>Export CSV</a>
+        <a className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={`/api/incidents/export?${query.toString()}`}>ส่งออก CSV</a>
       </div>
     </form>
 
@@ -78,7 +78,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
         {incidents.length === 0 ? <div className="px-4 py-8 text-center text-sm text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <Link key={incident.id} className="block space-y-3 p-4 transition hover:bg-slate-50" href={getDetailHref(incident.id)}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-xs uppercase text-slate-500">Incident No</div>
+              <div className="text-xs uppercase text-slate-500">เลขที่รายงาน</div>
               <div className="break-words text-sm font-semibold">{incident.incidentNo}</div>
             </div>
             <StatusBadge status={incident.status} />
@@ -108,12 +108,12 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             </div>
           </div>
           <div>
-            <div className="text-xs uppercase text-slate-500">Risk code</div>
+            <div className="text-xs uppercase text-slate-500">NRLS code</div>
             <div className="break-words text-sm"><span className="break-all font-semibold">{incident.riskCode.code}</span> - {incident.riskCode.nameTh}</div>
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">ประเภท</div>
-            <div className="break-words text-sm">{incident.clinicalOrGeneral} / {incident.simpleCategory}</div>
+            <div className="break-words text-sm">{incident.clinicalOrGeneral === "Clinical" ? "ดูแลรักษาผู้ป่วย" : "ทั่วไป"} / SIMPLE {incident.simpleCategory}</div>
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">ชื่อเหตุการณ์</div>
@@ -127,9 +127,9 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
         </Link>)}
       </div>
       <div className="hidden divide-y md:block">
-        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <div key={incident.id} role="link" tabIndex={0} aria-label={`Open incident ${incident.incidentNo}`} onClick={() => openIncidentDetail(incident.id)} onKeyDown={(event) => handleRowKeyDown(event, incident.id)} className="group grid cursor-pointer grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+        {incidents.length === 0 ? <div className="px-4 py-8 text-center text-slate-500">ไม่พบข้อมูล</div> : visibleIncidents.map((incident) => <div key={incident.id} role="link" tabIndex={0} aria-label={`เปิดรายงาน ${incident.incidentNo}`} onClick={() => openIncidentDetail(incident.id)} onKeyDown={(event) => handleRowKeyDown(event, incident.id)} className="group grid cursor-pointer grid-cols-12 gap-x-4 gap-y-3 px-4 py-4 text-sm transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           <div className="col-span-3 min-w-0 xl:col-span-2">
-            <div className="text-xs font-semibold uppercase text-slate-500">Incident No</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">เลขที่รายงาน</div>
             <div className="break-words font-semibold">{incident.incidentNo}</div>
           </div>
           <div className="col-span-3 min-w-0 xl:col-span-2">
@@ -155,7 +155,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="break-words font-medium text-blue-700 underline-offset-2 group-hover:underline [overflow-wrap:anywhere]">{incident.title}</div>
           </div>
           <div className="col-span-12 min-w-0 xl:col-span-5">
-            <div className="text-xs font-semibold uppercase text-slate-500">Risk code</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">NRLS code</div>
             <div className="break-words [overflow-wrap:anywhere]"><span className="font-semibold">{incident.riskCode.code}</span> - <span className="text-slate-600">{incident.riskCode.nameTh}</span></div>
           </div>
         </div>)}

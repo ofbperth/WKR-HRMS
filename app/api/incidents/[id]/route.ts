@@ -115,7 +115,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         description: input.description?.trim() ?? existing.description,
         immediateAction: input.immediateAction?.trim() ?? existing.immediateAction,
         clinicalOrGeneral: input.clinicalOrGeneral ?? existing.clinicalOrGeneral,
-        simpleCategory: input.simpleCategory?.trim() ?? existing.simpleCategory,
+        simpleCategory: riskCode.simpleCategory,
         riskCodeId: input.riskCodeId ?? existing.riskCodeId,
         severity: input.severity ?? existing.severity,
         rcaDueAt: input.severity ? calculateRcaDueAt(input.severity, existing.reportedAt) : existing.rcaDueAt,
@@ -141,7 +141,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         data: {
           severity: input.severity,
           riskCodeId: input.riskCodeId,
-          simpleCategory: input.simpleCategory,
+          simpleCategory: riskCode.simpleCategory,
           status: input.status,
           rcaDueAt: calculateRcaDueAt(input.severity, existing.reportedAt),
           isSentinel: input.isSentinel,

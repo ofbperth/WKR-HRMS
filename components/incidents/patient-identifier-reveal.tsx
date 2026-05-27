@@ -40,8 +40,8 @@ export function PatientIdentifierReveal({ incidentId, patientHn, patientAn, requ
 
   return <div className="rounded-lg border bg-slate-50 p-3">
     <div className="grid gap-2 sm:grid-cols-2">
-      <Identifier label="Patient HN" value={revealed?.patientHn ?? maskHn(patientHn)} revealed={!!revealed} />
-      <Identifier label="Patient AN" value={revealed?.patientAn ?? maskHn(patientAn ?? null)} revealed={!!revealed} />
+      <Identifier label="HN ผู้ป่วย" value={revealed?.patientHn ?? maskHn(patientHn)} revealed={!!revealed} />
+      <Identifier label="AN ผู้ป่วย" value={revealed?.patientAn ?? maskHn(patientAn ?? null)} revealed={!!revealed} />
     </div>
     {!revealed ? <Button type="button" className="mt-3" onClick={() => setOpen(true)}>ขอดู HN/AN</Button> : <p className="mt-3 text-xs text-red-700">ข้อมูลถูกเปิดดูแล้วใน session นี้ และมีการบันทึก audit log</p>}
 
