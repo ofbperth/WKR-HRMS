@@ -6,6 +6,8 @@ import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/com
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionPlanForm, ActionUpdateForm, AddCommentForm, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
+import { actionPlanStatusDisplay, affectedTypeDisplay, clinicalOrGeneralDisplay } from "@/lib/i18n/th";
+import { statusLabel } from "@/lib/format";
 
 type DetailIncident = DbIncident & {
   incidentUnit: DbUnit;
@@ -71,7 +73,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
         <Info label="กำหนดส่ง RCA" value={formatDateTime(incident.rcaDueAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
-        <Info label="ผู้รายงาน" value={incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "Deleted user"} />
+        <Info label="ผู้รายงาน" value={incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ"} />
         <div>
           <div className="font-medium text-slate-500">ข้อมูลระบุตัวผู้ป่วย</div>
           {canRevealSensitive
@@ -83,8 +85,8 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
         {canEditDetails ? <IncidentDetailEditor incident={incident} units={units} riskCodes={riskCodes} /> : null}
       </CardContent></Card>
       <Card><CardHeader><CardTitle>การจัดประเภท</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
-        <Info label="ประเภทผู้ได้รับผลกระทบ" value={incident.affectedType} />
-        <Info label="กลุ่มเหตุการณ์" value={incident.clinicalOrGeneral === "Clinical" ? "เกี่ยวกับการดูแลรักษาผู้ป่วย" : "ทั่วไป / ระบบงาน / สิ่งแวดล้อม"} />
+        <Info label="ประเภทผู้ได้รับผลกระทบ" value={affectedTypeDisplay(incident.affectedType)} />
+        <Info label="กลุ่มเหตุการณ์" value={clinicalOrGeneralDisplay(incident.clinicalOrGeneral)} />
         <Info label="หมวด SIMPLE จาก NRLS code" value={incident.simpleCategory} />
         <Info label="NRLS code" value={`${incident.riskCode.code} ${incident.riskCode.nameTh}`} />
         <Info label="ความถูกต้องในการบริหารยา 6 Rights" value={incident.medicationRight || "-"} />
@@ -99,7 +101,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">สถานะ: {incident.rca.status}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">ส่งเมื่อ {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
+          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">สถานะ: {statusLabel(incident.rca.status)}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">ส่งเมื่อ {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
           <Info label="ปัญหา" value={incident.rca.problemStatement || "-"} />
           <Info label="สาเหตุราก" value={incident.rca.rootCause || "-"} />
           <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
@@ -110,7 +112,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
 
       <Card><CardHeader><CardTitle>แผนแก้ไข</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มีแผนแก้ไข</p> : incident.actionPlans.map(action => <div key={action.id} className="space-y-3 rounded-lg border p-3">
-          <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอ Unit Manager มอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{action.status}</span></div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอหัวหน้าหน่วยงานมอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
           <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
           {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">หลักฐาน</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์หลักฐาน</a> : null}</div> : null}
           {(action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
@@ -122,10 +124,10 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>ความคิดเห็น</CardTitle></CardHeader><CardContent className="space-y-3">
         {manage ? <AddCommentForm incidentId={incident.id} /> : null}
-        {incident.comments.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มี comment</p> : incident.comments.map(c => <div key={c.id} className="rounded-lg border p-3 text-sm"><div className="flex justify-between"><span className="font-semibold">{c.user?.name ?? "Deleted user"}</span><span className="text-xs text-slate-500">{formatDateTime(c.createdAt)}</span></div><p className="mt-1 whitespace-pre-wrap text-slate-700">{c.message}</p></div>)}
+        {incident.comments.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มีความคิดเห็น</p> : incident.comments.map(c => <div key={c.id} className="rounded-lg border p-3 text-sm"><div className="flex justify-between"><span className="font-semibold">{c.user?.name ?? "ผู้ใช้ที่ถูกลบ"}</span><span className="text-xs text-slate-500">{formatDateTime(c.createdAt)}</span></div><p className="mt-1 whitespace-pre-wrap text-slate-700">{c.message}</p></div>)}
       </CardContent></Card>
       <Card><CardHeader><CardTitle>ประวัติการตรวจสอบ</CardTitle></CardHeader><CardContent className="space-y-2">
-        {incident.audits.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มี audit</p> : incident.audits.map(a => <div key={a.id} className="rounded-lg border p-3 text-xs"><div className="flex justify-between gap-3"><span className="font-semibold">{a.action}</span><span className="text-slate-500">{formatDateTime(a.createdAt)}</span></div><div className="mt-1 text-slate-500">โดย {a.user?.name ?? "System"}</div></div>)}
+        {incident.audits.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มีประวัติการตรวจสอบ</p> : incident.audits.map(a => <div key={a.id} className="rounded-lg border p-3 text-xs"><div className="flex justify-between gap-3"><span className="font-semibold">{a.action}</span><span className="text-slate-500">{formatDateTime(a.createdAt)}</span></div><div className="mt-1 text-slate-500">โดย {a.user?.name ?? "ระบบ"}</div></div>)}
       </CardContent></Card>
     </div>
   </div>;

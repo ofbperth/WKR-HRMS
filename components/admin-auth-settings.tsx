@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { roleDisplay } from "@/lib/i18n/th";
 
 const roles = ["Reporter", "UnitManager", "RMTeam", "Executive", "Admin"];
 const invitePageSize = 10;
@@ -62,11 +63,11 @@ export function AdminAuthSettings() {
     <label className="grid gap-1 text-sm font-medium">Email รายบุคคลที่อนุญาต<textarea className="min-h-24 rounded-md border px-3 py-2 text-sm" value={settings.allowedEmails} onChange={e => setSettings({ ...settings, allowedEmails: e.target.value })} placeholder={"specificdoctor@gmail.com\nrmteam@gmail.com"} /></label>
     <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={settings.allowAutoProvision} onChange={e => setSettings({ ...settings, allowAutoProvision: e.target.checked })} /> อนุญาต auto provision</label>
     <div className="grid gap-3 md:grid-cols-2">
-      <label className="grid gap-1 text-sm font-medium">Default role<select className="h-10 rounded-md border px-3 text-sm" value={settings.defaultRole} onChange={e => setSettings({ ...settings, defaultRole: e.target.value })}>{roles.map(role => <option key={role}>{role}</option>)}</select></label>
-      <label className="mt-6 flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={settings.defaultIsActive} onChange={e => setSettings({ ...settings, defaultIsActive: e.target.checked })} /> เปิดใช้งาน Google user ใหม่เป็น default</label>
+      <label className="grid gap-1 text-sm font-medium">บทบาทเริ่มต้น<select className="h-10 rounded-md border px-3 text-sm" value={settings.defaultRole} onChange={e => setSettings({ ...settings, defaultRole: e.target.value })}>{roles.map(role => <option key={role} value={role}>{roleDisplay(role)}</option>)}</select></label>
+      <label className="mt-6 flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={settings.defaultIsActive} onChange={e => setSettings({ ...settings, defaultIsActive: e.target.checked })} /> เปิดใช้งานผู้ใช้ Google ใหม่เป็นค่าเริ่มต้น</label>
     </div>
-    <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-600">Policy ปัจจุบัน: Google user ใหม่ที่ผ่านเงื่อนไขจะถูกสร้างเป็น Reporter ที่ active แล้วต้องเลือกหน่วยงานก่อนเข้าระบบ ส่วน user และ invite เดิมยังคง role/unit ที่ตั้งไว้</div>
-    <div className="flex items-center gap-3"><Button type="submit">บันทึก auth settings</Button>{message ? <span className="text-sm text-slate-600">{message}</span> : null}</div>
+    <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-600">นโยบายปัจจุบัน: ผู้ใช้ Google ใหม่ที่ผ่านเงื่อนไขจะถูกสร้างเป็นผู้รายงานที่เปิดใช้งานแล้ว และต้องเลือกหน่วยงานก่อนเข้าระบบ ส่วนผู้ใช้และ invite เดิมยังคงบทบาท/หน่วยงานที่ตั้งไว้</div>
+    <div className="flex items-center gap-3"><Button type="submit">บันทึกการตั้งค่าเข้าสู่ระบบ</Button>{message ? <span className="text-sm text-slate-600">{message}</span> : null}</div>
   </form>;
 }
 
@@ -90,7 +91,7 @@ export function AdminInvites({ units }: { units: Array<{ id: string; name: strin
     setMessage("");
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
     const res = await fetch("/api/admin/invites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    setMessage(res.ok ? "บันทึก invite แล้ว" : "บันทึก invite ไม่สำเร็จ");
+    setMessage(res.ok ? "บันทึกคำเชิญแล้ว" : "บันทึกคำเชิญไม่สำเร็จ");
     if (res.ok) { event.currentTarget.reset(); await load(); }
   }
   async function revoke(id: string) {
@@ -99,21 +100,21 @@ export function AdminInvites({ units }: { units: Array<{ id: string; name: strin
   }
   return <div className="space-y-4 rounded-lg border bg-white p-4">
     <form onSubmit={submit} className="grid gap-3 md:grid-cols-4">
-      <label className="grid gap-1 text-sm font-medium">Email<Input name="email" type="email" required /></label>
-      <label className="grid gap-1 text-sm font-medium">Role<select name="role" className="h-10 rounded-md border px-3 text-sm" defaultValue="Reporter">{roles.map(role => <option key={role}>{role}</option>)}</select></label>
+      <label className="grid gap-1 text-sm font-medium">อีเมล<Input name="email" type="email" required /></label>
+      <label className="grid gap-1 text-sm font-medium">บทบาท<select name="role" className="h-10 rounded-md border px-3 text-sm" defaultValue="Reporter">{roles.map(role => <option key={role} value={role}>{roleDisplay(role)}</option>)}</select></label>
       <label className="grid gap-1 text-sm font-medium">หน่วยงาน<select name="unitId" className="h-10 rounded-md border px-3 text-sm"><option value="">-</option>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
       <label className="grid gap-1 text-sm font-medium">หมดอายุวันที่<Input name="expiresAt" type="date" required /></label>
-      <div className="md:col-span-4 flex items-center gap-3"><Button type="submit">บันทึก invite</Button>{message ? <span className="text-sm text-slate-600">{message}</span> : null}</div>
+      <div className="md:col-span-4 flex items-center gap-3"><Button type="submit">บันทึกคำเชิญ</Button>{message ? <span className="text-sm text-slate-600">{message}</span> : null}</div>
     </form>
     <div className="overflow-auto">
-      <table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2">Email</th><th className="px-3 py-2">Role</th><th className="px-3 py-2">หน่วยงาน</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">หมดอายุ</th><th className="px-3 py-2">Action</th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-t"><td className="px-3 py-2">{item.email}</td><td className="px-3 py-2">{item.role}</td><td className="px-3 py-2">{item.unit?.name || "-"}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{new Date(item.expiresAt).toLocaleDateString("th-TH")}</td><td className="px-3 py-2"><button className="rounded-md border px-3 py-1 text-red-600" type="button" onClick={() => revoke(item.id)}>ยกเลิก</button></td></tr>)}</tbody></table>
+      <table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2">อีเมล</th><th className="px-3 py-2">บทบาท</th><th className="px-3 py-2">หน่วยงาน</th><th className="px-3 py-2">สถานะ</th><th className="px-3 py-2">หมดอายุ</th><th className="px-3 py-2">การทำงาน</th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-t"><td className="px-3 py-2">{item.email}</td><td className="px-3 py-2">{roleDisplay(item.role)}</td><td className="px-3 py-2">{item.unit?.name || "-"}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{new Date(item.expiresAt).toLocaleDateString("th-TH")}</td><td className="px-3 py-2"><button className="rounded-md border px-3 py-1 text-red-600" type="button" onClick={() => revoke(item.id)}>ยกเลิก</button></td></tr>)}</tbody></table>
     </div>
     {meta.total > meta.pageSize ? <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm">
-      <div className="text-slate-600">Showing {(meta.page - 1) * meta.pageSize + 1}-{Math.min(meta.page * meta.pageSize, meta.total)} of {meta.total} invites</div>
+      <div className="text-slate-600">แสดง {(meta.page - 1) * meta.pageSize + 1}-{Math.min(meta.page * meta.pageSize, meta.total)} จาก {meta.total} คำเชิญ</div>
       <div className="flex items-center gap-2">
-        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page <= 1} onClick={() => setPage(Math.max(1, meta.page - 1))}>Previous</button>
-        <span className="text-slate-600">Page {meta.page} / {meta.totalPages}</span>
-        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page >= meta.totalPages} onClick={() => setPage(Math.min(meta.totalPages, meta.page + 1))}>Next</button>
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page <= 1} onClick={() => setPage(Math.max(1, meta.page - 1))}>ก่อนหน้า</button>
+        <span className="text-slate-600">หน้า {meta.page} / {meta.totalPages}</span>
+        <button type="button" className="rounded-md border px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50" disabled={meta.page >= meta.totalPages} onClick={() => setPage(Math.min(meta.totalPages, meta.page + 1))}>ถัดไป</button>
       </div>
     </div> : null}
   </div>;

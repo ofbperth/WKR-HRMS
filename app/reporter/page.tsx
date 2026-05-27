@@ -18,16 +18,16 @@ export default async function Page() {
     prisma.incident.count({ where: countableIncidentFilter({ reportedById: user.id, status: "RCARequired" }) }),
     prisma.incident.count({ where: countableIncidentFilter({ reportedById: user.id, isSentinel: true }) }),
   ]);
-  return <AppShell user={user}><RoleHome title="Reporter Workspace" description="รายงาน incident ใหม่ และติดตามรายงานของตนเอง">
+  return <AppShell user={user}><RoleHome title="พื้นที่ทำงานผู้รายงาน" description="รายงานอุบัติการณ์ใหม่ และติดตามรายงานของตนเอง">
     <div className="grid gap-4 md:grid-cols-3">
-      <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
-      <Card><CardHeader><CardTitle>RCA Required</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Sentinel</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card>
+      <Card><CardHeader><CardTitle>อุบัติการณ์ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
+      <Card><CardHeader><CardTitle>ต้องทำ RCA</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card>
+      <Card><CardHeader><CardTitle>Sentinel Event</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card>
     </div>
     <div className="grid gap-4 md:grid-cols-3">
-      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
-      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">ติดตามสถานะ</div><p className="mt-1 text-sm text-slate-600">ติดตาม status ของรายงานที่ส่งแล้ว</p></Link>
+      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงานอุบัติการณ์</div><p className="mt-1 text-sm text-slate-600">เปิดแบบฟอร์มรายงานอุบัติการณ์</p></Link>
+      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">รายงานของฉัน</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
+      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">ติดตามสถานะ</div><p className="mt-1 text-sm text-slate-600">ติดตามสถานะของรายงานที่ส่งแล้ว</p></Link>
     </div>
   </RoleHome></AppShell>;
 }

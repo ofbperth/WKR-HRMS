@@ -13,7 +13,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const page = getPage(searchParams.page, total, pageSize);
   const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize });
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">RM Automation</h1><p className="mt-2 text-slate-600">Protected manual job สำหรับ overdue action, due soon notification, status sync และ cleanup</p></div>
+    <div><h1 className="text-2xl font-bold">งานอัตโนมัติของ RM</h1><p className="mt-2 text-slate-600">งานที่ป้องกันไว้สำหรับแผนเกินกำหนด การแจ้งเตือนใกล้ครบกำหนด การ sync สถานะ และ cleanup</p></div>
     <AutomationPanel initialRuns={runs} />
     <Pagination basePath="/rm/automation" searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div></AppShell>;

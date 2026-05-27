@@ -8,7 +8,7 @@ export default async function ExecutiveDashboardPage({ searchParams }: { searchP
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">Executive Dashboard</h1><p className="text-sm text-slate-600">ภาพรวมตัวชี้วัดความเสี่ยง โดยปกปิดข้อมูล sensitive</p></div>
+    <div><h1 className="text-2xl font-bold">Dashboard ผู้บริหาร</h1><p className="text-sm text-slate-600">ภาพรวมตัวชี้วัดความเสี่ยง โดยปกปิดข้อมูลละเอียดอ่อน</p></div>
     <Suspense fallback={<DashboardSummarySkeleton cards={8} />}>
       <ExecutiveDashboardSummary searchParams={searchParams} />
     </Suspense>

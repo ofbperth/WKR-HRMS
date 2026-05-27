@@ -72,7 +72,7 @@ export function SentinelEventList({ title, data }: { title: string; data: Array<
   return <ChartCard title={title} className="dashboard-chart-wide">
     {data.length === 0 ? <Empty /> : <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="border-b text-xs uppercase text-slate-500"><tr><th className="py-2 pr-3">Incident</th><th className="py-2 pr-3">หน่วยงาน</th><th className="py-2 pr-3">Severity</th><th className="py-2 pr-3">Risk</th><th className="py-2 pr-3">ชื่อเหตุการณ์</th><th className="py-2 pr-3">Status</th></tr></thead>
+        <thead className="border-b text-xs uppercase text-slate-500"><tr><th className="py-2 pr-3">เลขที่รายงาน</th><th className="py-2 pr-3">หน่วยงาน</th><th className="py-2 pr-3">ระดับความรุนแรง</th><th className="py-2 pr-3">รหัสความเสี่ยง</th><th className="py-2 pr-3">ชื่อเหตุการณ์</th><th className="py-2 pr-3">สถานะ</th></tr></thead>
         <tbody className="divide-y">{data.map(item => <tr key={item.id}><td className="py-3 pr-3 font-semibold"><Link className="text-blue-700 underline" href={`/rm/search/${item.id}`}>{item.incidentNo}</Link></td><td className="py-3 pr-3">{item.unit}</td><td className="py-3 pr-3">{item.severity}</td><td className="py-3 pr-3">{item.riskCode}</td><td className="py-3 pr-3">{item.title}</td><td className="py-3 pr-3">{item.status}</td></tr>)}</tbody>
       </table>
     </div>}

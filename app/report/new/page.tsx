@@ -9,7 +9,7 @@ export default async function NewReportPage() {
   if (!user) redirect("/login");
   const lookup = await getLookupData();
   return <AppShell user={user}>
-    <div className="mx-auto mb-6 max-w-5xl"><h1 className="text-2xl font-bold">รายงาน Incident ใหม่</h1><p className="mt-2 text-sm text-slate-600">กรอกข้อมูลตามลำดับ 3 ขั้นตอน ระบบจะตรวจข้อมูลจำเป็นก่อนส่งรายงาน</p></div>
+    <div className="mx-auto mb-6 max-w-5xl"><h1 className="text-2xl font-bold">รายงานอุบัติการณ์ใหม่</h1><p className="mt-2 text-sm text-slate-600">กรอกข้อมูลตามลำดับ 3 ขั้นตอน ระบบจะตรวจข้อมูลจำเป็นก่อนส่งรายงาน</p></div>
     <IncidentForm units={lookup.units} riskCodes={lookup.riskCodes} />
   </AppShell>;
 }

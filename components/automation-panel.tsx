@@ -35,7 +35,7 @@ export function AutomationPanel({ initialRuns }: { initialRuns: Run[] }) {
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {jobs.map((job) => <div key={job.id} className="rounded-lg border bg-white p-4">
         <div className="font-semibold">{job.label}</div>
-        <p className="mt-1 min-h-10 text-sm text-slate-600">Manual protected trigger พร้อม run log และ audit trail</p>
+        <p className="mt-1 min-h-10 text-sm text-slate-600">ปุ่มรันงานแบบป้องกัน พร้อม run log และ audit trail</p>
         <Button type="button" className="mt-3 w-full" onClick={() => trigger(job.id)} disabled={running !== null}>{running === job.id ? "กำลังรัน..." : "รันตอนนี้"}</Button>
       </div>)}
     </div>
@@ -43,8 +43,8 @@ export function AutomationPanel({ initialRuns }: { initialRuns: Run[] }) {
     <div className="overflow-hidden rounded-xl border bg-white">
       <div className="overflow-auto">
         <table className="min-w-[900px] w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Job</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">เริ่ม</th><th className="px-4 py-3">เสร็จ</th><th className="px-4 py-3">Message</th><th className="px-4 py-3">Error</th></tr></thead>
-          <tbody className="divide-y">{runs.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>ยังไม่มี automation run</td></tr> : runs.map((run) => <tr key={run.id}><td className="px-4 py-3 font-medium">{run.jobName}</td><td className="px-4 py-3">{run.status}</td><td className="px-4 py-3">{new Date(run.startedAt).toLocaleString("th-TH")}</td><td className="px-4 py-3">{run.finishedAt ? new Date(run.finishedAt).toLocaleString("th-TH") : "-"}</td><td className="px-4 py-3">{run.message ?? "-"}</td><td className="px-4 py-3 text-red-700">{run.error ?? "-"}</td></tr>)}</tbody>
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">งาน</th><th className="px-4 py-3">สถานะ</th><th className="px-4 py-3">เริ่ม</th><th className="px-4 py-3">เสร็จ</th><th className="px-4 py-3">ข้อความ</th><th className="px-4 py-3">ข้อผิดพลาด</th></tr></thead>
+          <tbody className="divide-y">{runs.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>ยังไม่มีประวัติการรันงานอัตโนมัติ</td></tr> : runs.map((run) => <tr key={run.id}><td className="px-4 py-3 font-medium">{run.jobName}</td><td className="px-4 py-3">{run.status}</td><td className="px-4 py-3">{new Date(run.startedAt).toLocaleString("th-TH")}</td><td className="px-4 py-3">{run.finishedAt ? new Date(run.finishedAt).toLocaleString("th-TH") : "-"}</td><td className="px-4 py-3">{run.message ?? "-"}</td><td className="px-4 py-3 text-red-700">{run.error ?? "-"}</td></tr>)}</tbody>
         </table>
       </div>
     </div>

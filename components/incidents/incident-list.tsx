@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
 import { incidentStatusValues, severityValues } from "@/lib/validators";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
+import { clinicalOrGeneralDisplay } from "@/lib/i18n/th";
+import { statusLabel } from "@/lib/format";
 
 type IncidentRow = {
   id: string;
@@ -62,7 +64,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุกระดับความรุนแรง</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">ทุก SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก NRLS code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุกสถานะ</option>{incidentStatusValues.map((status) => <option key={status}>{status}</option>)}</select>
+      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุกสถานะ</option>{incidentStatusValues.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">ต้องการ RM support</option><option value="false">ไม่ต้องการ</option></select>
       <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="ค้นหาเลขที่รายงาน / ชื่อเหตุการณ์ / NRLS code" defaultValue={asString(searchParams.q)} />
@@ -113,7 +115,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">ประเภท</div>
-            <div className="break-words text-sm">{incident.clinicalOrGeneral === "Clinical" ? "ดูแลรักษาผู้ป่วย" : "ทั่วไป"} / SIMPLE {incident.simpleCategory}</div>
+            <div className="break-words text-sm">{clinicalOrGeneralDisplay(incident.clinicalOrGeneral)} / SIMPLE {incident.simpleCategory}</div>
           </div>
           <div>
             <div className="text-xs uppercase text-slate-500">ชื่อเหตุการณ์</div>

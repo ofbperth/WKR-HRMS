@@ -21,11 +21,15 @@ export function statusLabel(status: string) {
     New: "ใหม่",
     UnderReview: "ผ่าน Triage / ไม่ต้อง RCA",
     RCARequired: "ยังไม่ทำ RCA",
-    RCASubmitted: "RCA submitted",
-    ActionOngoing: "ดำเนิน Action",
+    RCASubmitted: "ส่ง RCA แล้ว",
+    ActionOngoing: "ดำเนินแผนการแก้ไข",
     WaitingVerification: "รอตรวจสอบ",
     Closed: "ปิดเคส",
     Rejected: "ไม่รับรายงาน",
+    Draft: "ร่าง",
+    Submitted: "ส่งแล้ว",
+    Approved: "อนุมัติแล้ว",
+    RevisionRequired: "ต้องปรับปรุง",
   };
   return labels[status] ?? status;
 }

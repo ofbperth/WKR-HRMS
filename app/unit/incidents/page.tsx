@@ -10,7 +10,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   if (!user) redirect("/login");
   const [lookup, incidentPage] = await Promise.all([getLookupData(), getIncidentList(user, searchParams)]);
   return <AppShell user={user}>
-    <div className="mb-6"><h1 className="text-2xl font-bold">Unit Search / Export</h1><p className="mt-2 text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export incident เฉพาะหน่วยงานของคุณ</p></div>
+    <div className="mb-6"><h1 className="text-2xl font-bold">ค้นหา / Export ของหน่วยงาน</h1><p className="mt-2 text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export อุบัติการณ์เฉพาะหน่วยงานของคุณ</p></div>
     <IncidentList incidents={incidentPage.data} meta={incidentPage.meta} lookup={lookup} basePath="/unit/incidents" searchParams={searchParams} canSeeSensitive={canSeeSensitive(user.role)} />
   </AppShell>;
 }

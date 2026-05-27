@@ -11,7 +11,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const myReportScope = { ...user, role: "Reporter" as const };
   const [lookup, incidentPage] = await Promise.all([getLookupData(), getIncidentList(myReportScope, searchParams)]);
   return <AppShell user={user}>
-    <div className="mb-6"><h1 className="text-2xl font-bold">My Reports</h1><p className="mt-2 text-slate-600">แสดงเฉพาะ incident ที่ตัวเองเป็นผู้รายงาน</p></div>
+    <div className="mb-6"><h1 className="text-2xl font-bold">รายงานของฉัน</h1><p className="mt-2 text-slate-600">แสดงเฉพาะอุบัติการณ์ที่คุณเป็นผู้รายงาน</p></div>
     <IncidentList incidents={incidentPage.data} meta={incidentPage.meta} lookup={lookup} basePath="/my-reports" searchParams={searchParams} canSeeSensitive={canSeeSensitive(user.role)} />
   </AppShell>;
 }
