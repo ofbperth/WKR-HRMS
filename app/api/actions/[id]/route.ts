@@ -4,6 +4,7 @@ import { auditLog } from "@/lib/audit";
 import { notifyRmTeam } from "@/lib/notifications";
 import { actionUpdateSchema } from "@/lib/validators";
 import { canUnitManageIncident, canWorkAsOwner } from "@/lib/workflow-permissions";
+import { isIncidentClosed } from "@/lib/incident-close";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,6 +12,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const input = actionUpdateSchema.parse(await request.json());
     const existing = await prisma.actionPlan.findUnique({ where: { id: params.id }, include: { incident: true } });
     if (!existing) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isIncidentClosed(existing.incident)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
     const canReassignOwner = user.role === "Admin" || user.role === "RMTeam" || canUnitManageIncident(user, existing.incident);
     if (!canWorkAsOwner(user, existing) && user.role !== "RMTeam" && !canReassignOwner) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (existing.status === "Verified") return Response.json({ error: "ACTION_ALREADY_VERIFIED" }, { status: 409 });

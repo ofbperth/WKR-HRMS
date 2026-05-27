@@ -8,7 +8,7 @@ import { ActionPlanForm, ActionUpdateForm, AddCommentForm, CloseIncidentButton, 
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 import { actionPlanStatusDisplay, affectedTypeDisplay, clinicalOrGeneralDisplay } from "@/lib/i18n/th";
 import { statusLabel } from "@/lib/format";
-import { canCloseIncident } from "@/lib/incident-close";
+import { canCloseIncident, isIncidentClosed } from "@/lib/incident-close";
 
 type DetailIncident = DbIncident & {
   incidentUnit: DbUnit;
@@ -61,6 +61,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
   const canRevealSensitive = canSeeSensitive(currentUser.role);
   const unitCanWork = currentUser.role === "UnitManager" && currentUser.unitId === incident.incidentUnitId;
   const isIncidentOwner = currentUser.role === "Reporter" && currentUser.id === incident.reportedById;
+  const incidentClosed = isIncidentClosed(incident);
   const rcaSubmitted = ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"].includes(incident.status) || ["Submitted", "Approved"].includes(incident.rca?.status ?? "");
   const canEditDetails = (isIncidentOwner || unitCanWork || manage) && !rcaSubmitted && incident.status !== "Rejected";
   const canTriage = (manage || unitCanWork) && !incident.reviewedAt && !["Closed", "Rejected"].includes(incident.status);
@@ -98,7 +99,7 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
 
     {canTriage ? <div className="space-y-3"><TriageClassificationForm incident={incident} riskCodes={riskCodes} backHref={currentUser.role === "UnitManager" ? "/unit/triage" : "/rm/triage"} /></div> : null}
 
-    {manage && !canTriage ? <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
+    {manage && !canTriage && !incidentClosed ? <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={riskCodes} /></div> : null}
 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
@@ -117,9 +118,9 @@ export function IncidentDetail({ incident, currentUser, units, riskCodes, users 
           <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอหัวหน้าหน่วยงานมอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
           <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
           {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">หลักฐาน</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์หลักฐาน</a> : null}</div> : null}
-          {(action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
+          {!incidentClosed && (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified" ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
         </div>)}
-        {(unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved" ? <ActionPlanForm incidentId={incident.id} users={users} /> : null}
+        {!incidentClosed && (unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved" ? <ActionPlanForm incidentId={incident.id} users={users} /> : null}
       </CardContent></Card>
     </div>
 

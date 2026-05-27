@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCloseIncident } from "@/lib/incident-close";
+import { canCloseIncident, isIncidentClosed } from "@/lib/incident-close";
 
 describe("incident close eligibility", () => {
   it("allows incidents that finished triage without RCA", () => {
@@ -17,5 +17,10 @@ describe("incident close eligibility", () => {
   it("blocks already closed and rejected incidents", () => {
     expect(canCloseIncident({ status: "Closed", rca: null, actionPlans: [] })).toBe(false);
     expect(canCloseIncident({ status: "Rejected", rca: null, actionPlans: [] })).toBe(false);
+  });
+
+  it("marks closed incidents as read-only for non-comment workflows", () => {
+    expect(isIncidentClosed({ status: "Closed" })).toBe(true);
+    expect(isIncidentClosed({ status: "WaitingVerification" })).toBe(false);
   });
 });

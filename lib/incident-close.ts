@@ -4,6 +4,10 @@ type CloseCheckIncident = {
   actionPlans?: Array<{ status: string }>;
 };
 
+export function isIncidentClosed(incident: { status: string }) {
+  return incident.status === "Closed";
+}
+
 export function canCloseIncident(incident: CloseCheckIncident) {
   if (["Closed", "Rejected"].includes(incident.status)) return false;
 

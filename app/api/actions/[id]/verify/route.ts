@@ -2,6 +2,7 @@ import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { actionVerifySchema } from "@/lib/validators";
+import { isIncidentClosed } from "@/lib/incident-close";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -9,6 +10,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const input = actionVerifySchema.parse(await request.json());
     const existing = await prisma.actionPlan.findUnique({ where: { id: params.id }, include: { incident: true } });
     if (!existing) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isIncidentClosed(existing.incident)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
     if (existing.status !== "Done" && input.verified) return Response.json({ error: "ACTION_MUST_BE_DONE" }, { status: 409 });
 
     const updated = await prisma.actionPlan.update({

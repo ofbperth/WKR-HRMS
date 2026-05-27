@@ -10,6 +10,7 @@ import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
+import { isIncidentClosed } from "@/lib/incident-close";
 
 function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
@@ -128,6 +129,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     if (canManageIncident(user.role)) {
+      if (isIncidentClosed(existing)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
       const input = updateIncidentClassificationSchema.parse(body);
       const riskCode = await prisma.riskCode.findUnique({ where: { id: input.riskCodeId } });
       if (!riskCode || riskCode.clinicalOrGeneral !== existing.clinicalOrGeneral) return Response.json({ error: "INVALID_RISK_CODE_FOR_INCIDENT_TYPE" }, { status: 400 });
