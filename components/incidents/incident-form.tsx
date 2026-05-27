@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { createIncidentSchema, medicationRightValues } from "@/lib/validators";
 import { clinicalSeverityDescriptions, generalSeverityDetails, severityDescriptions, severityOptionsFor } from "@/lib/severity";
+import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
   }, [riskCodes, riskQuery, selectedClinicalOrGeneral]);
   const selectedRisk = riskCodes.find(r => r.id === values.riskCodeId);
   const isMedicationAdministration = selectedRisk?.code === "CPM205" || /Administration/i.test(selectedRisk?.nameTh ?? "");
-  const pdpaNameDetected = /(^|[\s,.;:()[\]{}"'“”‘’\-\/])(นาย|นาง|นางสาว|นส\.|ด\.ช\.?|ด\.ญ\.?|ดช|ดญ|miss|ms|mr|mrs)(?=$|[\s,.;:()[\]{}"'“”‘’\-\/])/i.test([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
+  const pdpaNameDetected = containsLikelyPatientIdentifier([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
 
   useEffect(() => {
     if (selectedRisk && selectedRisk.clinicalOrGeneral !== selectedClinicalOrGeneral) {
