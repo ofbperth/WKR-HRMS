@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { Severity } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
@@ -8,6 +8,8 @@ import { createIncidentSchema } from "@/lib/validators";
 import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
+import { generateIncidentNo } from "@/lib/incident-number";
+export { generateIncidentNo } from "@/lib/incident-number";
 
 function resolveAutomation(severity: Severity, clinicalOrGeneral: string) {
   if (isSentinelSeverity(severity, clinicalOrGeneral)) return { status: "RCARequired" as const, isSentinel: true };
@@ -15,11 +17,10 @@ function resolveAutomation(severity: Severity, clinicalOrGeneral: string) {
   return { status: "New" as const, isSentinel: false };
 }
 
-async function generateIncidentNo(tx: Prisma.TransactionClient) {
-  const year = new Date().getFullYear();
-  const prefix = `RM-${year}-`;
-  const count = await tx.incident.count({ where: { incidentNo: { startsWith: prefix } } });
-  return `${prefix}${String(count + 1).padStart(4, "0")}`;
+function isIncidentNoConflict(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") return false;
+  const target = error.meta?.target;
+  return Array.isArray(target) ? target.includes("incidentNo") : String(target ?? "").includes("incidentNo");
 }
 
 async function runPostCreateTask(label: string, task: () => Promise<unknown>) {
@@ -43,56 +44,65 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
   const reportedAt = new Date();
   const rcaDueAt = calculateRcaDueAt(input.severity, reportedAt);
 
-  const incident = await prisma.$transaction(async (tx) => {
-    const incidentNo = await generateIncidentNo(tx);
-    const created = await tx.incident.create({
-      data: {
-        incidentNo,
-        reportedAt,
-        occurredAt,
-        rcaDueAt,
-        reportedById: currentUser.id,
-        reporterUnitId: currentUser.unitId!,
-        incidentUnitId: input.incidentUnitId,
-        location: input.location?.trim() || null,
-        patientHn: null,
-        patientAn: null,
-        ...encryptedIncidentIdentifiers({
-          patientHn: input.patientHn,
-          patientAn: input.patientAn,
-          reporterName: currentUser.name,
-        }),
-        medicationRight: input.medicationRight || null,
-        affectedType: input.affectedType,
-        clinicalOrGeneral: input.clinicalOrGeneral,
-        simpleCategory: riskCode.simpleCategory,
-        riskCodeId: input.riskCodeId,
-        title: input.title.trim(),
-        description: input.description.trim(),
-        immediateAction: input.immediateAction?.trim() || null,
-        severity: input.severity,
-        isSentinel: auto.isSentinel,
-        needRmSupport: input.needRmSupport,
-        status: auto.status,
-      },
-      include: { riskCode: true, incidentUnit: true, reportedBy: true },
-    } as any);
-    await tx.auditLog.create({
-      data: {
-        userId: currentUser.id,
-        action: "create incident",
-        entityType: "Incident",
-        entityId: created.id,
-        newValue: JSON.stringify({ incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport, rcaDueAt: (created as any).rcaDueAt }),
-      },
-    });
-    if (auto.isSentinel) {
-      await tx.auditLog.create({
-        data: { userId: currentUser.id, action: "mark sentinel", entityType: "Incident", entityId: created.id, newValue: JSON.stringify({ isSentinel: true, severity: created.severity }) },
+  let incident: any;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      incident = await prisma.$transaction(async (tx) => {
+        const incidentNo = await generateIncidentNo(tx);
+        const created = await tx.incident.create({
+          data: {
+            incidentNo,
+            reportedAt,
+            occurredAt,
+            rcaDueAt,
+            reportedById: currentUser.id,
+            reporterUnitId: currentUser.unitId!,
+            incidentUnitId: input.incidentUnitId,
+            location: input.location?.trim() || null,
+            patientHn: null,
+            patientAn: null,
+            ...encryptedIncidentIdentifiers({
+              patientHn: input.patientHn,
+              patientAn: input.patientAn,
+              reporterName: currentUser.name,
+            }),
+            medicationRight: input.medicationRight || null,
+            affectedType: input.affectedType,
+            clinicalOrGeneral: input.clinicalOrGeneral,
+            simpleCategory: riskCode.simpleCategory,
+            riskCodeId: input.riskCodeId,
+            title: input.title.trim(),
+            description: input.description.trim(),
+            immediateAction: input.immediateAction?.trim() || null,
+            severity: input.severity,
+            isSentinel: auto.isSentinel,
+            needRmSupport: input.needRmSupport,
+            status: auto.status,
+          },
+          include: { riskCode: true, incidentUnit: true, reportedBy: true },
+        } as any);
+        await tx.auditLog.create({
+          data: {
+            userId: currentUser.id,
+            action: "create incident",
+            entityType: "Incident",
+            entityId: created.id,
+            newValue: JSON.stringify({ incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport, rcaDueAt: (created as any).rcaDueAt }),
+          },
+        });
+        if (auto.isSentinel) {
+          await tx.auditLog.create({
+            data: { userId: currentUser.id, action: "mark sentinel", entityType: "Incident", entityId: created.id, newValue: JSON.stringify({ isSentinel: true, severity: created.severity }) },
+          });
+        }
+        return created as any;
       });
+      break;
+    } catch (error) {
+      if (attempt < 3 && isIncidentNoConflict(error)) continue;
+      throw error;
     }
-    return created as any;
-  });
+  }
 
   const notificationTitle = incident.isSentinel ? "Sentinel event ใหม่" : "Incident ใหม่";
   const notificationMessage = `${incident.incidentNo} ${incident.title} (${incident.severity}) จาก ${incident.incidentUnit.name}`;

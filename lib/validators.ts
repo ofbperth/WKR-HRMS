@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ACTION_PLAN_STATUS_VALUES, AFFECTED_TYPE_VALUES, AUTH_PROVIDER_VALUES, CLINICAL_OR_GENERAL_VALUES, INCIDENT_STATUS_VALUES, RCA_STATUS_VALUES, ROLE_VALUES, SEVERITY_VALUES } from "@/lib/types";
+import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
 
 export const roles = ROLE_VALUES;
 export const authProviderValues = AUTH_PROVIDER_VALUES;
@@ -11,8 +12,6 @@ export const rcaStatusValues = RCA_STATUS_VALUES;
 export const actionPlanStatusValues = ACTION_PLAN_STATUS_VALUES;
 export const unitTypeValues = ["หน่วยงาน", "ทีม"] as const;
 export const medicationRightValues = ["Right patient", "Right drug", "Right dose", "Right route", "Right time", "Right documentation"] as const;
-
-const pdpaForbiddenTitlePattern = /(^|[\s,.;:()[\]{}"'“”‘’\-\/])(นาย|นาง|นางสาว|นส\.|ด\.ช\.?|ด\.ญ\.?|ดช|ดญ|miss|ms|mr|mrs)(?=$|[\s,.;:()[\]{}"'“”‘’\-\/])/i;
 
 export const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
@@ -38,7 +37,7 @@ const createIncidentBaseSchema = z.object({
 export const createIncidentSchema = createIncidentBaseSchema.superRefine((value, ctx) => {
   for (const field of ["title", "description", "immediateAction"] as const) {
     const text = value[field];
-    if (text && pdpaForbiddenTitlePattern.test(text)) {
+    if (text && containsLikelyPatientIdentifier(text)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: [field],
