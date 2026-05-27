@@ -2,6 +2,22 @@ import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { INCIDENT_PAGE_SIZE, incidentListSelect } from "@/lib/incident-query";
 
+const triageOrderBy = [{ isSentinel: "desc" }, { severity: "desc" }, { reportedAt: "asc" }, { id: "asc" }] as const;
+const priorityRiskWhere = {
+  OR: [
+    { clinicalOrGeneral: "Clinical", severity: { in: ["E", "F", "G", "H", "I"] } },
+    { clinicalOrGeneral: "General", severity: { in: ["4", "5"] } },
+  ],
+};
+
+function withPriorityRisk(where: any) {
+  return { AND: [where, priorityRiskWhere] };
+}
+
+function withoutPriorityRisk(where: any) {
+  return { AND: [where, { NOT: priorityRiskWhere }] };
+}
+
 export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
   const where: any = { reviewedAt: null, status: { notIn: ["Closed", "Rejected"] } };
   if (user.role === "UnitManager") where.incidentUnitId = user.unitId ?? "__NO_UNIT__";
@@ -28,16 +44,39 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
   }
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
-  const [total, rows] = await Promise.all([
+  const priorityWhere = withPriorityRisk(where);
+  const nonPriorityWhere = withoutPriorityRisk(where);
+  const offset = (page - 1) * INCIDENT_PAGE_SIZE;
+  const [total, priorityTotal] = await Promise.all([
     prisma.incident.count({ where }),
-    prisma.incident.findMany({
-      where,
-      select: incidentListSelect,
-      orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { reportedAt: "asc" }, { id: "asc" }],
-      skip: (page - 1) * INCIDENT_PAGE_SIZE,
-      take: INCIDENT_PAGE_SIZE + 1,
-    }),
+    prisma.incident.count({ where: priorityWhere }),
   ]);
+  const rows: any[] = [];
+  let remaining = INCIDENT_PAGE_SIZE + 1;
+
+  if (offset < priorityTotal) {
+    const priorityRows = await prisma.incident.findMany({
+      where: priorityWhere,
+      select: incidentListSelect,
+      orderBy: triageOrderBy as any,
+      skip: offset,
+      take: remaining,
+    });
+    rows.push(...priorityRows);
+    remaining -= priorityRows.length;
+  }
+
+  if (remaining > 0) {
+    const nonPrioritySkip = Math.max(0, offset - priorityTotal);
+    const nonPriorityRows = await prisma.incident.findMany({
+      where: nonPriorityWhere,
+      select: incidentListSelect,
+      orderBy: triageOrderBy as any,
+      skip: nonPrioritySkip,
+      take: remaining,
+    });
+    rows.push(...nonPriorityRows);
+  }
   const hasNextPage = rows.length > INCIDENT_PAGE_SIZE;
   const data = rows.slice(0, INCIDENT_PAGE_SIZE);
   return {

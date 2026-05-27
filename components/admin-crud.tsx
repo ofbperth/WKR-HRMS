@@ -20,6 +20,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
   const [editing, setEditing] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [authFilter, setAuthFilter] = useState("");
+  const [emailSearch, setEmailSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [meta, setMeta] = useState<PageMeta>({ page: 1, pageSize: userPageSize, total: 0, totalPages: 1 });
   const endpoint = `/api/admin/${mode}`;
@@ -29,6 +30,7 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     setLoading(true);
     const query = new URLSearchParams({ page: String(currentPage), pageSize: String(userPageSize) });
     if (mode === "users" && authFilter) query.set("authProvider", authFilter);
+    if (mode === "users" && emailSearch.trim()) query.set("email", emailSearch.trim());
     const [data, unitData] = await Promise.all([
       fetch(`${endpoint}?${query.toString()}`).then(r => r.json()),
       fetch("/api/admin/units?all=1").then(r => r.json()).catch(() => []),
@@ -39,10 +41,10 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     setMeta(nextMeta);
     setUnits(Array.isArray(unitData) ? unitData : []);
     setLoading(false);
-  }, [endpoint, currentPage, authFilter, mode]);
+  }, [endpoint, currentPage, authFilter, emailSearch, mode]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setCurrentPage(1); }, [authFilter, mode]);
+  useEffect(() => { setCurrentPage(1); }, [authFilter, emailSearch, mode]);
   useEffect(() => {
     if (!loading && currentPage > meta.totalPages) setCurrentPage(meta.totalPages || 1);
   }, [currentPage, loading, meta.totalPages]);
@@ -120,7 +122,10 @@ export function AdminCrud({ mode }: { mode: Mode }) {
     </div>
       <div className="mt-4 flex flex-wrap gap-2"><Button type="submit">{formEditing ? "บันทึกการแก้ไข" : "เพิ่มรายการ"}</Button>{formEditing ? <button type="button" className="rounded-md border px-4 text-sm" onClick={() => setEditing(null)}>ยกเลิก</button> : null}</div></form>
 
-    {mode === "users" ? <div className="rounded-lg border bg-white p-3 shadow-sm"><label className="grid max-w-xs gap-1 text-sm font-medium">Filter ตาม auth provider<select className="h-10 rounded-md border px-3 text-sm" value={authFilter} onChange={e => setAuthFilter(e.target.value)}><option value="">ทั้งหมด</option>{authProviderOptions.map(option => <option key={option}>{option}</option>)}</select></label></div> : null}
+    {mode === "users" ? <div className="rounded-lg border bg-white p-3 shadow-sm"><div className="grid gap-3 md:grid-cols-2">
+      <label className="grid gap-1 text-sm font-medium">Search by email<Input type="search" value={emailSearch} onChange={e => setEmailSearch(e.target.value)} placeholder="user@example.com" /></label>
+      <label className="grid gap-1 text-sm font-medium">Filter ตาม auth provider<select className="h-10 rounded-md border px-3 text-sm" value={authFilter} onChange={e => setAuthFilter(e.target.value)}><option value="">ทั้งหมด</option>{authProviderOptions.map(option => <option key={option}>{option}</option>)}</select></label>
+    </div></div> : null}
 
     <AdminMobileCards mode={mode} items={pagedItems} loading={loading} onEdit={setEditing} onUnlinkGoogle={unlinkGoogle} />
     <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm md:block"><div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-sm"><thead className="bg-slate-50 text-left"><tr>{headers(mode).map(h => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}<th className="w-40 px-3 py-3">Action</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={8}>กำลังโหลด...</td></tr> : pagedItems.map(item => <tr key={item.id} className="border-t">{rowCells(mode, item).map((cell, i) => <td key={i} className="px-3 py-3 align-top"><div className="min-w-0 break-words">{cell}</div></td>)}<td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-md border px-3 py-1" onClick={() => setEditing(item)}>แก้ไข</button>{mode === "users" && item.googleId ? <button type="button" className="rounded-md border px-3 py-1" onClick={() => unlinkGoogle(item.id)}>Unlink Google</button> : null}</div></td></tr>)}</tbody></table></div></div>
