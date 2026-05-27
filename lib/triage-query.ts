@@ -2,6 +2,13 @@ import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { INCIDENT_PAGE_SIZE, incidentListSelect } from "@/lib/incident-query";
 
+const highSeverityTriageFilter = {
+  OR: [
+    { clinicalOrGeneral: "Clinical", severity: { in: ["E", "F", "G", "H", "I"] } },
+    { clinicalOrGeneral: "General", severity: { in: ["4", "5"] } },
+  ],
+};
+
 export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
   const where: any = { reviewedAt: null, status: { notIn: ["Closed", "Rejected"] } };
   if (user.role === "UnitManager") where.incidentUnitId = user.unitId ?? "__NO_UNIT__";
@@ -28,16 +35,33 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
   }
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
-  const [total, rows] = await Promise.all([
-    prisma.incident.count({ where }),
-    prisma.incident.findMany({
-      where,
-      select: incidentListSelect,
-      orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { reportedAt: "asc" }, { id: "asc" }],
-      skip: (page - 1) * INCIDENT_PAGE_SIZE,
-      take: INCIDENT_PAGE_SIZE + 1,
-    }),
+  const highWhere = { AND: [where, highSeverityTriageFilter] };
+  const normalWhere = { AND: [where, { NOT: highSeverityTriageFilter }] };
+  const orderBy = [{ isSentinel: "desc" as const }, { severity: "desc" as const }, { reportedAt: "asc" as const }, { id: "asc" as const }];
+  const offset = (page - 1) * INCIDENT_PAGE_SIZE;
+  const [highTotal, normalTotal] = await Promise.all([
+    prisma.incident.count({ where: highWhere }),
+    prisma.incident.count({ where: normalWhere }),
   ]);
+  const highTake = Math.max(0, Math.min(INCIDENT_PAGE_SIZE + 1, highTotal - offset));
+  const highRows = highTake > 0 ? await prisma.incident.findMany({
+    where: highWhere,
+    select: incidentListSelect,
+    orderBy,
+    skip: offset,
+    take: highTake,
+  }) : [];
+  const normalTake = INCIDENT_PAGE_SIZE + 1 - highRows.length;
+  const normalSkip = Math.max(0, offset - highTotal);
+  const normalRows = normalTake > 0 ? await prisma.incident.findMany({
+    where: normalWhere,
+    select: incidentListSelect,
+    orderBy,
+    skip: normalSkip,
+    take: normalTake,
+  }) : [];
+  const rows = [...highRows, ...normalRows];
+  const total = highTotal + normalTotal;
   const hasNextPage = rows.length > INCIDENT_PAGE_SIZE;
   const data = rows.slice(0, INCIDENT_PAGE_SIZE);
   return {
