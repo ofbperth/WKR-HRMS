@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: {
         severity: input.severity,
         riskCodeId: input.riskCodeId,
-        simpleCategory: input.simpleCategory,
+        simpleCategory: riskCode.simpleCategory,
         isSentinel: sentinelSeverity.includes(input.severity) || input.isSentinel,
         needRmSupport: input.needRmSupport,
         status: requireRca ? "RCARequired" : "UnderReview",

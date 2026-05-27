@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildIncidentWhere, buildOverdueRcaWhere } from "@/lib/dashboard-analytics";
+import { buildIncidentWhere, buildOverdueRcaWhere, safetyGoals } from "@/lib/dashboard-analytics";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
+import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 
 const activeFilter = activeIncidentFilter();
@@ -47,6 +48,29 @@ describe("dashboard query filters", () => {
         },
       ],
     });
+  });
+});
+
+describe("9 standard safety mappings", () => {
+  it("uses the current 9 มาตรฐานสำคัญ NRLS codes", () => {
+    expect(safetyGoals.map((goal) => goal.codes)).toEqual([
+      ["CPS101", "CPS102", "CPS103"],
+      ["CPI201", "CPI202", "CPI203", "CPS111"],
+      ["GPI201", "GPI202", "GPI203", "GPI204"],
+      ["CPM101", "CPM201", "CPM202", "CPM203", "CPM204", "CPM205"],
+      ["CPM501"],
+      ["CPP101"],
+      ["CPP301"],
+      ["CPL201", "CPL203"],
+      ["CPE402", "CPE403", "CPE405", "CPE407"],
+    ]);
+  });
+
+  it("keeps every 9 มาตรฐานสำคัญ code available in NRLS seed data", () => {
+    const nrlsCodes = new Set<string>(nrlsRiskCodes.map((item) => item.code));
+    for (const code of safetyGoals.flatMap((goal) => goal.codes)) {
+      expect(nrlsCodes.has(code)).toBe(true);
+    }
   });
 });
 

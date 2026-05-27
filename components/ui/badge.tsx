@@ -2,6 +2,7 @@ import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { severityTone } from "@/lib/severity";
 import { statusLabel, statusTone } from "@/lib/format";
+import { roleDisplay } from "@/lib/i18n/th";
 
 export function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold leading-none shadow-sm", className)}>{children}</span>;
@@ -15,14 +16,7 @@ export function RoleBadge({ role }: { role: Role | string }) {
     UnitManager: "border-emerald-200 bg-emerald-50 text-emerald-700",
     Reporter: "border-amber-200 bg-amber-50 text-amber-700",
   };
-  const labels: Record<string, string> = {
-    Admin: "Admin",
-    RMTeam: "ทีม RM",
-    Executive: "Executive",
-    UnitManager: "Unit Manager",
-    Reporter: "Reporter",
-  };
-  return <Badge className={map[role] || ""}>{labels[role] || role}</Badge>;
+  return <Badge className={map[role] || ""}>{roleDisplay(role)}</Badge>;
 }
 
 export function SeverityBadge({ severity }: { severity: string }) {
@@ -35,7 +29,7 @@ export function StatusBadge({ status }: { status: string }) {
 
 export function SentinelBadge({ value }: { value: boolean }) {
   if (!value) return null;
-  return <Badge className="border-red-200 bg-red-600 text-white">Sentinel</Badge>;
+  return <Badge className="border-red-200 bg-red-600 text-white">Sentinel Event</Badge>;
 }
 
 export function RmSupportBadge({ value }: { value: boolean }) {

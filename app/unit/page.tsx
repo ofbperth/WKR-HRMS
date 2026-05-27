@@ -19,16 +19,16 @@ export default async function Page() {
     prisma.incident.count({ where: countableIncidentFilter({ incidentUnitId: user.unitId ?? "__NO_UNIT__", isSentinel: true }) }),
   ]);
 
-  return <AppShell user={user}><RoleHome title="Unit Manager Workspace" description="ติดตาม incident ที่เกิดในหน่วยงานของตนเอง">
+  return <AppShell user={user}><RoleHome title="พื้นที่ทำงานหัวหน้าหน่วยงาน" description="ติดตามอุบัติการณ์ที่เกิดในหน่วยงานของตนเอง">
     <div className="grid gap-4 md:grid-cols-3">
-      <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
-      <Card><CardHeader><CardTitle>RCA Required</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Sentinel</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card>
+      <Card><CardHeader><CardTitle>อุบัติการณ์ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
+      <Card><CardHeader><CardTitle>ต้องทำ RCA</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card>
+      <Card><CardHeader><CardTitle>Sentinel Event</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card>
     </div>
     <div className="grid gap-4 md:grid-cols-3">
-      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
-      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">My Reports</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">Search / Export</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export incident ของหน่วยงาน</p></Link>
+      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงานอุบัติการณ์</div><p className="mt-1 text-sm text-slate-600">เปิดแบบฟอร์มรายงานอุบัติการณ์</p></Link>
+      <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">รายงานของฉัน</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
+      <Link href="/unit/incidents" className={actionClass}><div className="font-semibold text-slate-900">ค้นหา / Export</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export อุบัติการณ์ของหน่วยงาน</p></Link>
     </div>
   </RoleHome></AppShell>;
 }

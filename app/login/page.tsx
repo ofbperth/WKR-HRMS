@@ -96,12 +96,12 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="max-w-xl rounded-lg border border-emerald-100 bg-white/80 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)]">
-            <h1 className="text-2xl font-bold tracking-normal text-slate-950">Workflow บริหารความเสี่ยงโรงพยาบาล</h1>
+            <h1 className="text-2xl font-bold tracking-normal text-slate-950">กระบวนการบริหารความเสี่ยงโรงพยาบาล</h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">ระบบรายงานและบริหารความเสี่ยงที่เน้นความเร็ว ความชัดเจน และการทำงานตามบทบาทของผู้ใช้</p>
             <div className="mt-6 grid gap-3 text-sm text-slate-700">
-              <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 text-emerald-600" size={18} /><span>One screen, one intention สำหรับงาน incident สำคัญ</span></div>
-              <div className="flex items-start gap-3"><Activity className="mt-0.5 text-emerald-600" size={18} /><span>Mobile-first และ dashboard ที่สแกนข้อมูลได้เร็ว</span></div>
-              <div className="flex items-start gap-3"><Hospital className="mt-0.5 text-emerald-600" size={18} /><span>Role-based workflow สำหรับ Reporter, RM, Executive และ Admin</span></div>
+              <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 text-emerald-600" size={18} /><span>หน้าจอเรียบง่าย ช่วยให้รายงานอุบัติการณ์สำคัญได้ตรงจุด</span></div>
+              <div className="flex items-start gap-3"><Activity className="mt-0.5 text-emerald-600" size={18} /><span>ใช้งานบนมือถือได้ดี และ Dashboard สแกนข้อมูลได้เร็ว</span></div>
+              <div className="flex items-start gap-3"><Hospital className="mt-0.5 text-emerald-600" size={18} /><span>แยกขั้นตอนตามบทบาทของผู้รายงาน ทีม RM ผู้บริหาร และผู้ดูแลระบบ</span></div>
             </div>
           </div>
         </section>
@@ -115,11 +115,11 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</label>
+                <label htmlFor="email" className="text-sm font-semibold text-slate-700">อีเมล</label>
                 <Input id="email" name="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
               </div>
               <div>
-                <label htmlFor="password" className="text-sm font-semibold text-slate-700">Password</label>
+                <label htmlFor="password" className="text-sm font-semibold text-slate-700">รหัสผ่าน</label>
                 <div className="relative">
                   <Input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required className="pr-10" />
                   <Eye className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />

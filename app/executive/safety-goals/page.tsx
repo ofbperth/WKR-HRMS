@@ -15,7 +15,7 @@ export default async function ExecutiveSafetyGoalsPage({ searchParams }: { searc
   const goals = await getSafetyGoalAnalytics(filters);
   const basePath = user.role === "RMTeam" || user.role === "Admin" ? "/rm/safety-goals" : "/executive/safety-goals";
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">9 Important Safety Goals</h1><p className="text-sm text-slate-600">การ์ดสรุปแบบ compact เปิดดู detail trend, RCA, action และ incident ที่เกี่ยวข้องได้</p></div>
+    <div><h1 className="text-2xl font-bold">9 มาตรฐานสำคัญ</h1><p className="text-sm text-slate-600">สรุปแนวโน้ม RCA แผนแก้ไข และ incident ที่เกี่ยวข้องในแต่ละมาตรฐาน</p></div>
     <DashboardFilter units={lookup.units} categories={lookup.simpleCategories} />
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{goals.map((goal, index) => <SafetyGoalSummaryCard key={goal.id} goal={{ ...goal, title: `${index + 1}. ${goal.title}` }} detailHref={`${basePath}/${goal.id}`} />)}</div>
   </div></AppShell>;

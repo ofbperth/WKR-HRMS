@@ -59,7 +59,7 @@ export async function runOverdueActionCheck(user?: AutomationUser) {
       const created = await createNotificationOnce({
         userId: action.ownerId,
         type: "action-overdue",
-        title: "Action overdue",
+        title: "แผนแก้ไขเกินกำหนด",
         message: `${action.incident.incidentNo}: ${action.title}`,
         relatedIncidentId: action.incidentId,
       });
@@ -87,7 +87,7 @@ export async function runDueSoonNotification(user?: AutomationUser) {
       const created = await createNotificationOnce({
         userId: action.ownerId,
         type: "action-due-soon",
-        title: "Action due soon",
+        title: "แผนแก้ไขใกล้ครบกำหนด",
         message: `${action.incident.incidentNo}: ${action.title}`,
         relatedIncidentId: action.incidentId,
       });

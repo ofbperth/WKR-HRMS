@@ -65,7 +65,7 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
         medicationRight: input.medicationRight || null,
         affectedType: input.affectedType,
         clinicalOrGeneral: input.clinicalOrGeneral,
-        simpleCategory: input.simpleCategory.trim(),
+        simpleCategory: riskCode.simpleCategory,
         riskCodeId: input.riskCodeId,
         title: input.title.trim(),
         description: input.description.trim(),

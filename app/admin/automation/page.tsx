@@ -13,7 +13,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const page = getPage(searchParams.page, total, pageSize);
   const runs = await (prisma as any).automationRun.findMany({ orderBy: { startedAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize });
   return <AppShell user={user}><div className="space-y-6">
-    <div><h1 className="text-2xl font-bold">Admin Automation</h1><p className="mt-2 text-slate-600">Production operation แบบ manual พร้อม run log, failure และ audit trail</p></div>
+    <div><h1 className="text-2xl font-bold">งานอัตโนมัติสำหรับผู้ดูแลระบบ</h1><p className="mt-2 text-slate-600">งาน production แบบกดรันเอง พร้อม run log, failure และ audit trail</p></div>
     <AutomationPanel initialRuns={runs} />
     <Pagination basePath="/admin/automation" searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div></AppShell>;

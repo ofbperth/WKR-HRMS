@@ -19,22 +19,22 @@ export default async function Page() {
     prisma.incident.count({ where: countableIncidentFilter({ isSentinel: true }) }),
   ]);
 
-  return <AppShell user={user}><RoleHome title="พื้นที่ทำงานทีม RM" description="จัดคิว Triage, ค้นหา incident, ติดตาม RCA และบริหาร workflow ความเสี่ยง">
+  return <AppShell user={user}><RoleHome title="พื้นที่ทำงานทีม RM" description="จัดคิว Triage ค้นหาอุบัติการณ์ ติดตาม RCA และบริหาร workflow ความเสี่ยง">
     <div className="grid gap-4 md:grid-cols-3">
-      <Card><CardHeader><CardTitle>Incident ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
-      <Link href="/rm/search?status=RCARequired" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>RCA Required</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card></Link>
-      <Link href="/rm/search?sentinel=true" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>Sentinel</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card></Link>
+      <Card><CardHeader><CardTitle>อุบัติการณ์ทั้งหมด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-slate-950">{total}</CardContent></Card>
+      <Link href="/rm/search?status=RCARequired" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>ต้องทำ RCA</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-amber-600">{rcaRequired}</CardContent></Card></Link>
+      <Link href="/rm/search?sentinel=true" className="block"><Card className="h-full transition hover:-translate-y-0.5 hover:bg-emerald-50"><CardHeader><CardTitle>Sentinel Event</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-600">{sentinel}</CardContent></Card></Link>
     </div>
     <div className="grid gap-4 md:grid-cols-3">
-      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงาน Incident</div><p className="mt-1 text-sm text-slate-600">เปิด incident report form</p></Link>
+      <Link href="/report/new" className={actionClass}><div className="font-semibold text-slate-900">รายงานอุบัติการณ์</div><p className="mt-1 text-sm text-slate-600">เปิดแบบฟอร์มรายงานอุบัติการณ์</p></Link>
       <Link href="/my-reports" className={actionClass}><div className="font-semibold text-slate-900">รายงานของฉัน</div><p className="mt-1 text-sm text-slate-600">ดูรายงานของตนเอง</p></Link>
-      <Link href="/rm/search" className={actionClass}><div className="font-semibold text-slate-900">ค้นหา/Export Incident</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export incident</p></Link>
-      <Link href="/rm/triage" className={actionClass}><div className="font-semibold text-slate-900">Triage</div><p className="mt-1 text-sm text-slate-600">Review และจัดประเภท incident ใหม่</p></Link>
-      <Link href="/rm/rca" className={actionClass}><div className="font-semibold text-slate-900">Review RCA</div><p className="mt-1 text-sm text-slate-600">อนุมัติ RCA หรือ request revision</p></Link>
-      <Link href="/rm/actions" className={actionClass}><div className="font-semibold text-slate-900">Action plan</div><p className="mt-1 text-sm text-slate-600">ติดตาม action plan และ verification</p></Link>
-      <Link href="/rm/heatmap" className={actionClass}><div className="font-semibold text-slate-900">Heatmap</div><p className="mt-1 text-sm text-slate-600">ดูความเสี่ยงตามหน่วยงานและ severity</p></Link>
-      <Link href="/rm/reports" className={actionClass}><div className="font-semibold text-slate-900">Report</div><p className="mt-1 text-sm text-slate-600">ดู RM report และผล analytics</p></Link>
+      <Link href="/rm/search" className={actionClass}><div className="font-semibold text-slate-900">ค้นหา/Export อุบัติการณ์</div><p className="mt-1 text-sm text-slate-600">ค้นหา กรอง เปิดรายละเอียด และ export อุบัติการณ์</p></Link>
+      <Link href="/rm/triage" className={actionClass}><div className="font-semibold text-slate-900">Triage</div><p className="mt-1 text-sm text-slate-600">ตรวจและจัดประเภทอุบัติการณ์ใหม่</p></Link>
+      <Link href="/rm/rca" className={actionClass}><div className="font-semibold text-slate-900">ตรวจสอบ RCA</div><p className="mt-1 text-sm text-slate-600">อนุมัติ RCA หรือขอปรับปรุง</p></Link>
+      <Link href="/rm/actions" className={actionClass}><div className="font-semibold text-slate-900">แผนการแก้ไข</div><p className="mt-1 text-sm text-slate-600">ติดตามแผนการแก้ไขและคิวตรวจสอบ</p></Link>
+      <Link href="/rm/heatmap" className={actionClass}><div className="font-semibold text-slate-900">Heatmap</div><p className="mt-1 text-sm text-slate-600">ดูความเสี่ยงตามหน่วยงานและระดับความรุนแรง</p></Link>
+      <Link href="/rm/reports" className={actionClass}><div className="font-semibold text-slate-900">รายงาน RM</div><p className="mt-1 text-sm text-slate-600">ดูรายงาน RM และผลวิเคราะห์</p></Link>
     </div>
-    <Card><CardHeader><CardTitle>Monthly report</CardTitle></CardHeader><CardContent><MonthlyReportButton /></CardContent></Card>
+    <Card><CardHeader><CardTitle>รายงานรายเดือน</CardTitle></CardHeader><CardContent><MonthlyReportButton /></CardContent></Card>
   </RoleHome></AppShell>;
 }

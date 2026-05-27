@@ -8,6 +8,6 @@ export function RoleHome({ title, description, children }: { title: string; desc
       <h1 className="mt-1 text-2xl font-bold tracking-normal text-slate-950">{title}</h1>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{description}</p>
     </div>
-    {children ?? <Card><CardHeader><CardTitle>Phase 2 พร้อมใช้งาน</CardTitle></CardHeader><CardContent className="text-sm leading-6 text-slate-600">ระบบ Incident Report, Risk Log, Notification และ Audit log พร้อมสำหรับการทดสอบ</CardContent></Card>}
+    {children ?? <Card><CardHeader><CardTitle>ระบบพร้อมใช้งาน</CardTitle></CardHeader><CardContent className="text-sm leading-6 text-slate-600">ระบบรายงานเหตุการณ์ บันทึกความเสี่ยง การแจ้งเตือน และประวัติการตรวจสอบพร้อมสำหรับการทดสอบ</CardContent></Card>}
   </div>;
 }

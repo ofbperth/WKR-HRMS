@@ -12,7 +12,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const params = searchParams;
   const [lookup, incidentPage] = await Promise.all([getLookupData(), getTriageIncidentList(user, params)]);
   return <AppShell user={user}>
-    <div className="mb-6"><h1 className="text-2xl font-bold">RM Triage</h1><p className="mt-2 text-slate-600">Review incident ที่รายงานเข้ามา ปรับ classification และส่งต่อ workflow ขั้นถัดไป</p></div>
+    <div className="mb-6"><h1 className="text-2xl font-bold">คิว Triage ของ RM</h1><p className="mt-2 text-slate-600">ตรวจอุบัติการณ์ที่รายงานเข้ามา ปรับการจัดประเภท และส่งต่อไปขั้นตอนถัดไป</p></div>
     <IncidentList incidents={incidentPage.data} meta={incidentPage.meta} lookup={lookup} basePath="/rm/triage" searchParams={params} canSeeSensitive={canSeeSensitive(user.role)} />
   </AppShell>;
 }

@@ -28,7 +28,7 @@ export function DashboardChartPanels({ variant, data }: { variant: DashboardVari
       <UnitRankingChart title="Top 10 หน่วยงานตามจำนวน incident" data={data.charts.topUnits} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
       <UnitRankingChart title="Top 10 หน่วยงานตาม weighted risk score" data={data.charts.weightedUnits} score drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
       <UnitRankingChart title="RCA ที่เปิดอยู่ตามหน่วยงาน" data={data.charts.openRcaByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
-      <UnitRankingChart title="Action overdue ตามหน่วยงาน" data={data.charts.overdueActionByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
+      <UnitRankingChart title="แผนแก้ไขเกินกำหนดตามหน่วยงาน" data={data.charts.overdueActionByUnit} drilldown={{ basePath: "/rm/search", param: "unitId", field: "unitId" }} />
     </div>;
   }
 
@@ -37,7 +37,7 @@ export function DashboardChartPanels({ variant, data }: { variant: DashboardVari
     <SeverityBarChart title="Incident ตาม severity" data={data.charts.severity} drilldown={{ basePath: "/rm/search", param: "severity", field: "name" }} />
     <CategoryPieChart title="Clinical vs General risk" data={data.charts.clinicalGeneral} drilldown={{ basePath: "/rm/search", param: "clinicalOrGeneral", field: "name" }} />
     <TrendLineChart title="Trend incident รายเดือน" data={data.charts.trend} />
-    <TopRiskCodeBarChart title="Incident ตาม SIMPLE category" data={data.charts.simpleCategory} labelKey="category" drilldown={{ basePath: "/rm/search", param: "simpleCategory", field: "category" }} />
+    <TopRiskCodeBarChart title="Incident ตามหมวด SIMPLE" data={data.charts.simpleCategory} labelKey="category" drilldown={{ basePath: "/rm/search", param: "simpleCategory", field: "category" }} />
     <TopRiskCodeBarChart title="Top 5 risk ที่เกิดซ้ำ" data={data.charts.topRecurrentRiskCodes} drilldown={{ basePath: "/rm/search", param: "riskCodeId", field: "riskCodeId" }} />
     <CategoryPieChart title="สัดส่วน status ของ RCA" data={data.charts.rcaStatus} />
     <CategoryPieChart title="สัดส่วน status ของ Action" data={data.charts.actionStatus} />

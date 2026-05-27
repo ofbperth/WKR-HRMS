@@ -93,17 +93,17 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const endMonth = range.mode === "range" ? new Date(range.end.getFullYear(), range.end.getMonth() - 1, 1).toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
   const fiscalYear = range.end.getFullYear() + 543;
   return <AppShell user={user}><div className="print-page space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">Summary Report</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลแบบ printable ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">รายงานสรุปความเสี่ยง</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลสำหรับพิมพ์ ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
     <SummaryReportFilter defaults={{ mode: range.mode, month: currentMonth, startMonth, endMonth, fiscalYear: String(fiscalYear) }} />
-    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">Hospital Risk Summary Report</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {new Date().toLocaleString("th-TH")}</p></div>
-    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Incident ทั้งหมด" value={summary.total} /><Metric label="ปิดเคสแล้ว" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="ส่ง RCA แล้ว" value={summary.rcaSubmitted} /><Metric label="Action overdue" value={summary.overdueActions} /></div>
-    <Card className="border-red-200"><CardHeader><CardTitle>Sentinel alert</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="ไม่มี sentinel event ในช่วงเวลานี้" /></CardContent></Card>
+    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">รายงานสรุปความเสี่ยงโรงพยาบาล</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {new Date().toLocaleString("th-TH")}</p></div>
+    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Incident ทั้งหมด" value={summary.total} /><Metric label="ปิดเคสแล้ว" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="ส่ง RCA แล้ว" value={summary.rcaSubmitted} /><Metric label="แผนแก้ไขเกินกำหนด" value={summary.overdueActions} /></div>
+    <Card className="border-red-200"><CardHeader><CardTitle>แจ้งเตือน Sentinel Event</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="ไม่มี Sentinel Event ในช่วงเวลานี้" /></CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตามจำนวน incident</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByCount} columns={["unit", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตาม weighted risk score</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByScore} columns={["unit", "score", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 Clinical risk</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topClinicalRisk} columns={["riskCode", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 General risk</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topGeneralRisk} columns={["riskCode", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 in 9 Safety Goals</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topSafetyGoals} columns={["title", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตามจำนวนอุบัติการณ์</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByCount} columns={["unit", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 หน่วยงานตามคะแนนความเสี่ยงถ่วงน้ำหนัก</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByScore} columns={["unit", "score", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 ความเสี่ยงเกี่ยวกับการดูแลรักษาผู้ป่วย</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topClinicalRisk} columns={["riskCode", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 ความเสี่ยงทั่วไป / ระบบงาน / สิ่งแวดล้อม</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topGeneralRisk} columns={["riskCode", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 ใน 9 มาตรฐานสำคัญ</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topSafetyGoals} columns={["title", "count"]} /></CardContent></Card>
     </div>
   </div></AppShell>;
 }
@@ -114,5 +114,19 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 function SimpleTable({ rows, columns, empty = "ไม่มีข้อมูล" }: { rows: any[]; columns: string[]; empty?: string }) {
   if (!rows.length) return <div className="text-sm text-slate-500">{empty}</div>;
-  return <div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="break-words px-2 py-2">{column}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-2 py-2 align-top">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="max-w-full overflow-hidden"><table className="w-full table-fixed text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(column => <th key={column} className="break-words px-2 py-2">{columnLabel(column)}</th>)}</tr></thead><tbody className="divide-y">{rows.map((row, index) => <tr key={index}>{columns.map(column => <td key={column} className="break-words px-2 py-2 align-top">{String(row[column] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
+}
+
+function columnLabel(column: string) {
+  const labels: Record<string, string> = {
+    count: "จำนวน",
+    incidentNo: "เลขที่รายงาน",
+    riskCode: "รหัสความเสี่ยง",
+    score: "คะแนน",
+    severity: "ระดับความรุนแรง",
+    status: "สถานะ",
+    title: "ชื่อเหตุการณ์",
+    unit: "หน่วยงาน",
+  };
+  return labels[column] ?? column;
 }
