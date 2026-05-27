@@ -60,7 +60,6 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
   if (filters.simpleCategory) and.push({ simpleCategory: filters.simpleCategory });
-  if (filters.includeClosed !== "true") and.push({ status: { not: "Closed" } });
   return and.length ? { AND: and } : {};
 }
 
@@ -203,6 +202,7 @@ export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
       rcaRevisionRequired,
       openActions,
       overdueActions,
+      closedIncidents: groupValue(statusRows as any, "status", "Closed"),
       closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
       needLeadershipDecision: leadershipDecision,
       needRmSupport,
@@ -311,6 +311,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       rcaRevisionRequired,
       openActions,
       overdueActions,
+      closedIncidents: groupValue(statusRows as any, "status", "Closed"),
       closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
       needLeadershipDecision: leadershipDecision,
       needRmSupport,
