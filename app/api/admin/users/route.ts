@@ -27,7 +27,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const { page, pageSize, skip, take } = getPagingParams(url);
     const authProvider = url.searchParams.get("authProvider")?.trim();
-    const where = authProvider ? { authProvider } : {};
+    const email = url.searchParams.get("email")?.trim();
+    const where: any = {};
+    if (authProvider) where.authProvider = authProvider;
+    if (email) where.email = { contains: email, mode: "insensitive" };
     const [users, total] = await prisma.$transaction([
       prisma.user.findMany({ where, include: { unit: true }, orderBy: { createdAt: "desc" }, skip, take }),
       prisma.user.count({ where }),
