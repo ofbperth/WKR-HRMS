@@ -103,7 +103,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
       <Card><CardHeader><CardTitle>Top 5 หน่วยงานตามคะแนนความเสี่ยงถ่วงน้ำหนัก</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topUnitsByScore} columns={["unit", "score", "count"]} /></CardContent></Card>
       <Card><CardHeader><CardTitle>Top 5 ความเสี่ยงด้าน Clinical</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topClinicalRisk} columns={["riskCode", "count"]} /></CardContent></Card>
       <Card><CardHeader><CardTitle>Top 5 ความเสี่ยงด้าน General</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topGeneralRisk} columns={["riskCode", "count"]} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>Top 5 ใน 9 เป้าหมายความปลอดภัย</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topSafetyGoals} columns={["title", "count"]} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>Top 5 ใน 9 มาตรฐานสำคัญ</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.topSafetyGoals} columns={["title", "count"]} /></CardContent></Card>
     </div>
   </div></AppShell>;
 }

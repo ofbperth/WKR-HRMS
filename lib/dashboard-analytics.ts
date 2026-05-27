@@ -18,15 +18,15 @@ const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readon
 const fiscalYearStartMonth = 9;
 
 export const safetyGoals = [
-  { id: "safe-surgery", title: "การผ่าตัดปลอดภัย / ผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง", codes: ["CPS101", "CPS102", "CPS103"] },
-  { id: "infection", title: "การป้องกันการติดเชื้อในโรงพยาบาล (CAUTI/VAP/CLABSI/SSI)", codes: ["CPS111", "CPI201", "CPI202", "CPI203"] },
-  { id: "medication", title: "ความปลอดภัยด้านยา", codes: ["CPM201", "CPM202", "CPM203", "CPM204", "CPM205", "CPM206", "CPM207", "CPM208"] },
-  { id: "blood", title: "ความปลอดภัยในการให้เลือด", codes: ["CPM501"] },
-  { id: "patient-id", title: "การระบุตัวผู้ป่วยถูกต้อง", codes: ["CPP101"] },
-  { id: "communication", title: "การสื่อสารผลวิกฤตและการส่งต่อข้อมูลการดูแล", codes: ["CPP201", "CPL201"] },
-  { id: "fall-pressure", title: "การพลัดตกหกล้ม แผลกดทับ และภาวะแทรกซ้อนสำคัญ", codes: ["CPP401"] },
-  { id: "refer-transfer", title: "ความปลอดภัยในการส่งต่อ เคลื่อนย้าย และห้องฉุกเฉิน", codes: ["CPE401", "CPE402"] },
-  { id: "deteriorating", title: "การดูแลผู้ป่วยอาการทรุดลง ภาวะฉุกเฉิน และ Sepsis", codes: ["CPE101", "CPE201"] },
+  { id: "safe-surgery", title: "การผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง ผิดหัตถการ", codes: ["CPS101", "CPS102", "CPS103"] },
+  { id: "infection", title: "การติดเชื้อที่สำคัญในสถานพยาบาลในผู้ป่วย ได้แก่ SSI, VAP, CAUTI, CABSI", codes: ["CPI201", "CPI202", "CPI203", "CPS111"] },
+  { id: "medication", title: "บุคลากรติดเชื้อจากการปฏิบัติหน้าที่", codes: ["GPI201", "GPI202", "GPI203", "GPI204"] },
+  { id: "blood", title: "การเกิด Medication Error และ Adverse Drug Event", codes: ["CPM101", "CPM201", "CPM202", "CPM203", "CPM204", "CPM205"] },
+  { id: "patient-id", title: "การให้เลือดผิดคน ผิดหมู่ ผิดชนิด", codes: ["CPM501"] },
+  { id: "communication", title: "การระบุตัวผู้ป่วยผิดพลาด", codes: ["CPP101"] },
+  { id: "fall-pressure", title: "ความคลาดเคลื่อนในการวินิจฉัยโรค", codes: ["CPP301"] },
+  { id: "refer-transfer", title: "การรายงานผลการตรวจทางห้องปฏิบัติการ/พยาธิวิทยาคลาดเคลื่อน", codes: ["CPL201", "CPL203"] },
+  { id: "deteriorating", title: "การคัดกรองที่ห้องฉุกเฉินคลาดเคลื่อน", codes: ["CPE402", "CPE403", "CPE405", "CPE407"] },
 ];
 
 function toDate(value?: string, end = false) {

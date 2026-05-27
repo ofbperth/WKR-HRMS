@@ -60,10 +60,7 @@ const units = [
   { name: "รังสีวิทยา", type: "หน่วยงาน" },
 ];
 
-const safetyGoalRiskCodes = [
-  { code: "CPP401", nameTh: "Common complication / Fall / Pressure injury", nameEn: "Common complication / Fall / Pressure injury", clinicalOrGeneral: "Clinical", simpleCategory: "Patient Care Process" },
-  { code: "CPE402", nameTh: "Refer and transfer safety", nameEn: "Refer and transfer safety", clinicalOrGeneral: "Clinical", simpleCategory: "Emergency / Refer / Transfer" },
-];
+const safetyGoalRiskCodes: Array<(typeof nrlsRiskCodes)[number]> = [];
 
 async function seedMasterData() {
   for (const unit of units) {
