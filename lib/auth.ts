@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
+import { cache } from "react";
 import { ZodError } from "zod";
 import { isRole, type Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
@@ -8,14 +9,14 @@ import { SESSION_COOKIE, signSession, verifySessionToken, type SessionUser } fro
 export { SESSION_COOKIE, signSession, verifySessionToken };
 export type { SessionUser };
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const token = cookies().get(SESSION_COOKIE)?.value;
   const session = await verifySessionToken(token);
   if (!session) return null;
   const user = await prisma.user.findUnique({ where: { id: session.id }, include: { unit: true } });
   if (!user || !user.isActive || !isRole(user.role)) return null;
   return user as typeof user & { role: Role };
-}
+});
 
 export async function requireUser(roles?: Role[]) {
   const user = await getCurrentUser();
