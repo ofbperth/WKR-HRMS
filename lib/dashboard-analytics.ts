@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
-import { getLookupData } from "@/lib/incident-query";
+import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
 import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
 
@@ -132,13 +132,19 @@ async function commonLookups() {
   return { lookup, unitNames, riskNames, riskExtras, unitExtras };
 }
 
+async function commonFilterLookups() {
+  const lookup = await getDashboardFilterLookups();
+  const unitNames = new Map(lookup.units.map((unit) => [unit.id, unit.name]));
+  return { lookup, unitNames };
+}
+
 export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
   const started = Date.now();
   const where = buildIncidentWhere(filters);
   const now = new Date();
   const month = getThisMonthRange(now);
   const fiscal = getFiscalYearRange(now);
-  const { lookup } = await commonLookups();
+  const { lookup } = await commonFilterLookups();
 
   const [
     total,
@@ -350,8 +356,9 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
 }
 
 export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
+  const started = Date.now();
   const where = buildIncidentWhere(filters);
-  const { lookup, unitNames } = await commonLookups();
+  const { lookup, unitNames } = await commonFilterLookups();
   const yMode = filters.simpleCategory === "__Y_SIMPLE__" ? "simpleCategory" : "severity";
   const yValues = yMode === "simpleCategory" ? lookup.simpleCategories : [...SEVERITY_VALUES];
   const grouped = await prisma.incident.groupBy({
@@ -363,17 +370,28 @@ export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
   for (const row of grouped as any[]) {
     unitScores.set(row.incidentUnitId, (unitScores.get(row.incidentUnitId) ?? 0) + (severityWeights[row.severity] ?? 0) * row._count);
   }
+  const groupedByCell = new Map<string, { count: number; score: number; highestSeverity: string }>();
+  for (const row of grouped as any[]) {
+    const yValue = yMode === "simpleCategory" ? row.simpleCategory : row.severity;
+    const key = `${row.incidentUnitId}\u0000${yValue}`;
+    const current = groupedByCell.get(key) ?? { count: 0, score: 0, highestSeverity: "-" };
+    const weight = severityWeights[row.severity] ?? 0;
+    current.count += row._count;
+    current.score += weight * row._count;
+    if (weight > (severityWeights[current.highestSeverity] ?? 0)) current.highestSeverity = row.severity;
+    groupedByCell.set(key, current);
+  }
   const orderedUnits = [...lookup.units].sort((a, b) => (unitScores.get(b.id) ?? 0) - (unitScores.get(a.id) ?? 0));
   const rows = yValues.map((row) => ({
     row,
     cells: orderedUnits.map((unit) => {
-      const scoped = (grouped as any[]).filter((item) => item.incidentUnitId === unit.id && (yMode === "simpleCategory" ? item.simpleCategory === row : item.severity === row));
-      const count = scoped.reduce((sum, item) => sum + item._count, 0);
-      const score = scoped.reduce((sum, item) => sum + (severityWeights[item.severity] ?? 0) * item._count, 0);
-      const highestSeverity = scoped.sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
-      return { unitId: unit.id, unit: unitNames.get(unit.id) ?? unit.name, row, count, score, highestSeverity, openRca: 0, overdueActions: 0 };
+      const cell = groupedByCell.get(`${unit.id}\u0000${row}`);
+      return { unitId: unit.id, unit: unitNames.get(unit.id) ?? unit.name, row, count: cell?.count ?? 0, score: cell?.score ?? 0, highestSeverity: cell?.highestSeverity ?? "-", openRca: 0, overdueActions: 0 };
     }),
   }));
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[perf] heatmap ${Date.now() - started}ms cells=${orderedUnits.length * yValues.length}`);
+  }
   return { units: orderedUnits, yMode, rows };
 }
 
