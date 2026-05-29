@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildIncidentWhere, buildOverdueRcaWhere, safetyGoals } from "@/lib/dashboard-analytics";
+import { buildIncidentWhere, buildOverdueRcaWhere, buildRcaStatusChart, safetyGoals } from "@/lib/dashboard-analytics";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
 import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
@@ -120,6 +120,18 @@ describe("RCA due countdown", () => {
     expect(formatRcaDueCountdown("2026-05-29T10:00:00.000Z", now)).toBe("ครบกำหนดวันนี้");
     expect(formatRcaDueCountdown("2026-06-01T10:00:00.000Z", now)).toBe("เหลือ 3 วัน");
     expect(formatRcaDueCountdown("2026-05-27T10:00:00.000Z", now)).toBe("เลยกำหนด 2 วัน");
+  });
+});
+
+describe("RCA dashboard chart data", () => {
+  it("includes incidents that need RCA but do not have an RCA row yet", () => {
+    expect(buildRcaStatusChart(5, [{ status: "Submitted", _count: 2 }])).toEqual([
+      { name: "NotStarted", value: 5 },
+      { name: "Draft", value: 0 },
+      { name: "Submitted", value: 2 },
+      { name: "Approved", value: 0 },
+      { name: "RevisionRequired", value: 0 },
+    ]);
   });
 });
 

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
-import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
+import { INCIDENT_STATUS_VALUES, RCA_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
 
 export type AnalyticsFilters = {
   startDate?: string;
@@ -88,6 +88,13 @@ function groupValue(rows: Array<{ [key: string]: any; _count: number }>, key: st
 
 function percent(numerator: number, denominator: number) {
   return denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
+}
+
+export function buildRcaStatusChart(notStarted: number, rows: Array<{ status: string; _count: number }>) {
+  return [
+    { name: "NotStarted", value: notStarted },
+    ...RCA_STATUS_VALUES.map((name) => ({ name, value: groupValue(rows, "status", name) })),
+  ];
 }
 
 function monthKey(date: Date | string) {
@@ -344,7 +351,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       topRecurrentRiskCodes: summarizeDimension(riskSeverityRows as any, "riskCodeId", "riskCode", riskNames, riskExtras).slice(0, 5),
       topUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras),
       weightedUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras).sort((a, b) => b.score - a.score),
-      rcaStatus: ["Draft", "Submitted", "Approved", "RevisionRequired"].map((name) => ({ name, value: groupValue(rcaStatusRows as any, "status", name) })),
+      rcaStatus: buildRcaStatusChart(rcaRequired, rcaStatusRows as any),
       actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map((name) => ({ name, value: groupValue(actionStatusRows as any, "status", name) })),
       openRcaByUnit: dimensionFromIncidents(openRcaRows),
       overdueActionByUnit: dimensionFromIncidents(overdueActionRows),
