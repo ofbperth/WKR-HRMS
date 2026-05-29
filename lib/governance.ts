@@ -16,11 +16,15 @@ function parseResultJson(value: string | null | undefined) {
   }
 }
 
+async function fallback<T>(promise: Promise<T>, value: T) {
+  return promise.catch(() => value);
+}
+
 export async function getStorageConsistencyReport() {
   const [storageObjects, attachments, monthlyReports] = await Promise.all([
-    (prisma as any).storageObject.findMany({ where: { deletedAt: null }, take: 1000 }),
-    prisma.attachment.findMany({ take: 1000 }),
-    prisma.monthlyReport.findMany({ where: { fileUrl: { not: null } }, take: 1000 }),
+    fallback((prisma as any).storageObject.findMany({ where: { deletedAt: null }, take: 1000 }), []),
+    fallback(prisma.attachment.findMany({ take: 1000 }), []),
+    fallback(prisma.monthlyReport.findMany({ where: { fileUrl: { not: null } }, take: 1000 }), []),
   ]);
 
   const objectKeys = new Set(storageObjects.map((item: any) => item.objectKey));
@@ -76,8 +80,8 @@ export async function getGovernanceDashboardData() {
     (prisma as any).storageObject.groupBy({ by: ["storageTier"], where: { deletedAt: null }, _count: true }).catch(() => []),
     (prisma as any).storageObject.groupBy({ by: ["objectType"], where: { deletedAt: null }, _count: true }).catch(() => []),
     (prisma as any).storageObject.count({ where: { deletedAt: null } }).catch(() => 0),
-    prisma.incident.count({ where: { OR: [{ retentionReviewRequired: true } as any, { lifecycleStatus: "ARCHIVED" } as any, { lifecycleStatus: "SOFT_DELETED" } as any] } as any }),
-    prisma.incident.findMany({
+    fallback(prisma.incident.count({ where: { OR: [{ retentionReviewRequired: true } as any, { lifecycleStatus: "ARCHIVED" } as any, { lifecycleStatus: "SOFT_DELETED" } as any] } as any }), 0),
+    fallback(prisma.incident.findMany({
       where: {
         OR: [
           { isSentinel: true },
@@ -90,13 +94,13 @@ export async function getGovernanceDashboardData() {
       select: { id: true, incidentNo: true, status: true, severity: true, isSentinel: true, occurredAt: true, incidentUnit: { select: { name: true } } },
       orderBy: { occurredAt: "desc" },
       take: 20,
-    }),
+    }), []),
     (prisma as any).retentionRun.findMany({ orderBy: { startedAt: "desc" }, take: 20 }).catch(() => []),
     (prisma as any).retentionRun.findMany({ where: { status: { in: ["Failed", "Stopped"] } }, orderBy: { startedAt: "desc" }, take: 10 }).catch(() => []),
     (prisma as any).cacheEntry.groupBy({ by: ["cacheType"], _count: true }).catch(() => []),
     (prisma as any).cacheEntry.count({ where: { expiresAt: { lt: now } } }).catch(() => 0),
     prisma.auditLog.groupBy({ by: ["action"], where: { createdAt: { gte: daysAgo(7) } }, _count: true, orderBy: { _count: { action: "desc" } }, take: 12 }).catch(() => []),
-    prisma.incident.count({ where: { lifecycleStatus: "ARCHIVED" } as any }),
+    fallback(prisma.incident.count({ where: { lifecycleStatus: "ARCHIVED" } as any }), 0),
     prisma.auditLog.count({ where: { action: { contains: "RESTORE" }, createdAt: { gte: daysAgo(30) }, newValue: { contains: "FAILED" } } }).catch(() => 0),
     prisma.auditLog.count({ where: { action: { in: ["EXPORT_SIGNED_URL_DENIED", "EXPORT_SIGNED_URL_INVALID"] }, createdAt: { gte: daysAgo(30) } } }).catch(() => 0),
     getStorageConsistencyReport(),

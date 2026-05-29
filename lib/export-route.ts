@@ -2,12 +2,12 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { auditLog } from "@/lib/audit";
 import type { ExportKind } from "@/lib/export-builders";
-import { createSignedExportToken, exportTtlSeconds, signedExportUrl } from "@/lib/signed-export";
+import { createSignedExportToken, exportTtlSeconds, signedExportUrl, type SignedExportFilters } from "@/lib/signed-export";
 
 export async function signedExportRedirect(request: Request, input: {
   kind: ExportKind;
   user: { id: string; role: string; unitId: string | null };
-  filters?: Record<string, string>;
+  filters?: SignedExportFilters;
 }) {
   const token = await createSignedExportToken({
     kind: input.kind,

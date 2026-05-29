@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
-import { formatDateOnly } from "@/lib/format";
+import { formatDateOnly, formatRcaDueCountdown } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
@@ -33,17 +33,19 @@ type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: stri
 type SearchParams = Record<string, string | string[] | undefined>;
 type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
-export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string }) {
+export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath, showRcaDueCountdown = false }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string; showRcaDueCountdown?: boolean }) {
   const router = useRouter();
   const query = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
     if (typeof value === "string" && value && key !== "page" && key !== "cursor") query.set(key, value);
+    if (Array.isArray(value) && key !== "page" && key !== "cursor") value.filter(Boolean).forEach((item) => query.append(key, item));
   });
   const page = meta?.page ?? getPage(searchParams.page, incidents.length);
   const pageSize = meta?.pageSize;
   const total = meta?.total ?? incidents.length;
   const visibleIncidents = meta ? incidents : pageSlice(incidents, page);
   const getDetailHref = (incidentId: string) => `${detailBasePath ?? basePath}/${incidentId}`;
+  const selectedSimpleCategories = asArray(searchParams.simpleCategory);
 
   function openIncidentDetail(incidentId: string) {
     router.push(getDetailHref(incidentId));
@@ -62,7 +64,15 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <DateFilterField name="to" defaultValue={asString(searchParams.to)} />
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุกระดับความรุนแรง</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
-      <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="simpleCategory" defaultValue={asString(searchParams.simpleCategory)}><option value="">ทุก SIMPLE</option>{lookup.simpleCategories.map((category) => <option key={category}>{category}</option>)}</select>
+      <fieldset className="min-w-0 rounded-md border px-3 py-2 text-sm">
+        <legend className="px-1 text-xs font-semibold text-slate-500">SIMPLE</legend>
+        <div className="max-h-28 space-y-1 overflow-auto pr-1">
+          {lookup.simpleCategories.map((category) => <label key={category} className="flex min-h-7 items-center gap-2">
+            <input className="h-4 w-4 shrink-0" type="checkbox" name="simpleCategory" value={category} defaultChecked={selectedSimpleCategories.includes(category)} />
+            <span className="truncate">{category}</span>
+          </label>)}
+        </div>
+      </fieldset>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="riskCodeId" defaultValue={asString(searchParams.riskCodeId)}><option value="">ทุก NRLS code</option>{lookup.riskCodes.map((riskCode) => <option key={riskCode.id} value={riskCode.id}>{riskCode.code} - {riskCode.nameTh}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุกสถานะ</option>{incidentStatusValues.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
@@ -97,6 +107,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="min-w-0">
               <div className="text-xs uppercase text-slate-500">กำหนดส่ง RCA</div>
               <div className="text-sm font-medium">{formatDateOnly(incident.rcaDueAt)}</div>
+              {showRcaDueCountdown ? <div className="text-xs text-slate-500">{formatRcaDueCountdown(incident.rcaDueAt)}</div> : null}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -141,6 +152,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           <div className="col-span-3 min-w-0 xl:col-span-2">
             <div className="text-xs font-semibold uppercase text-slate-500">กำหนดส่ง RCA</div>
             <div>{formatDateOnly(incident.rcaDueAt)}</div>
+            {showRcaDueCountdown ? <div className="text-xs text-slate-500">{formatRcaDueCountdown(incident.rcaDueAt)}</div> : null}
           </div>
           <div className="col-span-6 min-w-0 xl:col-span-3">
             <div className="text-xs font-semibold uppercase text-slate-500">หน่วยงานที่เกิดเหตุ</div>
@@ -170,6 +182,11 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
 
 function asString(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
+}
+
+function asArray(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return typeof value === "string" && value ? [value] : [];
 }
 
 function DateFilterField({ name, defaultValue }: { name: string; defaultValue: string }) {

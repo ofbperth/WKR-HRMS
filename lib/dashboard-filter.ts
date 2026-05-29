@@ -23,9 +23,12 @@ export function normalizeDashboardSearchParams(searchParams: Record<string, stri
     if (typeof searchParams.startDate === "string") filters.startDate = searchParams.startDate;
     if (typeof searchParams.endDate === "string") filters.endDate = searchParams.endDate;
   }
-  for (const key of ["unitId", "clinicalOrGeneral", "simpleCategory", "includeClosed"] as const) {
+  for (const key of ["unitId", "clinicalOrGeneral", "includeClosed"] as const) {
     if (typeof searchParams[key] === "string") filters[key] = searchParams[key];
   }
+  if (typeof searchParams.simpleCategory === "string") filters.simpleCategory = searchParams.simpleCategory;
+  if (Array.isArray(searchParams.simpleCategory)) filters.simpleCategory = searchParams.simpleCategory.filter(Boolean);
+  if (typeof searchParams.yMode === "string") filters.yMode = searchParams.yMode;
   return filters;
 }
 

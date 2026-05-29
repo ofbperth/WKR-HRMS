@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getIncidentExportRows } from "@/lib/incident-query";
+import type { SignedExportFilters } from "@/lib/signed-export";
 
 type ExportUser = { id: string; role: string; unitId: string | null };
 
@@ -20,7 +21,7 @@ function csvResponse(filename: string, header: string[], rows: unknown[][]) {
   };
 }
 
-export async function buildIncidentCsv(user: ExportUser, filters: Record<string, string>) {
+export async function buildIncidentCsv(user: ExportUser, filters: SignedExportFilters) {
   const incidents = await getIncidentExportRows(user as any, filters, 1000);
   const header = ["Incident No", "Occurred At", "Reported At", "Incident Unit", "Reporter Unit", "Title", "Risk Code", "Clinical/General", "SIMPLE Category", "Severity", "Sentinel", "Need RM Support", "Status", "Reporter", "Patient HN", "Patient AN"];
   const rows = incidents.map((i) => [i.incidentNo, i.occurredAt.toISOString(), i.reportedAt.toISOString(), i.incidentUnit.name, i.reporterUnit.name, i.title, i.riskCode.code, i.clinicalOrGeneral, i.simpleCategory, i.severity, i.isSentinel ? "Yes" : "No", i.needRmSupport ? "Yes" : "No", i.status, "Restricted", "Restricted", "Restricted"]);
@@ -78,9 +79,9 @@ export async function buildRcaCsv(user: ExportUser) {
   return { ...csvResponse(`rca-export-${Date.now()}.csv`, header, rows), count: rcas.length };
 }
 
-export async function buildAuditLogCsv(filters: Record<string, string>) {
-  const action = filters.action?.trim();
-  const entityType = filters.entityType?.trim();
+export async function buildAuditLogCsv(filters: SignedExportFilters) {
+  const action = typeof filters.action === "string" ? filters.action.trim() : "";
+  const entityType = typeof filters.entityType === "string" ? filters.entityType.trim() : "";
   const logs = await prisma.auditLog.findMany({
     where: {
       ...(action ? { action: { contains: action } } : {}),
@@ -95,7 +96,7 @@ export async function buildAuditLogCsv(filters: Record<string, string>) {
   return { ...csvResponse(`audit-log-${Date.now()}.csv`, header, rows), count: logs.length };
 }
 
-export async function buildExport(kind: ExportKind, user: ExportUser, filters: Record<string, string>) {
+export async function buildExport(kind: ExportKind, user: ExportUser, filters: SignedExportFilters) {
   if (kind === "incident-csv") return buildIncidentCsv(user, filters);
   if (kind === "action-csv") return buildActionCsv(user);
   if (kind === "rca-csv") return buildRcaCsv(user);

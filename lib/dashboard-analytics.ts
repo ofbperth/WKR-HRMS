@@ -9,7 +9,8 @@ export type AnalyticsFilters = {
   endDate?: string;
   unitId?: string;
   clinicalOrGeneral?: string;
-  simpleCategory?: string;
+  simpleCategory?: string | string[];
+  yMode?: string;
   includeClosed?: string;
   scopeUnitId?: string | null;
 };
@@ -59,7 +60,13 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   if (filters.scopeUnitId) and.push({ incidentUnitId: filters.scopeUnitId });
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
-  if (filters.simpleCategory) and.push({ simpleCategory: filters.simpleCategory });
+  const simpleCategories = Array.isArray(filters.simpleCategory)
+    ? filters.simpleCategory.filter(Boolean)
+    : filters.simpleCategory
+      ? [filters.simpleCategory]
+      : [];
+  if (simpleCategories.length === 1) and.push({ simpleCategory: simpleCategories[0] });
+  if (simpleCategories.length > 1) and.push({ simpleCategory: { in: simpleCategories } });
   return and.length ? { AND: and } : {};
 }
 
@@ -359,7 +366,7 @@ export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
   const started = Date.now();
   const where = buildIncidentWhere(filters);
   const { lookup, unitNames } = await commonFilterLookups();
-  const yMode = filters.simpleCategory === "__Y_SIMPLE__" ? "simpleCategory" : "severity";
+  const yMode = filters.yMode === "simpleCategory" ? "simpleCategory" : "severity";
   const yValues = yMode === "simpleCategory" ? lookup.simpleCategories : [...SEVERITY_VALUES];
   const grouped = await prisma.incident.groupBy({
     by: yMode === "simpleCategory" ? ["incidentUnitId", "simpleCategory", "severity"] : ["incidentUnitId", "severity"],
