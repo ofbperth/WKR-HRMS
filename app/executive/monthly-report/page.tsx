@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
+import { formatDateTime } from "@/lib/format";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
 
@@ -95,7 +96,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   return <AppShell user={user}><div className="print-page space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">รายงานสรุปความเสี่ยง</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลสำหรับพิมพ์ ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
     <SummaryReportFilter defaults={{ mode: range.mode, month: currentMonth, startMonth, endMonth, fiscalYear: String(fiscalYear) }} />
-    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">รายงานสรุปความเสี่ยงโรงพยาบาล</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {new Date().toLocaleString("th-TH")}</p></div>
+    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">รายงานสรุปความเสี่ยงโรงพยาบาล</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {formatDateTime(new Date())}</p></div>
     <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Incident ทั้งหมด" value={summary.total} /><Metric label="ปิดเคสแล้ว" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="ส่ง RCA แล้ว" value={summary.rcaSubmitted} /><Metric label="แผนแก้ไขเกินกำหนด" value={summary.overdueActions} /></div>
     <Card className="border-red-200"><CardHeader><CardTitle>แจ้งเตือน Sentinel Event</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="ไม่มี Sentinel Event ในช่วงเวลานี้" /></CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-2">

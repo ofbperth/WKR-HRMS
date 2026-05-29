@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatDateTime } from "@/lib/format";
 import { roleDisplay } from "@/lib/i18n/th";
 
 const roles = ["Reporter", "UnitManager", "RMTeam", "Executive", "Admin"];
@@ -107,7 +108,7 @@ export function AdminInvites({ units }: { units: Array<{ id: string; name: strin
       <div className="md:col-span-4 flex items-center gap-3"><Button type="submit">บันทึกคำเชิญ</Button>{message ? <span className="text-sm text-slate-600">{message}</span> : null}</div>
     </form>
     <div className="overflow-auto">
-      <table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2">อีเมล</th><th className="px-3 py-2">บทบาท</th><th className="px-3 py-2">หน่วยงาน</th><th className="px-3 py-2">สถานะ</th><th className="px-3 py-2">หมดอายุ</th><th className="px-3 py-2">การทำงาน</th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-t"><td className="px-3 py-2">{item.email}</td><td className="px-3 py-2">{roleDisplay(item.role)}</td><td className="px-3 py-2">{item.unit?.name || "-"}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{new Date(item.expiresAt).toLocaleDateString("th-TH")}</td><td className="px-3 py-2"><button className="rounded-md border px-3 py-1 text-red-600" type="button" onClick={() => revoke(item.id)}>ยกเลิก</button></td></tr>)}</tbody></table>
+      <table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2">อีเมล</th><th className="px-3 py-2">บทบาท</th><th className="px-3 py-2">หน่วยงาน</th><th className="px-3 py-2">สถานะ</th><th className="px-3 py-2">หมดอายุ</th><th className="px-3 py-2">การทำงาน</th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-t"><td className="px-3 py-2">{item.email}</td><td className="px-3 py-2">{roleDisplay(item.role)}</td><td className="px-3 py-2">{item.unit?.name || "-"}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{formatDateTime(item.expiresAt)}</td><td className="px-3 py-2"><button className="rounded-md border px-3 py-1 text-red-600" type="button" onClick={() => revoke(item.id)}>ยกเลิก</button></td></tr>)}</tbody></table>
     </div>
     {meta.total > meta.pageSize ? <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm">
       <div className="text-slate-600">แสดง {(meta.page - 1) * meta.pageSize + 1}-{Math.min(meta.page * meta.pageSize, meta.total)} จาก {meta.total} คำเชิญ</div>

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildIncidentWhere, buildOverdueRcaWhere, safetyGoals } from "@/lib/dashboard-analytics";
+import { buildIncidentWhere, buildOverdueRcaWhere, buildRcaStatusChart, safetyGoals } from "@/lib/dashboard-analytics";
+import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
-import { formatRcaDueCountdown } from "@/lib/format";
+import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 
@@ -11,6 +12,19 @@ const withActiveFilter = (...filters: object[]) => ({
 });
 
 describe("dashboard query filters", () => {
+  it("normalizes dashboard API filters the same way as dashboard pages", () => {
+    expect(normalizeDashboardSearchParams(dashboardSearchParamsFromUrl("https://example.test/api/dashboard/rm"))).toEqual({
+      startDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+  });
+
+  it("preserves repeated SIMPLE filters for analytics API routes", () => {
+    expect(normalizeDashboardSearchParams(dashboardSearchParamsFromUrl("https://example.test/api/analytics/heatmap?simpleCategory=S1&simpleCategory=S2"))).toMatchObject({
+      simpleCategory: ["S1", "S2"],
+    });
+  });
+
   it("keeps closed incidents countable by default while excluding rejected incidents", () => {
     expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { not: "Rejected" } }));
   });
@@ -120,5 +134,37 @@ describe("RCA due countdown", () => {
     expect(formatRcaDueCountdown("2026-05-29T10:00:00.000Z", now)).toBe("ครบกำหนดวันนี้");
     expect(formatRcaDueCountdown("2026-06-01T10:00:00.000Z", now)).toBe("เหลือ 3 วัน");
     expect(formatRcaDueCountdown("2026-05-27T10:00:00.000Z", now)).toBe("เลยกำหนด 2 วัน");
+  });
+});
+
+describe("RCA dashboard chart data", () => {
+  it("shows overdue RCA as a subset split out from not-started RCA", () => {
+    expect(buildRcaStatusChart({ notStarted: 5, waitingApproval: 0, overdue: 2, submitted: 1 })).toEqual([
+      { name: "ยังไม่เริ่ม RCA", value: 3 },
+      { name: "ส่ง RCA แล้ว", value: 0 },
+      { name: "RCA เกินกำหนด", value: 2 },
+      { name: "RCA submitted", value: 1 },
+    ]);
+  });
+
+  it("does not let an unexpected overdue count make not-started RCA negative", () => {
+    expect(buildRcaStatusChart({ notStarted: 1, waitingApproval: 0, overdue: 2, submitted: 0 })[0]).toEqual({ name: "ยังไม่เริ่ม RCA", value: 0 });
+  });
+});
+
+describe("Bangkok date/time display formatting", () => {
+  it("renders UTC timestamps in Bangkok time using 24-hour Gregorian format", () => {
+    const output = formatDateTime("2026-05-29T10:05:00.000Z");
+    expect(output).toBe("29/05/2026 17:05");
+    expect(output).not.toMatch(/\b(?:AM|PM)\b/i);
+  });
+
+  it("renders time-only values as HH:mm in Bangkok time", () => {
+    expect(formatTimeOnly("2026-05-29T01:07:00.000Z")).toBe("08:07");
+  });
+
+  it("keeps empty date/time values as dash", () => {
+    expect(formatDateTime(null)).toBe("-");
+    expect(formatTimeOnly(undefined)).toBe("-");
   });
 });

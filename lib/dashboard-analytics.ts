@@ -17,6 +17,7 @@ export type AnalyticsFilters = {
 
 const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readonly string[];
 const fiscalYearStartMonth = 9;
+export const dashboardAnalyticsCacheVersion = "dashboard-analytics-rca-pie-v2";
 
 export const safetyGoals = [
   { id: "safe-surgery", title: "การผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง ผิดหัตถการ", codes: ["CPS101", "CPS102", "CPS103"] },
@@ -88,6 +89,17 @@ function groupValue(rows: Array<{ [key: string]: any; _count: number }>, key: st
 
 function percent(numerator: number, denominator: number) {
   return denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
+}
+
+export function buildRcaStatusChart(input: { notStarted: number; waitingApproval: number; overdue: number; submitted: number }) {
+  const overdue = Math.max(0, input.overdue);
+  const notStartedOnTime = Math.max(0, input.notStarted - overdue);
+  return [
+    { name: "ยังไม่เริ่ม RCA", value: notStartedOnTime },
+    { name: "ส่ง RCA แล้ว", value: input.waitingApproval },
+    { name: "RCA เกินกำหนด", value: overdue },
+    { name: "RCA submitted", value: input.submitted },
+  ];
 }
 
 function monthKey(date: Date | string) {
@@ -247,7 +259,6 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     categorySeverityRows,
     riskSeverityRows,
     unitSeverityRows,
-    rcaStatusRows,
     actionStatusRows,
     openActions,
     overdueActions,
@@ -276,7 +287,6 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     () => prisma.incident.groupBy({ by: ["simpleCategory", "severity"], where, _count: true }),
     () => prisma.incident.groupBy({ by: ["riskCodeId", "severity"], where, _count: true }),
     () => prisma.incident.groupBy({ by: ["incidentUnitId", "severity"], where, _count: true }),
-    () => prisma.rCA.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
     () => prisma.actionPlan.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
     () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
     () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
@@ -344,7 +354,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       topRecurrentRiskCodes: summarizeDimension(riskSeverityRows as any, "riskCodeId", "riskCode", riskNames, riskExtras).slice(0, 5),
       topUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras),
       weightedUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras).sort((a, b) => b.score - a.score),
-      rcaStatus: ["Draft", "Submitted", "Approved", "RevisionRequired"].map((name) => ({ name, value: groupValue(rcaStatusRows as any, "status", name) })),
+      rcaStatus: buildRcaStatusChart({ notStarted: rcaRequired, waitingApproval: rcaWaitingApproval, overdue: overdueRca, submitted: rcaSubmitted }),
       actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map((name) => ({ name, value: groupValue(actionStatusRows as any, "status", name) })),
       openRcaByUnit: dimensionFromIncidents(openRcaRows),
       overdueActionByUnit: dimensionFromIncidents(overdueActionRows),
