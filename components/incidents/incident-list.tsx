@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
-import { formatDateOnly, formatRcaDueCountdown } from "@/lib/format";
+import { formatDateTime, formatRcaDueCountdown } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
@@ -98,15 +98,15 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
               <div className="text-xs uppercase text-slate-500">วันที่เกิดเหตุ</div>
-              <div className="text-sm font-medium">{formatDateOnly(incident.occurredAt)}</div>
+              <div className="text-sm font-medium">{formatDateTime(incident.occurredAt)}</div>
             </div>
             <div className="min-w-0">
               <div className="text-xs uppercase text-slate-500">วันที่รายงาน</div>
-              <div className="text-sm font-medium">{formatDateOnly(incident.reportedAt)}</div>
+              <div className="text-sm font-medium">{formatDateTime(incident.reportedAt)}</div>
             </div>
             <div className="min-w-0">
               <div className="text-xs uppercase text-slate-500">กำหนดส่ง RCA</div>
-              <div className="text-sm font-medium">{formatDateOnly(incident.rcaDueAt)}</div>
+              <div className="text-sm font-medium">{formatDateTime(incident.rcaDueAt)}</div>
               {showRcaDueCountdown ? <div className="text-xs text-slate-500">{formatRcaDueCountdown(incident.rcaDueAt)}</div> : null}
             </div>
           </div>
@@ -147,11 +147,11 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
           </div>
           <div className="col-span-3 min-w-0 xl:col-span-2">
             <div className="text-xs font-semibold uppercase text-slate-500">วันที่เกิดเหตุ</div>
-            <div>{formatDateOnly(incident.occurredAt)}</div>
+            <div>{formatDateTime(incident.occurredAt)}</div>
           </div>
           <div className="col-span-3 min-w-0 xl:col-span-2">
             <div className="text-xs font-semibold uppercase text-slate-500">กำหนดส่ง RCA</div>
-            <div>{formatDateOnly(incident.rcaDueAt)}</div>
+            <div>{formatDateTime(incident.rcaDueAt)}</div>
             {showRcaDueCountdown ? <div className="text-xs text-slate-500">{formatRcaDueCountdown(incident.rcaDueAt)}</div> : null}
           </div>
           <div className="col-span-6 min-w-0 xl:col-span-3">

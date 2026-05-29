@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildIncidentWhere, buildOverdueRcaWhere, safetyGoals } from "@/lib/dashboard-analytics";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
-import { formatRcaDueCountdown } from "@/lib/format";
+import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 
@@ -120,5 +120,22 @@ describe("RCA due countdown", () => {
     expect(formatRcaDueCountdown("2026-05-29T10:00:00.000Z", now)).toBe("ครบกำหนดวันนี้");
     expect(formatRcaDueCountdown("2026-06-01T10:00:00.000Z", now)).toBe("เหลือ 3 วัน");
     expect(formatRcaDueCountdown("2026-05-27T10:00:00.000Z", now)).toBe("เลยกำหนด 2 วัน");
+  });
+});
+
+describe("Bangkok date/time display formatting", () => {
+  it("renders UTC timestamps in Bangkok time using 24-hour Gregorian format", () => {
+    const output = formatDateTime("2026-05-29T10:05:00.000Z");
+    expect(output).toBe("29/05/2026 17:05");
+    expect(output).not.toMatch(/\b(?:AM|PM)\b/i);
+  });
+
+  it("renders time-only values as HH:mm in Bangkok time", () => {
+    expect(formatTimeOnly("2026-05-29T01:07:00.000Z")).toBe("08:07");
+  });
+
+  it("keeps empty date/time values as dash", () => {
+    expect(formatDateTime(null)).toBe("-");
+    expect(formatTimeOnly(undefined)).toBe("-");
   });
 });

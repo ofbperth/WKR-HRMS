@@ -1,13 +1,71 @@
 export function formatDateTime(value: Date | string | null | undefined) {
   if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(date);
+  const date = toValidDate(value);
+  if (!date) return "-";
+  return formatBangkokParts(date, true);
+}
+
+export function formatTimeOnly(value: Date | string | null | undefined) {
+  if (!value) return "-";
+  const date = toValidDate(value);
+  if (!date) return "-";
+  return formatBangkokParts(date, false);
 }
 
 export function formatDateOnly(value: Date | string | null | undefined) {
   if (!value) return "-";
+  const date = toValidDate(value);
+  if (!date) return "-";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.day}/${parts.month}/${parts.year}`;
+}
+
+export function formatBangkokDateInput(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = toValidDate(value);
+  if (!date) return "";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function formatBangkokTimeInput(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = toValidDate(value);
+  if (!date) return "";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.hour}:${parts.minute}`;
+}
+
+function toValidDate(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "Asia/Bangkok" }).format(date);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatBangkokParts(date: Date, includeDate: boolean) {
+  const parts = bangkokDateTimeParts(date);
+  const time = `${parts.hour}:${parts.minute}`;
+  return includeDate ? `${parts.day}/${parts.month}/${parts.year} ${time}` : time;
+}
+
+function bangkokDateTimeParts(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok",
+    calendar: "gregory",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: get("day"),
+    month: get("month"),
+    year: get("year"),
+    hour: get("hour"),
+    minute: get("minute"),
+  };
 }
 
 function bangkokDayNumber(value: Date) {

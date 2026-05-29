@@ -7,7 +7,7 @@ import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, inciden
 import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { actionPlanStatusDisplay, affectedTypeDisplay, roleDisplay } from "@/lib/i18n/th";
-import { statusLabel } from "@/lib/format";
+import { formatBangkokDateInput, formatBangkokTimeInput, statusLabel } from "@/lib/format";
 
 type UserOption = Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
 
@@ -17,8 +17,8 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const occurredDate = new Date(incident.occurredAt).toISOString().slice(0, 10);
-  const occurredTime = new Date(incident.occurredAt).toTimeString().slice(0, 5);
+  const occurredDate = formatBangkokDateInput(incident.occurredAt);
+  const occurredTime = formatBangkokTimeInput(incident.occurredAt);
   const [form, setForm] = useState({
     occurredDate,
     occurredTime,
@@ -303,7 +303,7 @@ export function CloseIncidentButton({ incidentId }: { incidentId: string }) {
 export function ActionPlanForm({ incidentId, users }: { incidentId: string; users: UserOption[] }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", ownerId: "", coOwnerText: "", dueDate: new Date().toISOString().slice(0, 10), kpiName: "", kpiTarget: "" });
+  const [form, setForm] = useState({ title: "", description: "", ownerId: "", coOwnerText: "", dueDate: formatBangkokDateInput(new Date()), kpiName: "", kpiTarget: "" });
   async function submit() {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });

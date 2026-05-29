@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
+import { formatBangkokDateInput, formatBangkokTimeInput } from "@/lib/format";
 
 type FormValues = z.infer<typeof createIncidentSchema>;
 
@@ -21,8 +22,8 @@ const defaultValues: Partial<FormValues> = {
   clinicalOrGeneral: "Clinical",
   severity: "C",
   needRmSupport: false,
-  occurredDate: new Date().toISOString().slice(0, 10),
-  occurredTime: new Date().toTimeString().slice(0, 5),
+  occurredDate: formatBangkokDateInput(new Date()),
+  occurredTime: formatBangkokTimeInput(new Date()),
 };
 
 function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
