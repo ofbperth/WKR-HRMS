@@ -17,6 +17,7 @@ export type AnalyticsFilters = {
 
 const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readonly string[];
 const fiscalYearStartMonth = 9;
+export const dashboardAnalyticsCacheVersion = "dashboard-analytics-rca-pie-v2";
 
 export const safetyGoals = [
   { id: "safe-surgery", title: "การผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง ผิดหัตถการ", codes: ["CPS101", "CPS102", "CPS103"] },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildIncidentWhere, buildOverdueRcaWhere, buildRcaStatusChart, safetyGoals } from "@/lib/dashboard-analytics";
+import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
 import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
@@ -11,6 +12,19 @@ const withActiveFilter = (...filters: object[]) => ({
 });
 
 describe("dashboard query filters", () => {
+  it("normalizes dashboard API filters the same way as dashboard pages", () => {
+    expect(normalizeDashboardSearchParams(dashboardSearchParamsFromUrl("https://example.test/api/dashboard/rm"))).toEqual({
+      startDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+  });
+
+  it("preserves repeated SIMPLE filters for analytics API routes", () => {
+    expect(normalizeDashboardSearchParams(dashboardSearchParamsFromUrl("https://example.test/api/analytics/heatmap?simpleCategory=S1&simpleCategory=S2"))).toMatchObject({
+      simpleCategory: ["S1", "S2"],
+    });
+  });
+
   it("keeps closed incidents countable by default while excluding rejected incidents", () => {
     expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { not: "Rejected" } }));
   });

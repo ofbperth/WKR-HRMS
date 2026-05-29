@@ -32,3 +32,16 @@ export function normalizeDashboardSearchParams(searchParams: Record<string, stri
   return filters;
 }
 
+export function dashboardSearchParamsFromUrl(url: string) {
+  const params = new URL(url).searchParams;
+  const searchParams: Record<string, string | string[] | undefined> = {};
+  params.forEach((value, key) => {
+    const existing = searchParams[key];
+    if (existing === undefined) {
+      const values = params.getAll(key);
+      searchParams[key] = values.length > 1 ? values : value;
+    }
+  });
+  return searchParams;
+}
+
