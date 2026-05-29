@@ -20,6 +20,13 @@ export function formatDateOnly(value: Date | string | null | undefined) {
   return `${parts.day}/${parts.month}/${parts.year}`;
 }
 
+export function formatMonthBucket(value: string | null | undefined) {
+  if (!value) return "-";
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `01/${match[2]}/${match[1]}`;
+}
+
 export function formatBangkokDateInput(value: Date | string | null | undefined) {
   if (!value) return "";
   const date = toValidDate(value);

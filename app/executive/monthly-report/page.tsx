@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
-import { formatDateTime } from "@/lib/format";
+import { formatDateOnly, formatDateTime, formatMonthBucket } from "@/lib/format";
 import { bangkokMonthInputToRange, bangkokMonthKey, bangkokMonthRange } from "@/lib/reporting-date";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
@@ -33,7 +33,7 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
     return {
       start: bangkokMonthRange(fiscalYear - 1, 10).start,
       end: bangkokMonthRange(fiscalYear, 9).end,
-      label: `ปีงบประมาณ ${fiscalYear + 543} (${fiscalYear - 1}-10 ถึง ${fiscalYear}-09)`,
+      label: `ปีงบประมาณ ${fiscalYear + 543} (${formatDateOnly(bangkokMonthRange(fiscalYear - 1, 10).start)} ถึง ${formatDateOnly(bangkokMonthRange(fiscalYear, 9).end)})`,
       mode,
       fiscalYear,
     };
@@ -43,10 +43,10 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
     const endBase = parseMonth(typeof searchParams.endMonth === "string" ? searchParams.endMonth : undefined, now);
     const end = endBase.start < start.start ? start.end : endBase.end;
     const endLabel = endBase.start < start.start ? bangkokMonthKey(start.start) : bangkokMonthKey(endBase.start);
-    return { start: start.start, end, label: `${bangkokMonthKey(start.start)} ถึง ${endLabel}`, mode };
+    return { start: start.start, end, label: `${formatMonthBucket(bangkokMonthKey(start.start))} ถึง ${formatMonthBucket(endLabel)}`, mode };
   }
   const month = parseMonth(typeof searchParams.month === "string" ? searchParams.month : undefined, now);
-  return { start: month.start, end: month.end, label: bangkokMonthKey(month.start), mode: "month" };
+  return { start: month.start, end: month.end, label: formatMonthBucket(bangkokMonthKey(month.start)), mode: "month" };
 }
 
 async function buildSummary(start: Date, end: Date, scopeUnitId?: string | null) {

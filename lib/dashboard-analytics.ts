@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatMonthBucket } from "@/lib/format";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
 import { bangkokDateRangeFilter, bangkokFiscalYearRange, bangkokLast12MonthsRange, bangkokMonthKey, bangkokThisMonthRange } from "@/lib/reporting-date";
@@ -110,7 +111,10 @@ function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: bo
     current.nearMissRate = percent(current.nearMiss, current.total);
     map.set(key, current);
   }
-  return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+  return Array.from(map.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-12)
+    .map((item) => ({ ...item, month: formatMonthBucket(item.month) }));
 }
 
 async function runBatched<T extends readonly (() => Promise<unknown>)[]>(tasks: T, batchSize = 6) {

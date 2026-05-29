@@ -3,7 +3,7 @@ import { buildIncidentWhere, buildOverdueRcaWhere, buildRcaStatusChart, safetyGo
 import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
 import { buildTriageIncidentWhere } from "@/lib/triage-query";
-import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
+import { formatDateTime, formatMonthBucket, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
 import { bangkokDateRangeFilter, bangkokEndOfDay, bangkokMonthKey, bangkokMonthRange, bangkokStartOfDay } from "@/lib/reporting-date";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
@@ -219,6 +219,11 @@ describe("RCA dashboard chart data", () => {
 });
 
 describe("Bangkok date/time display formatting", () => {
+  it("formats month buckets as DD/MM/YYYY for user-facing labels", () => {
+    expect(formatMonthBucket("2026-05")).toBe("01/05/2026");
+    expect(formatMonthBucket("2027-01")).toBe("01/01/2027");
+  });
+
   it("renders UTC timestamps in Bangkok time using 24-hour Gregorian format", () => {
     const output = formatDateTime("2026-05-29T10:05:00.000Z");
     expect(output).toBe("29/05/2026 17:05");
