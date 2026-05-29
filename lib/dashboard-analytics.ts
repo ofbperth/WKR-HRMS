@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
+import { bangkokDateRangeFilter, bangkokFiscalYearRange, bangkokLast12MonthsRange, bangkokMonthKey, bangkokThisMonthRange } from "@/lib/reporting-date";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
 import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
 
@@ -16,7 +17,6 @@ export type AnalyticsFilters = {
 };
 
 const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readonly string[];
-const fiscalYearStartMonth = 9;
 export const dashboardAnalyticsCacheVersion = "dashboard-analytics-rca-pie-v2";
 
 export const safetyGoals = [
@@ -31,23 +31,16 @@ export const safetyGoals = [
   { id: "deteriorating", title: "การคัดกรองที่ห้องฉุกเฉินคลาดเคลื่อน", codes: ["CPE402", "CPE403", "CPE405", "CPE407"] },
 ];
 
-function toDate(value?: string, end = false) {
-  if (!value) return undefined;
-  const date = new Date(`${value}T${end ? "23:59:59" : "00:00:00"}`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
 export function getFiscalYearRange(now = new Date()) {
-  const year = now.getMonth() >= fiscalYearStartMonth ? now.getFullYear() : now.getFullYear() - 1;
-  return { start: new Date(year, fiscalYearStartMonth, 1), end: new Date(year + 1, fiscalYearStartMonth, 0, 23, 59, 59) };
+  return bangkokFiscalYearRange(now);
 }
 
 export function getThisMonthRange(now = new Date()) {
-  return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+  return bangkokThisMonthRange(now);
 }
 
 export function getLast12MonthsRange(now = new Date()) {
-  return { start: new Date(now.getFullYear(), now.getMonth() - 11, 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+  return bangkokLast12MonthsRange(now);
 }
 
 export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
@@ -55,9 +48,8 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
   and.push({ status: { not: "Rejected" } });
-  const start = toDate(filters.startDate);
-  const end = toDate(filters.endDate, true);
-  if (start || end) and.push({ occurredAt: { ...(start ? { gte: start } : {}), ...(end ? { lte: end } : {}) } });
+  const occurredAt = bangkokDateRangeFilter(filters.startDate, filters.endDate);
+  if (occurredAt) and.push({ occurredAt });
   if (filters.scopeUnitId) and.push({ incidentUnitId: filters.scopeUnitId });
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
@@ -103,7 +95,7 @@ export function buildRcaStatusChart(input: { notStarted: number; waitingApproval
 }
 
 function monthKey(date: Date | string) {
-  return new Date(date).toISOString().slice(0, 7);
+  return bangkokMonthKey(date);
 }
 
 function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: boolean }>) {

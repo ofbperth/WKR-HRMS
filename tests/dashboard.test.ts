@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildIncidentWhere, buildOverdueRcaWhere, buildRcaStatusChart, safetyGoals } from "@/lib/dashboard-analytics";
 import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
+import { buildTriageIncidentWhere } from "@/lib/triage-query";
 import { formatDateTime, formatRcaDueCountdown, formatTimeOnly } from "@/lib/format";
+import { bangkokDateRangeFilter, bangkokEndOfDay, bangkokMonthKey, bangkokMonthRange, bangkokStartOfDay } from "@/lib/reporting-date";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 
@@ -89,6 +91,16 @@ describe("9 standard safety mappings", () => {
 });
 
 describe("incident list RCA due filters", () => {
+  it("uses Bangkok day boundaries for incident search date filters", () => {
+    const where = buildIncidentListWhere({ id: "rm-1", role: "RMTeam", unitId: null }, { from: "2026-05-31", to: "2026-05-31" }) as any;
+    expect(where.AND).toContainEqual({
+      occurredAt: {
+        gte: new Date("2026-05-30T17:00:00.000Z"),
+        lte: new Date("2026-05-31T16:59:59.999Z"),
+      },
+    });
+  });
+
   it("uses OR semantics within multi-select SIMPLE filters", () => {
     const where = buildIncidentListWhere({ id: "rm-1", role: "RMTeam", unitId: null }, { simpleCategory: ["S1", "S2"], unitId: "unit-1" }) as any;
     expect(where.AND).toEqual([
@@ -134,6 +146,60 @@ describe("RCA due countdown", () => {
     expect(formatRcaDueCountdown("2026-05-29T10:00:00.000Z", now)).toBe("ครบกำหนดวันนี้");
     expect(formatRcaDueCountdown("2026-06-01T10:00:00.000Z", now)).toBe("เหลือ 3 วัน");
     expect(formatRcaDueCountdown("2026-05-27T10:00:00.000Z", now)).toBe("เลยกำหนด 2 วัน");
+  });
+});
+
+describe("triage date filters", () => {
+  it("uses the same Bangkok day boundaries as incident search", () => {
+    expect(buildTriageIncidentWhere({ id: "rm-1", role: "RMTeam", unitId: null }, { from: "2026-05-31", to: "2026-05-31" })).toMatchObject({
+      reviewedAt: null,
+      status: { notIn: ["Closed", "Rejected"] },
+      occurredAt: {
+        gte: new Date("2026-05-30T17:00:00.000Z"),
+        lte: new Date("2026-05-31T16:59:59.999Z"),
+      },
+    });
+  });
+});
+
+describe("Bangkok reporting date boundaries", () => {
+  it("builds inclusive Bangkok calendar-day ranges for dashboard and exports", () => {
+    expect(bangkokStartOfDay("2026-06-01")?.toISOString()).toBe("2026-05-31T17:00:00.000Z");
+    expect(bangkokEndOfDay("2026-06-01")?.toISOString()).toBe("2026-06-01T16:59:59.999Z");
+    expect(bangkokDateRangeFilter("2026-06-01", "2026-06-01")).toEqual({
+      gte: new Date("2026-05-31T17:00:00.000Z"),
+      lte: new Date("2026-06-01T16:59:59.999Z"),
+    });
+  });
+
+  it("keeps 23:00-01:00 local incidents inside the same Bangkok report date", () => {
+    const range = bangkokDateRangeFilter("2026-06-01", "2026-06-01")!;
+    const lateLocal = new Date("2026-06-01T16:30:00.000Z"); // 23:30 Bangkok
+    const earlyLocal = new Date("2026-05-31T18:15:00.000Z"); // 01:15 Bangkok
+    expect(lateLocal >= range.gte! && lateLocal <= range.lte!).toBe(true);
+    expect(earlyLocal >= range.gte! && earlyLocal <= range.lte!).toBe(true);
+  });
+
+  it("assigns UTC-adjacent month-end and year-end incidents to Bangkok calendar month", () => {
+    expect(bangkokMonthKey("2026-05-31T17:30:00.000Z")).toBe("2026-06");
+    expect(bangkokMonthKey("2026-12-31T17:30:00.000Z")).toBe("2027-01");
+    const december = bangkokMonthRange(2026, 12);
+    expect(december.start.toISOString()).toBe("2026-11-30T17:00:00.000Z");
+    expect(december.end.toISOString()).toBe("2026-12-31T16:59:59.999Z");
+  });
+
+  it("uses identical Bangkok boundaries for dashboard filters", () => {
+    expect(buildIncidentWhere({ startDate: "2026-12-31", endDate: "2026-12-31" })).toEqual(
+      withActiveFilter(
+        { status: { not: "Rejected" } },
+        {
+          occurredAt: {
+            gte: new Date("2026-12-30T17:00:00.000Z"),
+            lte: new Date("2026-12-31T16:59:59.999Z"),
+          },
+        },
+      ),
+    );
   });
 });
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { SEVERITY_VALUES } from "@/lib/types";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
+import { bangkokMonthKey } from "@/lib/reporting-date";
 
 const highSeverity = ["E", "F", "G", "H", "I"];
 
@@ -25,7 +26,7 @@ export async function getIncidentAnalytics() {
   for (const item of incidents as any[]) {
     const unit = item.incidentUnit?.name ?? "Unknown";
     const category = item.simpleCategory || item.riskCode?.simpleCategory || "Unclassified";
-    const month = new Date(item.occurredAt).toISOString().slice(0, 7);
+    const month = bangkokMonthKey(item.occurredAt);
     const isHigh = highSeverity.includes(item.severity);
 
     const unitValue = unitMap.get(unit) ?? { unit, total: 0, high: 0, sentinel: 0, open: 0 };

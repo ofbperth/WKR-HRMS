@@ -4,11 +4,12 @@ import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
 import { LinkedStatCard } from "@/components/dashboard/stat-cards";
 import { getDashboardSummary, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
 import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
+import { bangkokDateKey } from "@/lib/reporting-date";
 
 type DashboardSearchParams = Record<string, string | string[] | undefined>;
 
 function dateOnly(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return bangkokDateKey(date);
 }
 
 function rangeHref(basePath: string, range: { start: Date; end: Date }) {

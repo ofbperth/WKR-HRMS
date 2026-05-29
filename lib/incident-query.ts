@@ -1,6 +1,7 @@
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
+import { bangkokDateRangeFilter } from "@/lib/reporting-date";
 import { cache as reactCache } from "react";
 
 type IncidentWhereInput = Record<string, unknown>;
@@ -67,10 +68,8 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   and.push({ status: { not: "Rejected" } });
 
   if (params.from || params.to) {
-    const occurredAt: Record<string, Date> = {};
-    if (params.from) occurredAt.gte = new Date(`${params.from}T00:00:00`);
-    if (params.to) occurredAt.lte = new Date(`${params.to}T23:59:59`);
-    and.push({ occurredAt });
+    const occurredAt = bangkokDateRangeFilter(params.from, params.to);
+    if (occurredAt) and.push({ occurredAt });
   }
   if (params.unitId) and.push({ incidentUnitId: params.unitId });
   if (params.severity) and.push({ severity: params.severity });

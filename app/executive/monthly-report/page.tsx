@@ -7,21 +7,21 @@ import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
 import { formatDateTime } from "@/lib/format";
+import { bangkokMonthInputToRange, bangkokMonthKey, bangkokMonthRange } from "@/lib/reporting-date";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
 
-type ReportRange = { start: Date; end: Date; label: string; mode: string };
+type ReportRange = { start: Date; end: Date; label: string; mode: string; fiscalYear?: number };
 
 function parseMonth(value: string | undefined, fallback: Date) {
-  if (!value || !/^\d{4}-\d{2}$/.test(value)) return new Date(fallback.getFullYear(), fallback.getMonth(), 1);
-  const [year, month] = value.split("-").map(Number);
-  return new Date(year, month - 1, 1);
+  return bangkokMonthInputToRange(value, fallback);
 }
 
 function normalizeFiscalYear(value: string | undefined) {
   const now = new Date();
-  const raw = Number(value || (now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear()));
-  if (!Number.isFinite(raw)) return now.getFullYear();
+  const [currentYear, currentMonth] = bangkokMonthKey(now).split("-").map(Number);
+  const raw = Number(value || (currentMonth >= 10 ? currentYear + 1 : currentYear));
+  if (!Number.isFinite(raw)) return currentYear;
   return raw > 2400 ? raw - 543 : raw;
 }
 
@@ -31,25 +31,27 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
   if (mode === "fiscalYear") {
     const fiscalYear = normalizeFiscalYear(typeof searchParams.fiscalYear === "string" ? searchParams.fiscalYear : undefined);
     return {
-      start: new Date(fiscalYear - 1, 9, 1),
-      end: new Date(fiscalYear, 9, 1),
+      start: bangkokMonthRange(fiscalYear - 1, 10).start,
+      end: bangkokMonthRange(fiscalYear, 9).end,
       label: `ปีงบประมาณ ${fiscalYear + 543} (${fiscalYear - 1}-10 ถึง ${fiscalYear}-09)`,
       mode,
+      fiscalYear,
     };
   }
   if (mode === "range") {
     const start = parseMonth(typeof searchParams.startMonth === "string" ? searchParams.startMonth : undefined, now);
     const endBase = parseMonth(typeof searchParams.endMonth === "string" ? searchParams.endMonth : undefined, now);
-    const end = new Date(endBase.getFullYear(), endBase.getMonth() + 1, 1);
-    return { start, end: end < start ? new Date(start.getFullYear(), start.getMonth() + 1, 1) : end, label: `${start.toISOString().slice(0, 7)} ถึง ${endBase.toISOString().slice(0, 7)}`, mode };
+    const end = endBase.start < start.start ? start.end : endBase.end;
+    const endLabel = endBase.start < start.start ? bangkokMonthKey(start.start) : bangkokMonthKey(endBase.start);
+    return { start: start.start, end, label: `${bangkokMonthKey(start.start)} ถึง ${endLabel}`, mode };
   }
   const month = parseMonth(typeof searchParams.month === "string" ? searchParams.month : undefined, now);
-  return { start: month, end: new Date(month.getFullYear(), month.getMonth() + 1, 1), label: month.toISOString().slice(0, 7), mode: "month" };
+  return { start: month.start, end: month.end, label: bangkokMonthKey(month.start), mode: "month" };
 }
 
 async function buildSummary(start: Date, end: Date, scopeUnitId?: string | null) {
   const incidents = await prisma.incident.findMany({
-    where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
+    where: countableIncidentFilter({ occurredAt: { gte: start, lte: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
     include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
     orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { occurredAt: "desc" }],
   });
@@ -89,10 +91,11 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const range = resolveRange(searchParams);
   const scopeUnitId = user.role === "UnitManager" ? user.unitId ?? "__NO_UNIT__" : undefined;
   const summary = await buildSummary(range.start, range.end, scopeUnitId);
-  const currentMonth = range.mode === "month" ? range.start.toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const startMonth = range.mode === "range" ? range.start.toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const endMonth = range.mode === "range" ? new Date(range.end.getFullYear(), range.end.getMonth() - 1, 1).toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const fiscalYear = range.end.getFullYear() + 543;
+  const currentBangkokMonth = bangkokMonthKey(now);
+  const currentMonth = range.mode === "month" ? bangkokMonthKey(range.start) : currentBangkokMonth;
+  const startMonth = range.mode === "range" ? bangkokMonthKey(range.start) : currentBangkokMonth;
+  const endMonth = range.mode === "range" ? bangkokMonthKey(range.end) : currentBangkokMonth;
+  const fiscalYear = (range.fiscalYear ?? normalizeFiscalYear(undefined)) + 543;
   return <AppShell user={user}><div className="print-page space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">รายงานสรุปความเสี่ยง</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลสำหรับพิมพ์ ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
     <SummaryReportFilter defaults={{ mode: range.mode, month: currentMonth, startMonth, endMonth, fiscalYear: String(fiscalYear) }} />
