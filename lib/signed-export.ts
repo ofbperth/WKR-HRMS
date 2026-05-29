@@ -4,6 +4,7 @@ import type { ExportKind } from "@/lib/export-builders";
 
 const minTtlSeconds = 15 * 60;
 const maxTtlSeconds = 60 * 60;
+export type SignedExportFilters = Record<string, string | string[]>;
 
 function getSigningSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -22,7 +23,7 @@ export async function createSignedExportToken(input: {
   userId: string;
   role: string;
   unitId: string | null;
-  filters?: Record<string, string>;
+  filters?: SignedExportFilters;
 }) {
   return new SignJWT({
     kind: input.kind,
@@ -47,7 +48,7 @@ export async function verifySignedExportToken(token: string) {
     userId: payload.userId,
     role: payload.role,
     unitId: typeof payload.unitId === "string" ? payload.unitId : null,
-    filters: typeof payload.filters === "object" && payload.filters ? payload.filters as Record<string, string> : {},
+    filters: typeof payload.filters === "object" && payload.filters ? payload.filters as SignedExportFilters : {},
   };
 }
 

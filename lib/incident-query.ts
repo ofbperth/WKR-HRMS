@@ -11,9 +11,10 @@ export type IncidentFilterParams = {
   to?: string;
   unitId?: string;
   severity?: string;
-  simpleCategory?: string;
+  simpleCategory?: string | string[];
   riskCodeId?: string;
   status?: string;
+  rcaWorklist?: string;
   rcaDue?: string;
   sentinel?: string;
   needRmSupport?: string;
@@ -23,6 +24,8 @@ export type IncidentFilterParams = {
 };
 
 export const INCIDENT_PAGE_SIZE = 20;
+
+export const RCA_WORKLIST_STATUSES = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] as const;
 
 export const incidentInclude = {
   incidentUnit: true,
@@ -71,9 +74,20 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   }
   if (params.unitId) and.push({ incidentUnitId: params.unitId });
   if (params.severity) and.push({ severity: params.severity });
-  if (params.simpleCategory) and.push({ simpleCategory: params.simpleCategory });
+  const simpleCategories = Array.isArray(params.simpleCategory)
+    ? params.simpleCategory.filter(Boolean)
+    : params.simpleCategory
+      ? [params.simpleCategory]
+      : [];
+  if (simpleCategories.length === 1) and.push({ simpleCategory: simpleCategories[0] });
+  if (simpleCategories.length > 1) and.push({ simpleCategory: { in: simpleCategories } });
   if (params.riskCodeId) and.push({ riskCodeId: params.riskCodeId });
-  if (params.status) and.push({ status: params.status });
+  if (params.rcaWorklist === "true") {
+    and.push({ reviewedAt: { not: null } });
+    and.push({ status: { in: [...RCA_WORKLIST_STATUSES] } });
+  } else if (params.status) {
+    and.push({ status: params.status });
+  }
   if (params.rcaDue === "overdue") {
     and.push({
       status: "RCARequired",

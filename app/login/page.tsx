@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, type MouseEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, Eye, Hospital, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleConfigured, setGoogleConfigured] = useState(false);
   const [googleNeedsMigration, setGoogleNeedsMigration] = useState(false);
@@ -95,6 +96,15 @@ export default function LoginPage() {
     }
   }
 
+  function onGoogleLogin(event: MouseEvent<HTMLAnchorElement>) {
+    if (isGoogleSubmitting) {
+      event.preventDefault();
+      return;
+    }
+    setError("");
+    setIsGoogleSubmitting(true);
+  }
+
   return (
     <div className="grid min-h-screen place-items-center bg-[linear-gradient(135deg,#f7fffb_0%,#eefaf3_46%,#f8fbff_100%)] p-4">
       <div className="grid w-full max-w-5xl gap-5 lg:grid-cols-[1fr_430px] lg:items-center">
@@ -128,12 +138,15 @@ export default function LoginPage() {
               {googleEnabled && googleConfigured
                 ? (
                   <a
-                    className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-4 text-base font-bold text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.12)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200"
+                    className={`inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-4 text-base font-bold text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.12)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 ${isGoogleSubmitting ? "pointer-events-none cursor-not-allowed opacity-70" : "hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/50"}`}
                     href="/api/auth/google"
+                    onClick={onGoogleLogin}
                     aria-label="เข้าสู่ระบบด้วย Google"
+                    aria-disabled={isGoogleSubmitting}
+                    aria-busy={isGoogleSubmitting}
                   >
-                    <GoogleLogo />
-                    <span>เข้าสู่ระบบด้วย Google</span>
+                    {isGoogleSubmitting ? <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" aria-hidden="true" /> : <GoogleLogo />}
+                    <span>{isGoogleSubmitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบด้วย Google"}</span>
                   </a>
                 )
                 : (

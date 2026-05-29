@@ -17,6 +17,8 @@ export function DashboardFilter({ units = [], categories = [], showUnit = true }
       const value = String(formData.get(key) || "");
       if (value) query.set(key, value);
     }
+    const yMode = search.get("yMode");
+    if (yMode) query.set("yMode", yMode);
     if (formData.get("includeClosed") === "on") query.set("includeClosed", "true");
     router.push(`?${query.toString()}`);
   }
