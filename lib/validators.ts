@@ -17,7 +17,7 @@ export const loginSchema = z.object({ email: z.string().email(), password: z.str
 
 const createIncidentBaseSchema = z.object({
   occurredDate: z.string().min(1, "กรุณาระบุวันที่เกิดเหตุ"),
-  occurredTime: z.string().min(1, "กรุณาระบุเวลาเกิดเหตุ"),
+  occurredTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Use 24-hour time as HH:mm"),
   incidentUnitId: z.string().min(1, "กรุณาเลือกหน่วยงานที่เกิดเหตุ"),
   location: z.string().optional().nullable(),
   affectedType: z.enum(affectedTypes),

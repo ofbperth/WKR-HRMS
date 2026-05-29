@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TimeInput } from "@/components/ui/time-input";
 import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, incidentStatusValues, medicationRightValues } from "@/lib/validators";
 import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
@@ -89,7 +90,7 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
 
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
     <label className="space-y-1 text-sm"><span className="font-medium">วันที่เกิดเหตุ</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.occurredDate} onChange={e => setForm({ ...form, occurredDate: e.target.value })} /></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">เวลาเกิดเหตุ</span><input type="time" className="h-10 w-full rounded-md border px-3" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">เวลาเกิดเหตุ</span><TimeInput className="rounded-md" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">หน่วยงานที่เกิดเหตุ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.incidentUnitId} onChange={e => setForm({ ...form, incidentUnitId: e.target.value })}>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">สถานที่</span><input className="h-10 w-full rounded-md border px-3" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">ประเภทผู้ได้รับผลกระทบ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.affectedType} onChange={e => setForm({ ...form, affectedType: e.target.value })}>{affectedTypes.map(type => <option key={type} value={type}>{affectedTypeDisplay(type)}</option>)}</select></label>
