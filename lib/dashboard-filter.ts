@@ -1,7 +1,8 @@
 import { getFiscalYearRange, getLast12MonthsRange, getThisMonthRange, type AnalyticsFilters } from "@/lib/dashboard-analytics";
+import { bangkokDateKey } from "@/lib/reporting-date";
 
 function dateOnly(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return bangkokDateKey(date);
 }
 
 export function normalizeDashboardSearchParams(searchParams: Record<string, string | string[] | undefined>): AnalyticsFilters {
