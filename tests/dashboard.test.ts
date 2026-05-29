@@ -124,14 +124,17 @@ describe("RCA due countdown", () => {
 });
 
 describe("RCA dashboard chart data", () => {
-  it("includes incidents that need RCA but do not have an RCA row yet", () => {
-    expect(buildRcaStatusChart(5, [{ status: "Submitted", _count: 2 }])).toEqual([
-      { name: "NotStarted", value: 5 },
-      { name: "Draft", value: 0 },
-      { name: "Submitted", value: 2 },
-      { name: "Approved", value: 0 },
-      { name: "RevisionRequired", value: 0 },
+  it("shows overdue RCA as a subset split out from not-started RCA", () => {
+    expect(buildRcaStatusChart({ notStarted: 5, waitingApproval: 0, overdue: 2, submitted: 1 })).toEqual([
+      { name: "ยังไม่เริ่ม RCA", value: 3 },
+      { name: "ส่ง RCA แล้ว", value: 0 },
+      { name: "RCA เกินกำหนด", value: 2 },
+      { name: "RCA submitted", value: 1 },
     ]);
+  });
+
+  it("does not let an unexpected overdue count make not-started RCA negative", () => {
+    expect(buildRcaStatusChart({ notStarted: 1, waitingApproval: 0, overdue: 2, submitted: 0 })[0]).toEqual({ name: "ยังไม่เริ่ม RCA", value: 0 });
   });
 });
 
