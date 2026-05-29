@@ -244,9 +244,25 @@ export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>
   };
 }
 
-export const getLookupData = cache(async function getLookupData() {
-  const units = await prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
-  const riskCodes = await prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } });
+export const getActiveUnits = cache(async function getActiveUnits() {
+  return prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
+});
+
+export const getActiveRiskCodes = cache(async function getActiveRiskCodes() {
+  return prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } });
+});
+
+export const getSimpleCategories = cache(async function getSimpleCategories() {
   const simpleCategories = await prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } });
-  return { units, riskCodes, simpleCategories: simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory) };
+  return simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory);
+});
+
+export const getDashboardFilterLookups = cache(async function getDashboardFilterLookups() {
+  const [units, simpleCategories] = await Promise.all([getActiveUnits(), getSimpleCategories()]);
+  return { units, simpleCategories };
+});
+
+export const getLookupData = cache(async function getLookupData() {
+  const [filterLookups, riskCodes] = await Promise.all([getDashboardFilterLookups(), getActiveRiskCodes()]);
+  return { ...filterLookups, riskCodes };
 });

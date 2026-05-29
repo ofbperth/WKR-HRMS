@@ -281,6 +281,25 @@ export function RcaApprovalForm({ incidentId }: { incidentId: string }) {
   return <div className="flex flex-wrap gap-2 rounded-lg border bg-white p-3"><Button type="button" onClick={() => decide(true)} disabled={saving}>อนุมัติ RCA</Button><Button type="button" className="bg-slate-700" onClick={() => decide(false)} disabled={saving}>ขอปรับปรุง</Button></div>;
 }
 
+export function CloseIncidentButton({ incidentId }: { incidentId: string }) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  async function closeIncident() {
+    const ok = window.confirm("Close this incident?");
+    if (!ok) return;
+    setSaving(true);
+    const res = await fetch(`/api/incidents/${incidentId}/close`, { method: "POST" });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Close incident failed");
+      return;
+    }
+    router.refresh();
+  }
+  return <Button type="button" className="bg-emerald-700 hover:bg-emerald-800" onClick={closeIncident} disabled={saving}>{saving ? "Closing..." : "Close incident"}</Button>;
+}
+
 export function ActionPlanForm({ incidentId, users }: { incidentId: string; users: UserOption[] }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);

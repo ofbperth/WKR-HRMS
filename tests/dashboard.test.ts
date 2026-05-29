@@ -11,8 +11,8 @@ const withActiveFilter = (...filters: object[]) => ({
 });
 
 describe("dashboard query filters", () => {
-  it("excludes closed and rejected incidents by default", () => {
-    expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { not: "Rejected" } }, { status: { not: "Closed" } }));
+  it("keeps closed incidents countable by default while excluding rejected incidents", () => {
+    expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { not: "Rejected" } }));
   });
 
   it("allows closed incidents when explicitly requested", () => {
@@ -21,7 +21,7 @@ describe("dashboard query filters", () => {
 
   it("uses unit-manager scope over a supplied unit filter", () => {
     expect(buildIncidentWhere({ scopeUnitId: "own-unit", unitId: "other-unit" })).toEqual(
-      withActiveFilter({ status: { not: "Rejected" } }, { incidentUnitId: "own-unit" }, { status: { not: "Closed" } }),
+      withActiveFilter({ status: { not: "Rejected" } }, { incidentUnitId: "own-unit" }),
     );
   });
 
@@ -31,7 +31,6 @@ describe("dashboard query filters", () => {
         { status: { not: "Rejected" } },
         { clinicalOrGeneral: "Clinical" },
         { simpleCategory: "M2" },
-        { status: { not: "Closed" } },
       ),
     );
   });

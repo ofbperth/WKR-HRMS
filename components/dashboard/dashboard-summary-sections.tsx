@@ -50,6 +50,7 @@ export async function RmDashboardSummary({ searchParams }: { searchParams: Dashb
       <LinkedStatCard title="ต้องการ RM support" value={data.cards.needRmSupport} href="/rm/search?needRmSupport=true" />
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="รอ verification" value={data.cards.waitingVerification} href="/rm/search?status=WaitingVerification" />
+      <LinkedStatCard title="Closed incident" value={data.cards.closedIncidents} href="/rm/search?status=Closed" />
     </div>
     <DashboardChartsSection variant="rm" />
   </div>;

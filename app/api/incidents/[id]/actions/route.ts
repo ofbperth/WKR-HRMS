@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { actionPlanSchema } from "@/lib/validators";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
+import { isIncidentClosed } from "@/lib/incident-close";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -10,6 +11,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const input = actionPlanSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isIncidentClosed(incident)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
     if (user.role !== "Admin" && !canUnitManageIncident(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (!incident.rca || incident.rca.status !== "Approved") return Response.json({ error: "RCA_APPROVAL_REQUIRED" }, { status: 409 });
     const dueDate = new Date(`${input.dueDate}T00:00:00`);
