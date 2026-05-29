@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { TimeInput } from "@/components/ui/time-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
-import { formatBangkokDateInput, formatBangkokTimeInput } from "@/lib/format";
+import { formatBangkokDateInput, formatBangkokTimeInput, formatDateInputDisplay, parseDateInputDisplay } from "@/lib/format";
 
 type FormValues = z.infer<typeof createIncidentSchema>;
 
@@ -131,7 +131,10 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
     </div>
 
     {step === 1 ? <Card><CardHeader><CardTitle className="text-xl">ส่วนที่ 1: ข้อมูลเหตุการณ์</CardTitle><p className="mt-1 text-sm text-slate-500">ระบุเวลา หน่วยงาน และรายละเอียดเหตุการณ์ที่จำเป็น</p></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
-      <Field label="วันที่เกิดเหตุ" error={errors.occurredDate?.message}><Input type="date" {...register("occurredDate")} /></Field>
+      <Field label="วันที่เกิดเหตุ" error={errors.occurredDate?.message}>
+        <DateInput value={values.occurredDate ?? ""} onChange={(value) => setValue("occurredDate", value, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} />
+        <input type="hidden" {...register("occurredDate")} />
+      </Field>
       <Field label="เวลาเกิดเหตุ" error={errors.occurredTime?.message}><TimeInput {...register("occurredTime")} /></Field>
       <Field label="หน่วยงานที่เกิดเหตุ" error={errors.incidentUnitId?.message}><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("incidentUnitId")}><option value="">เลือกหน่วยงาน</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
       <Field label="สถานที่เกิดเหตุ"><Input placeholder="เช่น ห้องยา, ER zone 1, Ward" {...register("location")} /></Field>
@@ -205,7 +208,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
 
     {step === 3 ? <Card><CardHeader><CardTitle className="text-xl">ส่วนที่ 3: ตรวจสอบและส่งรายงาน</CardTitle><p className="mt-1 text-sm text-slate-500">ตรวจความถูกต้องก่อนส่งรายงานเข้าสู่ระบบ</p></CardHeader><CardContent className="space-y-4">
       <div className="grid gap-3 text-sm md:grid-cols-2">
-        <Summary label="วันเวลาเกิดเหตุ" value={`${values.occurredDate || "-"} ${values.occurredTime || ""}`} />
+        <Summary label="วันเวลาเกิดเหตุ" value={`${formatDateInputDisplay(values.occurredDate) || "-"} ${values.occurredTime || ""}`} />
         <Summary label="หน่วยงาน" value={units.find(u => u.id === values.incidentUnitId)?.name || "-"} />
         <Summary label="ชื่อเหตุการณ์" value={values.title || "-"} />
         <Summary label="NRLS code" value={selectedRisk ? `${selectedRisk.code} ${selectedRisk.nameTh}` : "-"} />
@@ -221,4 +224,34 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
 
 function Summary({ label, value }: { label: string; value: string }) {
   return <div className="rounded-lg border bg-white p-3"><div className="text-xs text-slate-500">{label}</div><div className="mt-1 font-medium">{value}</div></div>;
+}
+
+function DateInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [displayValue, setDisplayValue] = useState(formatDateInputDisplay(value));
+
+  useEffect(() => {
+    setDisplayValue(formatDateInputDisplay(value));
+  }, [value]);
+
+  function normalizeDisplay(input: string) {
+    const digits = input.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  }
+
+  return <Input
+    type="text"
+    inputMode="numeric"
+    autoComplete="off"
+    maxLength={10}
+    placeholder="DD/MM/YYYY"
+    value={displayValue}
+    onChange={(event) => {
+      const nextDisplay = normalizeDisplay(event.currentTarget.value);
+      setDisplayValue(nextDisplay);
+      onChange(parseDateInputDisplay(nextDisplay));
+    }}
+    onBlur={() => setDisplayValue(formatDateInputDisplay(value))}
+  />;
 }

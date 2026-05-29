@@ -27,6 +27,25 @@ export function formatMonthBucket(value: string | null | undefined) {
   return `01/${match[2]}/${match[1]}`;
 }
 
+export function formatDateInputDisplay(value: string | null | undefined) {
+  if (!value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+export function parseDateInputDisplay(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return "";
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) return "";
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) return "";
+  return `${year}-${match[2]}-${match[1]}`;
+}
+
 export function formatBangkokDateInput(value: Date | string | null | undefined) {
   if (!value) return "";
   const date = toValidDate(value);
