@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Calendar } from "lucide-react";
 import type { z } from "zod";
 import { createIncidentSchema, medicationRightValues } from "@/lib/validators";
 import { clinicalSeverityDescriptions, generalSeverityDetails, severityDescriptions, severityOptionsFor } from "@/lib/severity";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { TimeInput } from "@/components/ui/time-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
-import { formatBangkokDateInput, formatBangkokTimeInput, formatDateInputDisplay, parseDateInputDisplay } from "@/lib/format";
+import { formatBangkokDateInput, formatBangkokTimeInput, formatDateInputDisplay } from "@/lib/format";
 
 type FormValues = z.infer<typeof createIncidentSchema>;
 
@@ -228,30 +229,59 @@ function Summary({ label, value }: { label: string; value: string }) {
 
 function DateInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [displayValue, setDisplayValue] = useState(formatDateInputDisplay(value));
+  const pickerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDisplayValue(formatDateInputDisplay(value));
   }, [value]);
 
-  function normalizeDisplay(input: string) {
-    const digits = input.replace(/\D/g, "").slice(0, 8);
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  function openPicker() {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    picker.focus();
+    try {
+      picker.showPicker?.();
+    } catch {
+      picker.click();
+    }
   }
 
-  return <Input
-    type="text"
-    inputMode="numeric"
-    autoComplete="off"
-    maxLength={10}
-    placeholder="DD/MM/YYYY"
-    value={displayValue}
-    onChange={(event) => {
-      const nextDisplay = normalizeDisplay(event.currentTarget.value);
-      setDisplayValue(nextDisplay);
-      onChange(parseDateInputDisplay(nextDisplay));
-    }}
-    onBlur={() => setDisplayValue(formatDateInputDisplay(value))}
-  />;
+  return <div className="relative">
+    <Input
+      type="text"
+      inputMode="none"
+      autoComplete="off"
+      placeholder="DD/MM/YYYY"
+      value={displayValue}
+      readOnly
+      onClick={openPicker}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPicker();
+        }
+      }}
+      className="cursor-pointer pr-12"
+    />
+    <button
+      type="button"
+      aria-label="เลือกวันที่"
+      onClick={openPicker}
+      className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md border-l text-slate-600 hover:bg-slate-50"
+    >
+      <Calendar aria-hidden="true" className="h-4 w-4" />
+    </button>
+    <input
+      ref={pickerRef}
+      type="date"
+      value={value}
+      tabIndex={-1}
+      aria-hidden="true"
+      className="pointer-events-none absolute bottom-0 right-0 h-px w-px opacity-0"
+      onChange={(event) => {
+        onChange(event.currentTarget.value);
+        setDisplayValue(formatDateInputDisplay(event.currentTarget.value));
+      }}
+    />
+  </div>;
 }
