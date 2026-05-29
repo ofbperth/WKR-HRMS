@@ -246,7 +246,7 @@ function DateInput({ value, onChange }: { value: string; onChange: (value: strin
     }
   }
 
-  return <div className="relative">
+  return <div className="relative flex h-10 overflow-hidden rounded-lg border border-input bg-white transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-100">
     <Input
       type="text"
       inputMode="none"
@@ -261,13 +261,13 @@ function DateInput({ value, onChange }: { value: string; onChange: (value: strin
           openPicker();
         }
       }}
-      className="cursor-pointer pr-12"
+      className="h-full flex-1 cursor-pointer rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0"
     />
     <button
       type="button"
       aria-label="เลือกวันที่"
       onClick={openPicker}
-      className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md border-l text-slate-600 hover:bg-slate-50"
+      className="grid h-full w-11 shrink-0 place-items-center border-l text-slate-600 hover:bg-slate-50"
     >
       <Calendar aria-hidden="true" className="h-4 w-4" />
     </button>
