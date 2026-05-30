@@ -10,7 +10,7 @@ export default async function UnitDashboardPage({ searchParams }: { searchParams
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">Dashboard หน่วยงาน</h1><p className="text-sm text-slate-600">อุบัติการณ์ RCA และสถานะแผนการแก้ไขเฉพาะหน่วยงานของคุณ</p></div>
     <Suspense fallback={<DashboardSummarySkeleton cards={8} />}>
-      <UnitDashboardSummary searchParams={searchParams} unitId={user.unitId} role={user.role} />
+      <UnitDashboardSummary searchParams={searchParams} unitId={user.unitId} />
     </Suspense>
   </div></AppShell>;
 }
