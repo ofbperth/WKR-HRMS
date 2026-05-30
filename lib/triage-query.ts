@@ -1,6 +1,7 @@
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { INCIDENT_PAGE_SIZE, incidentListSelect } from "@/lib/incident-query";
+import { bangkokDateRangeFilter } from "@/lib/reporting-date";
 
 const highSeverityTriageFilter = {
   OR: [
@@ -9,13 +10,15 @@ const highSeverityTriageFilter = {
   ],
 };
 
-export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
+export function buildTriageIncidentWhere(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
   const where: any = { reviewedAt: null, status: { notIn: ["Closed", "Rejected"] } };
   if (user.role === "UnitManager") where.incidentUnitId = user.unitId ?? "__NO_UNIT__";
   if (typeof params.from === "string" || typeof params.to === "string") {
-    where.occurredAt = {};
-    if (typeof params.from === "string" && params.from) where.occurredAt.gte = new Date(`${params.from}T00:00:00`);
-    if (typeof params.to === "string" && params.to) where.occurredAt.lte = new Date(`${params.to}T23:59:59`);
+    const occurredAt = bangkokDateRangeFilter(
+      typeof params.from === "string" ? params.from : undefined,
+      typeof params.to === "string" ? params.to : undefined,
+    );
+    if (occurredAt) where.occurredAt = occurredAt;
   }
   if (typeof params.unitId === "string" && params.unitId) where.incidentUnitId = params.unitId;
   if (typeof params.severity === "string" && params.severity) where.severity = params.severity;
@@ -33,6 +36,11 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
       { riskCode: { nameTh: { contains: q } } },
     ];
   }
+  return where;
+}
+
+export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
+  const where = buildTriageIncidentWhere(user, params);
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
   const highWhere = { AND: [where, highSeverityTriageFilter] };

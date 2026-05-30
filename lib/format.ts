@@ -1,13 +1,119 @@
 export function formatDateTime(value: Date | string | null | undefined) {
   if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  const date = toValidDate(value);
+  if (!date) return "-";
+  return formatBangkokParts(date, true);
+}
+
+export function formatTimeOnly(value: Date | string | null | undefined) {
+  if (!value) return "-";
+  const date = toValidDate(value);
+  if (!date) return "-";
+  return formatBangkokParts(date, false);
 }
 
 export function formatDateOnly(value: Date | string | null | undefined) {
   if (!value) return "-";
+  const date = toValidDate(value);
+  if (!date) return "-";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.day}/${parts.month}/${parts.year}`;
+}
+
+export function formatMonthBucket(value: string | null | undefined) {
+  if (!value) return "-";
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `01/${match[2]}/${match[1]}`;
+}
+
+export function formatDateInputDisplay(value: string | null | undefined) {
+  if (!value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+export function parseDateInputDisplay(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return "";
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) return "";
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) return "";
+  return `${year}-${match[2]}-${match[1]}`;
+}
+
+export function formatBangkokDateInput(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = toValidDate(value);
+  if (!date) return "";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function formatBangkokTimeInput(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = toValidDate(value);
+  if (!date) return "";
+  const parts = bangkokDateTimeParts(date);
+  return `${parts.hour}:${parts.minute}`;
+}
+
+function toValidDate(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(date);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatBangkokParts(date: Date, includeDate: boolean) {
+  const parts = bangkokDateTimeParts(date);
+  const time = `${parts.hour}:${parts.minute}`;
+  return includeDate ? `${parts.day}/${parts.month}/${parts.year} ${time}` : time;
+}
+
+function bangkokDateTimeParts(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok",
+    calendar: "gregory",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(value);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: get("day"),
+    month: get("month"),
+    year: get("year"),
+    hour: get("hour"),
+    minute: get("minute"),
+  };
+}
+
+function bangkokDayNumber(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
+}
+
+export function formatRcaDueCountdown(value: Date | string | null | undefined, now = new Date()) {
+  if (!value) return "ยังไม่กำหนด Due date";
+  const due = typeof value === "string" ? new Date(value) : value;
+  const diffDays = bangkokDayNumber(due) - bangkokDayNumber(now);
+  if (diffDays === 0) return "ครบกำหนดวันนี้";
+  if (diffDays > 0) return `เหลือ ${diffDays} วัน`;
+  return `เลยกำหนด ${Math.abs(diffDays)} วัน`;
 }
 
 export function maskHn(value?: string | null) {

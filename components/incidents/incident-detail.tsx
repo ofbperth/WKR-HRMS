@@ -5,12 +5,13 @@ import { severityDescriptions } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ActionPlanForm, ActionUpdateForm, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
+import { ActionPlanForm, ActionUpdateForm, CloseIncidentButton, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 import { IncidentCommentsPanel } from "@/components/incidents/incident-comments-panel";
 import { IncidentAuditsPanel } from "@/components/incidents/incident-audits-panel";
 import { actionPlanStatusDisplay, affectedTypeDisplay, clinicalOrGeneralDisplay } from "@/lib/i18n/th";
 import { getActiveUsers, getLookupData } from "@/lib/incident-query";
+import { canCloseIncident, isIncidentClosed } from "@/lib/incident-close";
 
 type DetailIncident = DbIncident & {
   incidentUnit: DbUnit;
@@ -63,14 +64,16 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
   const canRevealSensitive = canSeeSensitive(currentUser.role);
   const unitCanWork = currentUser.role === "UnitManager" && currentUser.unitId === incident.incidentUnitId;
   const isIncidentOwner = currentUser.role === "Reporter" && currentUser.id === incident.reportedById;
+  const incidentClosed = isIncidentClosed(incident);
   const rcaSubmitted = ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"].includes(incident.status) || ["Submitted", "Approved"].includes(incident.rca?.status ?? "");
   const canEditDetails = (isIncidentOwner || unitCanWork || manage) && !rcaSubmitted && incident.status !== "Rejected";
   const canTriage = (manage || unitCanWork) && !incident.reviewedAt && !["Closed", "Rejected"].includes(incident.status);
   const rcaAllowed = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status);
   const canAddComment = manage;
+  const canClose = manage && canCloseIncident(incident);
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{incident.incidentNo}</h1><p className="mt-1 text-slate-600">{incident.title}</p></div><div className="flex flex-wrap gap-2"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} /><SentinelBadge value={incident.isSentinel} /><RmSupportBadge value={incident.needRmSupport} /></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{incident.incidentNo}</h1><p className="mt-1 text-slate-600">{incident.title}</p></div><div className="flex flex-wrap items-center gap-2"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} /><SentinelBadge value={incident.isSentinel} /><RmSupportBadge value={incident.needRmSupport} />{canClose ? <CloseIncidentButton incidentId={incident.id} /> : null}</div></div>
     <div className="grid gap-4 lg:grid-cols-3">
       <Card className="lg:col-span-2"><CardHeader><CardTitle>รายละเอียดเหตุการณ์</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         <Info label="วันที่รายงาน" value={formatDateTime(incident.reportedAt)} />
@@ -101,8 +104,8 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
       </CardContent></Card>
     </div>
 
-    {(canTriage || manage) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือจัดประเภท..." />}>
-      <IncidentClassificationSection incident={incident} currentUser={currentUser} canTriage={canTriage} manage={manage} unitCanWork={unitCanWork} />
+    {(canTriage || (manage && !incidentClosed)) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือจัดประเภท..." />}>
+      <IncidentClassificationSection incident={incident} currentUser={currentUser} canTriage={canTriage} manage={manage} unitCanWork={unitCanWork} incidentClosed={incidentClosed} />
     </Suspense> : null}
 
     <div className="grid gap-4 lg:grid-cols-2">
@@ -113,14 +116,14 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
           <Info label="สาเหตุราก" value={incident.rca.rootCause || "-"} />
           <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
         </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
-        {((unitCanWork || currentUser.role === "Admin") && rcaAllowed) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดฟอร์ม RCA..." />}>
-          <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} />
+        {(!incidentClosed && ((unitCanWork || currentUser.role === "Admin") && rcaAllowed)) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดฟอร์ม RCA..." />}>
+          <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} incidentClosed={incidentClosed} />
         </Suspense> : null}
       </CardContent></Card>
 
       <Card><CardHeader><CardTitle>แผนแก้ไข</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือแผนแก้ไข..." />}>
-          <IncidentActionSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} manage={manage} />
+          <IncidentActionSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} manage={manage} incidentClosed={incidentClosed} />
         </Suspense>
       </CardContent></Card>
     </div>
@@ -143,18 +146,20 @@ async function IncidentClassificationSection({
   canTriage,
   manage,
   unitCanWork,
+  incidentClosed,
 }: {
   incident: DetailIncident;
   currentUser: CurrentUser;
   canTriage: boolean;
   manage: boolean;
   unitCanWork: boolean;
+  incidentClosed: boolean;
 }) {
   const lookup = await getLookupData();
   if (canTriage) {
     return <div className="space-y-3"><TriageClassificationForm incident={incident} riskCodes={lookup.riskCodes} backHref={currentUser.role === "UnitManager" ? "/unit/triage" : "/rm/triage"} /></div>;
   }
-  if (manage && !canTriage) {
+  if (manage && !canTriage && !incidentClosed) {
     return <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={lookup.riskCodes} /></div>;
   }
   return null;
@@ -166,14 +171,16 @@ async function IncidentRcaSection({
   unitCanWork,
   rcaAllowed,
   manage,
+  incidentClosed,
 }: {
   incident: DetailIncident;
   currentUser: CurrentUser;
   unitCanWork: boolean;
   rcaAllowed: boolean;
   manage: boolean;
+  incidentClosed: boolean;
 }) {
-  const showForm = (unitCanWork || currentUser.role === "Admin") && rcaAllowed;
+  const showForm = !incidentClosed && (unitCanWork || currentUser.role === "Admin") && rcaAllowed;
   const users = showForm ? await getActiveUsers() : [];
   return <>
     {showForm ? <RcaForm incidentId={incident.id} rca={incident.rca} users={users} /> : null}
@@ -186,19 +193,21 @@ async function IncidentActionSection({
   currentUser,
   unitCanWork,
   manage,
+  incidentClosed,
 }: {
   incident: DetailIncident;
   currentUser: CurrentUser;
   unitCanWork: boolean;
   manage: boolean;
+  incidentClosed: boolean;
 }) {
-  const canAddActionPlan = (unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved";
-  const canEditActions = incident.actionPlans.some((action) => (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified");
+  const canAddActionPlan = !incidentClosed && (unitCanWork || currentUser.role === "Admin") && incident.rca?.status === "Approved";
+  const canEditActions = !incidentClosed && incident.actionPlans.some((action) => (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified");
   const users = canAddActionPlan || canEditActions ? await getActiveUsers() : [];
 
   return <>
     {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มีแผนแก้ไข</p> : incident.actionPlans.map((action) => {
-      const canEditAction = (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified";
+      const canEditAction = !incidentClosed && (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified";
       return <div key={action.id} className="space-y-3 rounded-lg border p-3">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอหัวหน้าหน่วยงานมอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
         <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>

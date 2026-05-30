@@ -6,22 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SavePdfButton } from "@/components/reports/save-pdf-button";
 import { SummaryReportFilter } from "@/components/reports/summary-report-filter";
 import { safetyGoals } from "@/lib/dashboard-analytics";
+import { formatDateOnly, formatDateTime, formatMonthBucket } from "@/lib/format";
+import { bangkokMonthInputToRange, bangkokMonthKey, bangkokMonthRange } from "@/lib/reporting-date";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
 import { getOrSetCachedValue } from "@/lib/smart-cache";
 
-type ReportRange = { start: Date; end: Date; label: string; mode: string };
+type ReportRange = { start: Date; end: Date; label: string; mode: string; fiscalYear?: number };
 
 function parseMonth(value: string | undefined, fallback: Date) {
-  if (!value || !/^\d{4}-\d{2}$/.test(value)) return new Date(fallback.getFullYear(), fallback.getMonth(), 1);
-  const [year, month] = value.split("-").map(Number);
-  return new Date(year, month - 1, 1);
+  return bangkokMonthInputToRange(value, fallback);
 }
 
 function normalizeFiscalYear(value: string | undefined) {
   const now = new Date();
-  const raw = Number(value || (now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear()));
-  if (!Number.isFinite(raw)) return now.getFullYear();
+  const [currentYear, currentMonth] = bangkokMonthKey(now).split("-").map(Number);
+  const raw = Number(value || (currentMonth >= 10 ? currentYear + 1 : currentYear));
+  if (!Number.isFinite(raw)) return currentYear;
   return raw > 2400 ? raw - 543 : raw;
 }
 
@@ -31,25 +32,27 @@ function resolveRange(searchParams: Record<string, string | string[] | undefined
   if (mode === "fiscalYear") {
     const fiscalYear = normalizeFiscalYear(typeof searchParams.fiscalYear === "string" ? searchParams.fiscalYear : undefined);
     return {
-      start: new Date(fiscalYear - 1, 9, 1),
-      end: new Date(fiscalYear, 9, 1),
-      label: `ปีงบประมาณ ${fiscalYear + 543} (${fiscalYear - 1}-10 ถึง ${fiscalYear}-09)`,
+      start: bangkokMonthRange(fiscalYear - 1, 10).start,
+      end: bangkokMonthRange(fiscalYear, 9).end,
+      label: `ปีงบประมาณ ${fiscalYear + 543} (${formatDateOnly(bangkokMonthRange(fiscalYear - 1, 10).start)} ถึง ${formatDateOnly(bangkokMonthRange(fiscalYear, 9).end)})`,
       mode,
+      fiscalYear,
     };
   }
   if (mode === "range") {
     const start = parseMonth(typeof searchParams.startMonth === "string" ? searchParams.startMonth : undefined, now);
     const endBase = parseMonth(typeof searchParams.endMonth === "string" ? searchParams.endMonth : undefined, now);
-    const end = new Date(endBase.getFullYear(), endBase.getMonth() + 1, 1);
-    return { start, end: end < start ? new Date(start.getFullYear(), start.getMonth() + 1, 1) : end, label: `${start.toISOString().slice(0, 7)} ถึง ${endBase.toISOString().slice(0, 7)}`, mode };
+    const end = endBase.start < start.start ? start.end : endBase.end;
+    const endLabel = endBase.start < start.start ? bangkokMonthKey(start.start) : bangkokMonthKey(endBase.start);
+    return { start: start.start, end, label: `${formatMonthBucket(bangkokMonthKey(start.start))} ถึง ${formatMonthBucket(endLabel)}`, mode };
   }
   const month = parseMonth(typeof searchParams.month === "string" ? searchParams.month : undefined, now);
-  return { start: month, end: new Date(month.getFullYear(), month.getMonth() + 1, 1), label: month.toISOString().slice(0, 7), mode: "month" };
+  return { start: month.start, end: month.end, label: formatMonthBucket(bangkokMonthKey(month.start)), mode: "month" };
 }
 
 async function buildSummary(start: Date, end: Date, scopeUnitId?: string | null) {
   const incidents = await prisma.incident.findMany({
-    where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
+    where: countableIncidentFilter({ occurredAt: { gte: start, lte: end }, ...(scopeUnitId ? { incidentUnitId: scopeUnitId } : {}) }),
     include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
     orderBy: [{ isSentinel: "desc" }, { severity: "desc" }, { occurredAt: "desc" }],
   });
@@ -105,14 +108,15 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
     },
     loader: () => buildSummary(range.start, range.end, scopeUnitId),
   });
-  const currentMonth = range.mode === "month" ? range.start.toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const startMonth = range.mode === "range" ? range.start.toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const endMonth = range.mode === "range" ? new Date(range.end.getFullYear(), range.end.getMonth() - 1, 1).toISOString().slice(0, 7) : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 7);
-  const fiscalYear = range.end.getFullYear() + 543;
+  const currentBangkokMonth = bangkokMonthKey(now);
+  const currentMonth = range.mode === "month" ? bangkokMonthKey(range.start) : currentBangkokMonth;
+  const startMonth = range.mode === "range" ? bangkokMonthKey(range.start) : currentBangkokMonth;
+  const endMonth = range.mode === "range" ? bangkokMonthKey(range.end) : currentBangkokMonth;
+  const fiscalYear = (range.fiscalYear ?? normalizeFiscalYear(undefined)) + 543;
   return <AppShell user={user}><div className="print-page space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">รายงานสรุปความเสี่ยง</h1><p className="mt-2 text-slate-600">สรุปความเสี่ยงโรงพยาบาลสำหรับพิมพ์ ตามเดือน ช่วงเดือน หรือปีงบประมาณไทย</p></div><SavePdfButton /></div>
     <SummaryReportFilter defaults={{ mode: range.mode, month: currentMonth, startMonth, endMonth, fiscalYear: String(fiscalYear) }} />
-    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">รายงานสรุปความเสี่ยงโรงพยาบาล</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {new Date().toLocaleString("th-TH")}</p></div>
+    <div className="rounded-xl border bg-white p-6"><h2 className="text-xl font-bold">รายงานสรุปความเสี่ยงโรงพยาบาล</h2><p className="mt-1 text-sm text-slate-600">ช่วงเวลา: {range.label}</p>{user.role === "UnitManager" ? <p className="text-sm text-slate-600">ขอบเขต: เฉพาะหน่วยงานของคุณ</p> : null}<p className="text-sm text-slate-600">สร้างเมื่อ {formatDateTime(new Date())}</p></div>
     <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6"><Metric label="Incident ทั้งหมด" value={summary.total} /><Metric label="ปิดเคสแล้ว" value={summary.closed} /><Metric label="Sentinel" value={summary.sentinel} /><Metric label="RCA ยังไม่ทำ" value={summary.rcaNotStarted} /><Metric label="ส่ง RCA แล้ว" value={summary.rcaSubmitted} /><Metric label="แผนแก้ไขเกินกำหนด" value={summary.overdueActions} /></div>
     <Card className="border-red-200"><CardHeader><CardTitle>แจ้งเตือน Sentinel Event</CardTitle></CardHeader><CardContent><SimpleTable rows={summary.sentinelEvents} columns={["incidentNo", "unit", "severity", "riskCode", "title", "status"]} empty="ไม่มี Sentinel Event ในช่วงเวลานี้" /></CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-2">

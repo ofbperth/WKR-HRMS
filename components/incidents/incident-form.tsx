@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Calendar } from "lucide-react";
 import type { z } from "zod";
 import { createIncidentSchema, medicationRightValues } from "@/lib/validators";
 import { clinicalSeverityDescriptions, generalSeverityDetails, severityDescriptions, severityOptionsFor } from "@/lib/severity";
+import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimeInput } from "@/components/ui/time-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
+import { formatBangkokDateInput, formatBangkokTimeInput, formatDateInputDisplay } from "@/lib/format";
 
 type FormValues = z.infer<typeof createIncidentSchema>;
 
@@ -20,8 +24,8 @@ const defaultValues: Partial<FormValues> = {
   clinicalOrGeneral: "Clinical",
   severity: "C",
   needRmSupport: false,
-  occurredDate: new Date().toISOString().slice(0, 10),
-  occurredTime: new Date().toTimeString().slice(0, 5),
+  occurredDate: formatBangkokDateInput(new Date()),
+  occurredTime: formatBangkokTimeInput(new Date()),
 };
 
 function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
@@ -47,7 +51,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
   }, [riskCodes, riskQuery, selectedClinicalOrGeneral]);
   const selectedRisk = riskCodes.find(r => r.id === values.riskCodeId);
   const isMedicationAdministration = selectedRisk?.code === "CPM205" || /Administration/i.test(selectedRisk?.nameTh ?? "");
-  const pdpaNameDetected = /(^|[\s,.;:()[\]{}"'“”‘’\-\/])(นาย|นาง|นางสาว|นส\.|ด\.ช\.?|ด\.ญ\.?|ดช|ดญ|miss|ms|mr|mrs)(?=$|[\s,.;:()[\]{}"'“”‘’\-\/])/i.test([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
+  const pdpaNameDetected = containsLikelyPatientIdentifier([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
 
   useEffect(() => {
     if (selectedRisk && selectedRisk.clinicalOrGeneral !== selectedClinicalOrGeneral) {
@@ -128,8 +132,11 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
     </div>
 
     {step === 1 ? <Card><CardHeader><CardTitle className="text-xl">ส่วนที่ 1: ข้อมูลเหตุการณ์</CardTitle><p className="mt-1 text-sm text-slate-500">ระบุเวลา หน่วยงาน และรายละเอียดเหตุการณ์ที่จำเป็น</p></CardHeader><CardContent className="grid gap-4 md:grid-cols-2">
-      <Field label="วันที่เกิดเหตุ" error={errors.occurredDate?.message}><Input type="date" {...register("occurredDate")} /></Field>
-      <Field label="เวลาเกิดเหตุ" error={errors.occurredTime?.message}><Input type="time" {...register("occurredTime")} /></Field>
+      <Field label="วันที่เกิดเหตุ" error={errors.occurredDate?.message}>
+        <DateInput value={values.occurredDate ?? ""} onChange={(value) => setValue("occurredDate", value, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} />
+        <input type="hidden" {...register("occurredDate")} />
+      </Field>
+      <Field label="เวลาเกิดเหตุ" error={errors.occurredTime?.message}><TimeInput {...register("occurredTime")} /></Field>
       <Field label="หน่วยงานที่เกิดเหตุ" error={errors.incidentUnitId?.message}><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("incidentUnitId")}><option value="">เลือกหน่วยงาน</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
       <Field label="สถานที่เกิดเหตุ"><Input placeholder="เช่น ห้องยา, ER zone 1, Ward" {...register("location")} /></Field>
       <Field label="ผู้ได้รับผลกระทบ"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" {...register("affectedType")}><option value="Patient">ผู้ป่วย</option><option value="Personnel">บุคลากร</option><option value="People">ประชาชน/ผู้มาติดต่อ</option><option value="Organization">องค์กร/ระบบงาน</option></select></Field>
@@ -202,7 +209,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
 
     {step === 3 ? <Card><CardHeader><CardTitle className="text-xl">ส่วนที่ 3: ตรวจสอบและส่งรายงาน</CardTitle><p className="mt-1 text-sm text-slate-500">ตรวจความถูกต้องก่อนส่งรายงานเข้าสู่ระบบ</p></CardHeader><CardContent className="space-y-4">
       <div className="grid gap-3 text-sm md:grid-cols-2">
-        <Summary label="วันเวลาเกิดเหตุ" value={`${values.occurredDate || "-"} ${values.occurredTime || ""}`} />
+        <Summary label="วันเวลาเกิดเหตุ" value={`${formatDateInputDisplay(values.occurredDate) || "-"} ${values.occurredTime || ""}`} />
         <Summary label="หน่วยงาน" value={units.find(u => u.id === values.incidentUnitId)?.name || "-"} />
         <Summary label="ชื่อเหตุการณ์" value={values.title || "-"} />
         <Summary label="NRLS code" value={selectedRisk ? `${selectedRisk.code} ${selectedRisk.nameTh}` : "-"} />
@@ -218,4 +225,63 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
 
 function Summary({ label, value }: { label: string; value: string }) {
   return <div className="rounded-lg border bg-white p-3"><div className="text-xs text-slate-500">{label}</div><div className="mt-1 font-medium">{value}</div></div>;
+}
+
+function DateInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [displayValue, setDisplayValue] = useState(formatDateInputDisplay(value));
+  const pickerRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDisplayValue(formatDateInputDisplay(value));
+  }, [value]);
+
+  function openPicker() {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    picker.focus();
+    try {
+      picker.showPicker?.();
+    } catch {
+      picker.click();
+    }
+  }
+
+  return <div className="relative flex h-10 overflow-hidden rounded-lg border border-input bg-white transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-100">
+    <Input
+      type="text"
+      inputMode="none"
+      autoComplete="off"
+      placeholder="DD/MM/YYYY"
+      value={displayValue}
+      readOnly
+      onClick={openPicker}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPicker();
+        }
+      }}
+      className="h-full flex-1 cursor-pointer rounded-none border-0 bg-transparent shadow-none focus-visible:border-0 focus-visible:ring-0"
+    />
+    <button
+      type="button"
+      aria-label="เลือกวันที่"
+      onClick={openPicker}
+      className="grid h-full w-11 shrink-0 place-items-center border-l text-slate-600 hover:bg-slate-50"
+    >
+      <Calendar aria-hidden="true" className="h-4 w-4" />
+    </button>
+    <input
+      ref={pickerRef}
+      type="date"
+      value={value}
+      tabIndex={-1}
+      aria-hidden="true"
+      className="pointer-events-none absolute bottom-0 right-0 h-px w-px opacity-0"
+      onChange={(event) => {
+        onChange(event.currentTarget.value);
+        setDisplayValue(formatDateInputDisplay(event.currentTarget.value));
+      }}
+    />
+  </div>;
 }

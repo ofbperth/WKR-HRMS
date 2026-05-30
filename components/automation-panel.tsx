@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/format";
 
 type Run = { id: string; jobName: string; status: string; startedAt: string | Date; finishedAt: string | Date | null; message: string | null; error: string | null };
 
@@ -44,7 +45,7 @@ export function AutomationPanel({ initialRuns }: { initialRuns: Run[] }) {
       <div className="overflow-auto">
         <table className="min-w-[900px] w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">งาน</th><th className="px-4 py-3">สถานะ</th><th className="px-4 py-3">เริ่ม</th><th className="px-4 py-3">เสร็จ</th><th className="px-4 py-3">ข้อความ</th><th className="px-4 py-3">ข้อผิดพลาด</th></tr></thead>
-          <tbody className="divide-y">{runs.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>ยังไม่มีประวัติการรันงานอัตโนมัติ</td></tr> : runs.map((run) => <tr key={run.id}><td className="px-4 py-3 font-medium">{run.jobName}</td><td className="px-4 py-3">{run.status}</td><td className="px-4 py-3">{new Date(run.startedAt).toLocaleString("th-TH")}</td><td className="px-4 py-3">{run.finishedAt ? new Date(run.finishedAt).toLocaleString("th-TH") : "-"}</td><td className="px-4 py-3">{run.message ?? "-"}</td><td className="px-4 py-3 text-red-700">{run.error ?? "-"}</td></tr>)}</tbody>
+          <tbody className="divide-y">{runs.length === 0 ? <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>ยังไม่มีประวัติการรันงานอัตโนมัติ</td></tr> : runs.map((run) => <tr key={run.id}><td className="px-4 py-3 font-medium">{run.jobName}</td><td className="px-4 py-3">{run.status}</td><td className="px-4 py-3">{formatDateTime(run.startedAt)}</td><td className="px-4 py-3">{formatDateTime(run.finishedAt)}</td><td className="px-4 py-3">{run.message ?? "-"}</td><td className="px-4 py-3 text-red-700">{run.error ?? "-"}</td></tr>)}</tbody>
         </table>
       </div>
     </div>

@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TimeInput } from "@/components/ui/time-input";
 import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, incidentStatusValues, medicationRightValues } from "@/lib/validators";
 import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { actionPlanStatusDisplay, affectedTypeDisplay, roleDisplay } from "@/lib/i18n/th";
-import { statusLabel } from "@/lib/format";
+import { formatBangkokDateInput, formatBangkokTimeInput, statusLabel } from "@/lib/format";
 
 type UserOption = Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
 
@@ -17,8 +18,8 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const occurredDate = new Date(incident.occurredAt).toISOString().slice(0, 10);
-  const occurredTime = new Date(incident.occurredAt).toTimeString().slice(0, 5);
+  const occurredDate = formatBangkokDateInput(incident.occurredAt);
+  const occurredTime = formatBangkokTimeInput(incident.occurredAt);
   const [form, setForm] = useState({
     occurredDate,
     occurredTime,
@@ -89,7 +90,7 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
 
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
     <label className="space-y-1 text-sm"><span className="font-medium">วันที่เกิดเหตุ</span><input type="date" className="h-10 w-full rounded-md border px-3" value={form.occurredDate} onChange={e => setForm({ ...form, occurredDate: e.target.value })} /></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">เวลาเกิดเหตุ</span><input type="time" className="h-10 w-full rounded-md border px-3" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">เวลาเกิดเหตุ</span><TimeInput className="rounded-md" value={form.occurredTime} onChange={e => setForm({ ...form, occurredTime: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">หน่วยงานที่เกิดเหตุ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.incidentUnitId} onChange={e => setForm({ ...form, incidentUnitId: e.target.value })}>{units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">สถานที่</span><input className="h-10 w-full rounded-md border px-3" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">ประเภทผู้ได้รับผลกระทบ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.affectedType} onChange={e => setForm({ ...form, affectedType: e.target.value })}>{affectedTypes.map(type => <option key={type} value={type}>{affectedTypeDisplay(type)}</option>)}</select></label>
@@ -281,10 +282,29 @@ export function RcaApprovalForm({ incidentId }: { incidentId: string }) {
   return <div className="flex flex-wrap gap-2 rounded-lg border bg-white p-3"><Button type="button" onClick={() => decide(true)} disabled={saving}>อนุมัติ RCA</Button><Button type="button" className="bg-slate-700" onClick={() => decide(false)} disabled={saving}>ขอปรับปรุง</Button></div>;
 }
 
+export function CloseIncidentButton({ incidentId }: { incidentId: string }) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  async function closeIncident() {
+    const ok = window.confirm("Close this incident?");
+    if (!ok) return;
+    setSaving(true);
+    const res = await fetch(`/api/incidents/${incidentId}/close`, { method: "POST" });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Close incident failed");
+      return;
+    }
+    router.refresh();
+  }
+  return <Button type="button" className="bg-emerald-700 hover:bg-emerald-800" onClick={closeIncident} disabled={saving}>{saving ? "Closing..." : "Close incident"}</Button>;
+}
+
 export function ActionPlanForm({ incidentId, users }: { incidentId: string; users: UserOption[] }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", ownerId: "", coOwnerText: "", dueDate: new Date().toISOString().slice(0, 10), kpiName: "", kpiTarget: "" });
+  const [form, setForm] = useState({ title: "", description: "", ownerId: "", coOwnerText: "", dueDate: formatBangkokDateInput(new Date()), kpiName: "", kpiTarget: "" });
   async function submit() {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });

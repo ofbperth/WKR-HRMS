@@ -1,18 +1,24 @@
 import { apiError, requireUser } from "@/lib/auth";
-import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
-import { buildDashboardCacheInput } from "@/lib/dashboard-cache";
+import { dashboardAnalyticsCacheVersion, getDashboardAnalytics } from "@/lib/dashboard-analytics";
+import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { getOrSetCachedValue } from "@/lib/smart-cache";
 
 export async function GET(request: Request) {
   try {
     const started = Date.now();
     const user = await requireUser(["UnitManager", "Admin"]);
-    const params = Object.fromEntries(new URL(request.url).searchParams.entries());
+    const rawParams = dashboardSearchParamsFromUrl(request.url);
+    const params = normalizeDashboardSearchParams(rawParams);
     const scopeUnitId = user.role === "Admin" ? params.unitId : user.unitId;
-    const cacheInput = buildDashboardCacheInput({ variant: "unit", role: user.role, searchParams: params, scopeUnitId });
+    const filters = { ...params, scopeUnitId };
     const data = await getOrSetCachedValue({
-      ...cacheInput,
-      loader: () => getDashboardAnalytics(cacheInput.scopedFilters),
+      cacheType: "dashboard",
+      unitId: scopeUnitId,
+      dateRange: { from: params.startDate, to: params.endDate },
+      reportType: "unit-dashboard",
+      role: user.role,
+      filters: { ...filters, cacheVersion: dashboardAnalyticsCacheVersion },
+      loader: () => getDashboardAnalytics(filters),
     });
     if (process.env.NODE_ENV === "development") console.info(`[perf] dashboard-api unit ${Date.now() - started}ms`);
     return Response.json({ data, meta: { cached: true, scopeUnitId } });

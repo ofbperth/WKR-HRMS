@@ -1,6 +1,7 @@
 import type { Role } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
+import { bangkokDateRangeFilter } from "@/lib/reporting-date";
 import { cache as reactCache } from "react";
 
 type IncidentWhereInput = Record<string, unknown>;
@@ -11,9 +12,10 @@ export type IncidentFilterParams = {
   to?: string;
   unitId?: string;
   severity?: string;
-  simpleCategory?: string;
+  simpleCategory?: string | string[];
   riskCodeId?: string;
   status?: string;
+  rcaWorklist?: string;
   rcaDue?: string;
   sentinel?: string;
   needRmSupport?: string;
@@ -25,6 +27,8 @@ export type IncidentFilterParams = {
 export type IncidentAccessUser = { id: string; role: Role; unitId: string | null };
 
 export const INCIDENT_PAGE_SIZE = 20;
+
+export const RCA_WORKLIST_STATUSES = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"] as const;
 
 export const incidentInclude = {
   incidentUnit: true,
@@ -66,16 +70,25 @@ export function buildIncidentWhere(user: IncidentAccessUser, params: IncidentFil
   and.push({ status: { not: "Rejected" } });
 
   if (params.from || params.to) {
-    const occurredAt: Record<string, Date> = {};
-    if (params.from) occurredAt.gte = new Date(`${params.from}T00:00:00`);
-    if (params.to) occurredAt.lte = new Date(`${params.to}T23:59:59`);
-    and.push({ occurredAt });
+    const occurredAt = bangkokDateRangeFilter(params.from, params.to);
+    if (occurredAt) and.push({ occurredAt });
   }
   if (params.unitId) and.push({ incidentUnitId: params.unitId });
   if (params.severity) and.push({ severity: params.severity });
-  if (params.simpleCategory) and.push({ simpleCategory: params.simpleCategory });
+  const simpleCategories = Array.isArray(params.simpleCategory)
+    ? params.simpleCategory.filter(Boolean)
+    : params.simpleCategory
+      ? [params.simpleCategory]
+      : [];
+  if (simpleCategories.length === 1) and.push({ simpleCategory: simpleCategories[0] });
+  if (simpleCategories.length > 1) and.push({ simpleCategory: { in: simpleCategories } });
   if (params.riskCodeId) and.push({ riskCodeId: params.riskCodeId });
-  if (params.status) and.push({ status: params.status });
+  if (params.rcaWorklist === "true") {
+    and.push({ reviewedAt: { not: null } });
+    and.push({ status: { in: [...RCA_WORKLIST_STATUSES] } });
+  } else if (params.status) {
+    and.push({ status: params.status });
+  }
   if (params.rcaDue === "overdue") {
     and.push({
       status: "RCARequired",
@@ -299,9 +312,25 @@ export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>
   };
 }
 
-export const getLookupData = cache(async function getLookupData() {
-  const units = await prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
-  const riskCodes = await prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } });
+export const getActiveUnits = cache(async function getActiveUnits() {
+  return prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
+});
+
+export const getActiveRiskCodes = cache(async function getActiveRiskCodes() {
+  return prisma.riskCode.findMany({ where: { isActive: true }, select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true }, orderBy: { code: "asc" } });
+});
+
+export const getSimpleCategories = cache(async function getSimpleCategories() {
   const simpleCategories = await prisma.riskCode.findMany({ where: { isActive: true }, distinct: ["simpleCategory"], select: { simpleCategory: true }, orderBy: { simpleCategory: "asc" } });
-  return { units, riskCodes, simpleCategories: simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory) };
+  return simpleCategories.map((s: { simpleCategory: string }) => s.simpleCategory);
+});
+
+export const getDashboardFilterLookups = cache(async function getDashboardFilterLookups() {
+  const [units, simpleCategories] = await Promise.all([getActiveUnits(), getSimpleCategories()]);
+  return { units, simpleCategories };
+});
+
+export const getLookupData = cache(async function getLookupData() {
+  const [filterLookups, riskCodes] = await Promise.all([getDashboardFilterLookups(), getActiveRiskCodes()]);
+  return { ...filterLookups, riskCodes };
 });

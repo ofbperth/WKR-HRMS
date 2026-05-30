@@ -28,6 +28,16 @@ describe("incident and RCA validation", () => {
     expect(createIncidentSchema.safeParse(payload).success).toBe(true);
   });
 
+  it("does not require HN or AN for incident submission", () => {
+    expect(createIncidentSchema.safeParse({ ...validIncident, patientHn: "", patientAn: "" }).success).toBe(true);
+    expect(createIncidentSchema.safeParse(validIncident).success).toBe(true);
+  });
+
+  it("does not treat MS Word as a patient name", () => {
+    const result = createIncidentSchema.safeParse({ ...validIncident, immediateAction: "ให้ลงข้อมูลใน MS Word ระหว่างรอแก้ไขระบบ" });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects likely patient names in narrative fields for PDPA readiness", () => {
     const result = createIncidentSchema.safeParse({ ...validIncident, description: "Mr Somchai received the wrong medication." });
     expect(result.success).toBe(false);

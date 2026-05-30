@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SEVERITY_VALUES } from "@/lib/types";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
+import { bangkokMonthKey } from "@/lib/reporting-date";
+import { formatMonthBucket } from "@/lib/format";
 
 const highSeverity = ["E", "F", "G", "H", "I"];
 
@@ -25,7 +27,7 @@ export async function getIncidentAnalytics() {
   for (const item of incidents as any[]) {
     const unit = item.incidentUnit?.name ?? "Unknown";
     const category = item.simpleCategory || item.riskCode?.simpleCategory || "Unclassified";
-    const month = new Date(item.occurredAt).toISOString().slice(0, 7);
+    const month = bangkokMonthKey(item.occurredAt);
     const isHigh = highSeverity.includes(item.severity);
 
     const unitValue = unitMap.get(unit) ?? { unit, total: 0, high: 0, sentinel: 0, open: 0 };
@@ -61,7 +63,10 @@ export async function getIncidentAnalytics() {
     bySeverity,
     byUnit: Array.from(unitMap.values()).sort((a, b) => b.total - a.total),
     byCategory: Array.from(categoryMap.values()).sort((a, b) => b.total - a.total),
-    byMonth: Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12),
+    byMonth: Array.from(monthMap.values())
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-12)
+      .map((item) => ({ ...item, month: formatMonthBucket(item.month) })),
     heatmap: Array.from(heatmap.values()),
   };
 }

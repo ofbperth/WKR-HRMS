@@ -2,19 +2,21 @@ import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { safetyGoals } from "@/lib/dashboard-analytics";
+import { bangkokMonthKey, bangkokMonthRange } from "@/lib/reporting-date";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
 
 function monthRange(year: number, month: number) {
-  return { start: new Date(year, month - 1, 1), end: new Date(year, month, 1) };
+  return bangkokMonthRange(year, month);
 }
 
 export async function GET(request: Request) {
   try {
     await requireUser(["RMTeam", "Executive", "Admin"]);
     const url = new URL(request.url);
-    const year = Number(url.searchParams.get("year") ?? new Date().getFullYear());
-    const month = Number(url.searchParams.get("month") ?? new Date().getMonth() + 1);
+    const [currentYear, currentMonth] = bangkokMonthKey(new Date()).split("-").map(Number);
+    const year = Number(url.searchParams.get("year") ?? currentYear);
+    const month = Number(url.searchParams.get("month") ?? currentMonth);
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return Response.json({ error: "INVALID_MONTH" }, { status: 400 });
     const report = await prisma.monthlyReport.findUnique({ where: { year_month: { year, month } } });
     return Response.json(report);
@@ -27,11 +29,12 @@ export async function POST(request: Request) {
   try {
     const user = await requireUser(["RMTeam", "Admin"]);
     const body = await request.json().catch(() => ({}));
-    const year = Number(body.year ?? new Date().getFullYear());
-    const month = Number(body.month ?? new Date().getMonth() + 1);
+    const [currentYear, currentMonth] = bangkokMonthKey(new Date()).split("-").map(Number);
+    const year = Number(body.year ?? currentYear);
+    const month = Number(body.month ?? currentMonth);
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return Response.json({ error: "INVALID_MONTH" }, { status: 400 });
     const { start, end } = monthRange(year, month);
-    const monthWhere = countableIncidentFilter({ occurredAt: { gte: start, lt: end } });
+    const monthWhere = countableIncidentFilter({ occurredAt: { gte: start, lte: end } });
     const incidents = await prisma.incident.findMany({
       where: monthWhere,
       include: { incidentUnit: true, riskCode: true, rca: true, actionPlans: true },
@@ -39,9 +42,9 @@ export async function POST(request: Request) {
     });
     const [total, closed, sentinel, rcaRequired, bySeverity, byUnit, topRiskCodes] = await Promise.all([
       prisma.incident.count({ where: monthWhere }),
-      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, status: "Closed" }) }),
-      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, isSentinel: true }) }),
-      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lt: end }, status: "RCARequired" }) }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lte: end }, status: "Closed" }) }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lte: end }, isSentinel: true }) }),
+      prisma.incident.count({ where: countableIncidentFilter({ occurredAt: { gte: start, lte: end }, status: "RCARequired" }) }),
       prisma.incident.groupBy({ by: ["severity"], where: monthWhere, _count: true }),
       prisma.incident.groupBy({ by: ["incidentUnitId"], where: monthWhere, _count: true }),
       prisma.incident.groupBy({ by: ["riskCodeId"], where: monthWhere, _count: true }),

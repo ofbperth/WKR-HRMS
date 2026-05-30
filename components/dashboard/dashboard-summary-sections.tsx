@@ -4,11 +4,12 @@ import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
 import { LinkedStatCard } from "@/components/dashboard/stat-cards";
 import { getDashboardSummary, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
 import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
+import { bangkokDateKey } from "@/lib/reporting-date";
 
 type DashboardSearchParams = Record<string, string | string[] | undefined>;
 
 function dateOnly(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return bangkokDateKey(date);
 }
 
 function rangeHref(basePath: string, range: { start: Date; end: Date }) {
@@ -50,6 +51,7 @@ export async function RmDashboardSummary({ searchParams }: { searchParams: Dashb
       <LinkedStatCard title="ต้องการ RM support" value={data.cards.needRmSupport} href="/rm/search?needRmSupport=true" />
       <LinkedStatCard title="Sentinel event" value={data.cards.sentinel} href="/rm/search?sentinel=true" />
       <LinkedStatCard title="รอ verification" value={data.cards.waitingVerification} href="/rm/search?status=WaitingVerification" />
+      <LinkedStatCard title="Closed incident" value={data.cards.closedIncidents} href="/rm/search?status=Closed" />
     </div>
     <DashboardChartsSection variant="rm" />
   </div>;

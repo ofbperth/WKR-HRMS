@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { formatMonthBucket } from "@/lib/format";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
-import { getLookupData } from "@/lib/incident-query";
+import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
+import { bangkokDateRangeFilter, bangkokFiscalYearRange, bangkokLast12MonthsRange, bangkokMonthKey, bangkokThisMonthRange } from "@/lib/reporting-date";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
 import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
 
@@ -9,13 +11,14 @@ export type AnalyticsFilters = {
   endDate?: string;
   unitId?: string;
   clinicalOrGeneral?: string;
-  simpleCategory?: string;
+  simpleCategory?: string | string[];
+  yMode?: string;
   includeClosed?: string;
   scopeUnitId?: string | null;
 };
 
 const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readonly string[];
-const fiscalYearStartMonth = 9;
+export const dashboardAnalyticsCacheVersion = "dashboard-analytics-rca-pie-v2";
 
 export const safetyGoals = [
   { id: "safe-surgery", title: "การผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง ผิดหัตถการ", codes: ["CPS101", "CPS102", "CPS103"] },
@@ -29,23 +32,16 @@ export const safetyGoals = [
   { id: "deteriorating", title: "การคัดกรองที่ห้องฉุกเฉินคลาดเคลื่อน", codes: ["CPE402", "CPE403", "CPE405", "CPE407"] },
 ];
 
-function toDate(value?: string, end = false) {
-  if (!value) return undefined;
-  const date = new Date(`${value}T${end ? "23:59:59" : "00:00:00"}`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
 export function getFiscalYearRange(now = new Date()) {
-  const year = now.getMonth() >= fiscalYearStartMonth ? now.getFullYear() : now.getFullYear() - 1;
-  return { start: new Date(year, fiscalYearStartMonth, 1), end: new Date(year + 1, fiscalYearStartMonth, 0, 23, 59, 59) };
+  return bangkokFiscalYearRange(now);
 }
 
 export function getThisMonthRange(now = new Date()) {
-  return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+  return bangkokThisMonthRange(now);
 }
 
 export function getLast12MonthsRange(now = new Date()) {
-  return { start: new Date(now.getFullYear(), now.getMonth() - 11, 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+  return bangkokLast12MonthsRange(now);
 }
 
 export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
@@ -53,14 +49,18 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
   and.push({ status: { not: "Rejected" } });
-  const start = toDate(filters.startDate);
-  const end = toDate(filters.endDate, true);
-  if (start || end) and.push({ occurredAt: { ...(start ? { gte: start } : {}), ...(end ? { lte: end } : {}) } });
+  const occurredAt = bangkokDateRangeFilter(filters.startDate, filters.endDate);
+  if (occurredAt) and.push({ occurredAt });
   if (filters.scopeUnitId) and.push({ incidentUnitId: filters.scopeUnitId });
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
-  if (filters.simpleCategory) and.push({ simpleCategory: filters.simpleCategory });
-  if (filters.includeClosed !== "true") and.push({ status: { not: "Closed" } });
+  const simpleCategories = Array.isArray(filters.simpleCategory)
+    ? filters.simpleCategory.filter(Boolean)
+    : filters.simpleCategory
+      ? [filters.simpleCategory]
+      : [];
+  if (simpleCategories.length === 1) and.push({ simpleCategory: simpleCategories[0] });
+  if (simpleCategories.length > 1) and.push({ simpleCategory: { in: simpleCategories } });
   return and.length ? { AND: and } : {};
 }
 
@@ -84,8 +84,19 @@ function percent(numerator: number, denominator: number) {
   return denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
 }
 
+export function buildRcaStatusChart(input: { notStarted: number; waitingApproval: number; overdue: number; submitted: number }) {
+  const overdue = Math.max(0, input.overdue);
+  const notStartedOnTime = Math.max(0, input.notStarted - overdue);
+  return [
+    { name: "ยังไม่เริ่ม RCA", value: notStartedOnTime },
+    { name: "ส่ง RCA แล้ว", value: input.waitingApproval },
+    { name: "RCA เกินกำหนด", value: overdue },
+    { name: "RCA submitted", value: input.submitted },
+  ];
+}
+
 function monthKey(date: Date | string) {
-  return new Date(date).toISOString().slice(0, 7);
+  return bangkokMonthKey(date);
 }
 
 function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: boolean }>) {
@@ -100,7 +111,10 @@ function trend(items: Array<{ occurredAt: Date; severity: string; isSentinel: bo
     current.nearMissRate = percent(current.nearMiss, current.total);
     map.set(key, current);
   }
-  return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+  return Array.from(map.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-12)
+    .map((item) => ({ ...item, month: formatMonthBucket(item.month) }));
 }
 
 async function runBatched<T extends readonly (() => Promise<unknown>)[]>(tasks: T, batchSize = 6) {
@@ -133,13 +147,19 @@ async function commonLookups() {
   return { lookup, unitNames, riskNames, riskExtras, unitExtras };
 }
 
+async function commonFilterLookups() {
+  const lookup = await getDashboardFilterLookups();
+  const unitNames = new Map(lookup.units.map((unit) => [unit.id, unit.name]));
+  return { lookup, unitNames };
+}
+
 export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
   const started = Date.now();
   const where = buildIncidentWhere(filters);
   const now = new Date();
   const month = getThisMonthRange(now);
   const fiscal = getFiscalYearRange(now);
-  const { lookup } = await commonLookups();
+  const { lookup } = await commonFilterLookups();
 
   const [
     total,
@@ -203,6 +223,7 @@ export async function getDashboardSummary(filters: AnalyticsFilters = {}) {
       rcaRevisionRequired,
       openActions,
       overdueActions,
+      closedIncidents: groupValue(statusRows as any, "status", "Closed"),
       closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
       needLeadershipDecision: leadershipDecision,
       needRmSupport,
@@ -234,7 +255,6 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     categorySeverityRows,
     riskSeverityRows,
     unitSeverityRows,
-    rcaStatusRows,
     actionStatusRows,
     openActions,
     overdueActions,
@@ -263,7 +283,6 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     () => prisma.incident.groupBy({ by: ["simpleCategory", "severity"], where, _count: true }),
     () => prisma.incident.groupBy({ by: ["riskCodeId", "severity"], where, _count: true }),
     () => prisma.incident.groupBy({ by: ["incidentUnitId", "severity"], where, _count: true }),
-    () => prisma.rCA.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
     () => prisma.actionPlan.groupBy({ by: ["status"], where: { incident: where }, _count: true }),
     () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" } } }),
     () => prisma.actionPlan.count({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } } }),
@@ -311,6 +330,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       rcaRevisionRequired,
       openActions,
       overdueActions,
+      closedIncidents: groupValue(statusRows as any, "status", "Closed"),
       closedCaseRate: percent(groupValue(statusRows as any, "status", "Closed"), total),
       needLeadershipDecision: leadershipDecision,
       needRmSupport,
@@ -330,7 +350,7 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
       topRecurrentRiskCodes: summarizeDimension(riskSeverityRows as any, "riskCodeId", "riskCode", riskNames, riskExtras).slice(0, 5),
       topUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras),
       weightedUnits: summarizeDimension(unitSeverityRows as any, "incidentUnitId", "unit", unitNames, unitExtras).sort((a, b) => b.score - a.score),
-      rcaStatus: ["Draft", "Submitted", "Approved", "RevisionRequired"].map((name) => ({ name, value: groupValue(rcaStatusRows as any, "status", name) })),
+      rcaStatus: buildRcaStatusChart({ notStarted: rcaRequired, waitingApproval: rcaWaitingApproval, overdue: overdueRca, submitted: rcaSubmitted }),
       actionStatus: ["NotStarted", "Ongoing", "Done", "Delayed", "Verified"].map((name) => ({ name, value: groupValue(actionStatusRows as any, "status", name) })),
       openRcaByUnit: dimensionFromIncidents(openRcaRows),
       overdueActionByUnit: dimensionFromIncidents(overdueActionRows),
@@ -349,9 +369,10 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
 }
 
 export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
+  const started = Date.now();
   const where = buildIncidentWhere(filters);
-  const { lookup, unitNames } = await commonLookups();
-  const yMode = filters.simpleCategory === "__Y_SIMPLE__" ? "simpleCategory" : "severity";
+  const { lookup, unitNames } = await commonFilterLookups();
+  const yMode = filters.yMode === "simpleCategory" ? "simpleCategory" : "severity";
   const yValues = yMode === "simpleCategory" ? lookup.simpleCategories : [...SEVERITY_VALUES];
   const grouped = await prisma.incident.groupBy({
     by: yMode === "simpleCategory" ? ["incidentUnitId", "simpleCategory", "severity"] : ["incidentUnitId", "severity"],
@@ -359,30 +380,29 @@ export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
     _count: true,
   } as any);
   const unitScores = new Map<string, number>();
-  const cellMap = new Map<string, { count: number; score: number; highestSeverity: string }>();
+  const groupedByCell = new Map<string, { count: number; score: number; highestSeverity: string }>();
   for (const row of grouped as any[]) {
     unitScores.set(row.incidentUnitId, (unitScores.get(row.incidentUnitId) ?? 0) + (severityWeights[row.severity] ?? 0) * row._count);
-    const rowKey = yMode === "simpleCategory" ? row.simpleCategory : row.severity;
-    const cellKey = `${row.incidentUnitId}:${rowKey}`;
-    const current = cellMap.get(cellKey) ?? { count: 0, score: 0, highestSeverity: "-" };
+    const yValue = yMode === "simpleCategory" ? row.simpleCategory : row.severity;
+    const key = `${row.incidentUnitId}\u0000${yValue}`;
+    const current = groupedByCell.get(key) ?? { count: 0, score: 0, highestSeverity: "-" };
+    const weight = severityWeights[row.severity] ?? 0;
     current.count += row._count;
-    current.score += (severityWeights[row.severity] ?? 0) * row._count;
-    if ((severityWeights[row.severity] ?? 0) > (severityWeights[current.highestSeverity] ?? -1)) {
-      current.highestSeverity = row.severity;
-    }
-    cellMap.set(cellKey, current);
+    current.score += weight * row._count;
+    if (weight > (severityWeights[current.highestSeverity] ?? 0)) current.highestSeverity = row.severity;
+    groupedByCell.set(key, current);
   }
   const orderedUnits = [...lookup.units].sort((a, b) => (unitScores.get(b.id) ?? 0) - (unitScores.get(a.id) ?? 0));
   const rows = yValues.map((row) => ({
     row,
     cells: orderedUnits.map((unit) => {
-      const scoped = cellMap.get(`${unit.id}:${row}`);
-      const count = scoped?.count ?? 0;
-      const score = scoped?.score ?? 0;
-      const highestSeverity = scoped?.highestSeverity ?? "-";
-      return { unitId: unit.id, unit: unitNames.get(unit.id) ?? unit.name, row, count, score, highestSeverity, openRca: 0, overdueActions: 0 };
+      const cell = groupedByCell.get(`${unit.id}\u0000${row}`);
+      return { unitId: unit.id, unit: unitNames.get(unit.id) ?? unit.name, row, count: cell?.count ?? 0, score: cell?.score ?? 0, highestSeverity: cell?.highestSeverity ?? "-", openRca: 0, overdueActions: 0 };
     }),
   }));
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[perf] heatmap ${Date.now() - started}ms cells=${orderedUnits.length * yValues.length}`);
+  }
   return { units: orderedUnits, yMode, rows };
 }
 
