@@ -380,11 +380,9 @@ export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
     _count: true,
   } as any);
   const unitScores = new Map<string, number>();
-  for (const row of grouped as any[]) {
-    unitScores.set(row.incidentUnitId, (unitScores.get(row.incidentUnitId) ?? 0) + (severityWeights[row.severity] ?? 0) * row._count);
-  }
   const groupedByCell = new Map<string, { count: number; score: number; highestSeverity: string }>();
   for (const row of grouped as any[]) {
+    unitScores.set(row.incidentUnitId, (unitScores.get(row.incidentUnitId) ?? 0) + (severityWeights[row.severity] ?? 0) * row._count);
     const yValue = yMode === "simpleCategory" ? row.simpleCategory : row.severity;
     const key = `${row.incidentUnitId}\u0000${yValue}`;
     const current = groupedByCell.get(key) ?? { count: 0, score: 0, highestSeverity: "-" };
@@ -413,6 +411,12 @@ export async function getSafetyGoalAnalytics(filters: AnalyticsFilters = {}) {
   const { lookup } = await commonLookups();
   const riskByCode = new Map(lookup.riskCodes.map((risk) => [risk.code, risk.id]));
   const riskIdsByGoal = new Map(safetyGoals.map((goal) => [goal.id, goal.codes.map((code) => riskByCode.get(code)).filter(Boolean) as string[]]));
+  const goalByRiskCodeId = new Map<string, string[]>();
+  for (const [goalId, riskCodeIds] of riskIdsByGoal.entries()) {
+    for (const riskCodeId of riskCodeIds) {
+      goalByRiskCodeId.set(riskCodeId, [...(goalByRiskCodeId.get(riskCodeId) ?? []), goalId]);
+    }
+  }
   const allRiskCodeIds = [...new Set(Array.from(riskIdsByGoal.values()).flat())];
   const now = new Date();
   const rows = allRiskCodeIds.length ? await prisma.incident.findMany({
@@ -428,20 +432,33 @@ export async function getSafetyGoalAnalytics(filters: AnalyticsFilters = {}) {
     orderBy: { occurredAt: "desc" },
     take: 5000,
   }) : [];
+  const goalState = new Map(safetyGoals.map((goal) => [goal.id, {
+    count: 0,
+    severityCounts: new Map<string, number>(),
+    openRca: 0,
+    overdueActions: 0,
+    trendItems: [] as Array<{ occurredAt: Date; severity: string; isSentinel: boolean }>,
+  }]));
+  for (const row of rows) {
+    const goalIds = goalByRiskCodeId.get(row.riskCodeId) ?? [];
+    for (const goalId of goalIds) {
+      const state = goalState.get(goalId);
+      if (!state) continue;
+      state.count += 1;
+      state.severityCounts.set(row.severity, (state.severityCounts.get(row.severity) ?? 0) + 1);
+      if (row.rca && row.rca.status !== "Approved") state.openRca += 1;
+      state.overdueActions += row.actionPlans.filter((action) => action.status !== "Verified" && action.dueDate < now).length;
+      state.trendItems.push({ occurredAt: row.occurredAt, severity: row.severity, isSentinel: row.isSentinel });
+    }
+  }
   return safetyGoals.map((goal) => {
-    const riskCodeIds = new Set(riskIdsByGoal.get(goal.id) ?? []);
-    const goalRows = rows.filter((row) => riskCodeIds.has(row.riskCodeId));
-    const severityRows = Array.from(goalRows.reduce((map, row) => {
-      map.set(row.severity, (map.get(row.severity) ?? 0) + 1);
-      return map;
-    }, new Map<string, number>())).map(([severity, count]) => ({ severity, _count: count }));
-    const openRca = goalRows.filter((row) => row.rca && row.rca.status !== "Approved").length;
-    const overdueActions = goalRows.reduce((sum, row) => sum + row.actionPlans.filter((action) => action.status !== "Verified" && action.dueDate < now).length, 0);
+    const state = goalState.get(goal.id) ?? { count: 0, severityCounts: new Map<string, number>(), openRca: 0, overdueActions: 0, trendItems: [] };
+    const severityRows = Array.from(state.severityCounts.entries()).map(([severity, count]) => ({ severity, _count: count }));
     const highestSeverity = [...severityRows].sort((a, b) => (severityWeights[b.severity] ?? 0) - (severityWeights[a.severity] ?? 0))[0]?.severity ?? "-";
-    const monthly = trend(goalRows);
+    const monthly = trend(state.trendItems);
     const increasing = monthly.length >= 2 && monthly[monthly.length - 1].total > monthly[monthly.length - 2].total;
-    const critical = ["G", "H", "I", "5"].includes(highestSeverity) || overdueActions > 0;
-    const watch = !critical && (["E", "F", "3", "4"].includes(highestSeverity) || openRca > 0 || increasing);
-    return { ...goal, count: goalRows.length, highestSeverity, trend: monthly, openRca, overdueActions, status: critical ? "Critical" : watch ? "Watch" : "Good", relatedRiskCodes: goal.codes };
+    const critical = ["G", "H", "I", "5"].includes(highestSeverity) || state.overdueActions > 0;
+    const watch = !critical && (["E", "F", "3", "4"].includes(highestSeverity) || state.openRca > 0 || increasing);
+    return { ...goal, count: state.count, highestSeverity, trend: monthly, openRca: state.openRca, overdueActions: state.overdueActions, status: critical ? "Critical" : watch ? "Watch" : "Good", relatedRiskCodes: goal.codes };
   });
 }

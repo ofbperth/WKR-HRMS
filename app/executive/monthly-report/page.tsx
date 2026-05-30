@@ -10,6 +10,7 @@ import { formatDateOnly, formatDateTime, formatMonthBucket } from "@/lib/format"
 import { bangkokMonthInputToRange, bangkokMonthKey, bangkokMonthRange } from "@/lib/reporting-date";
 import { severityWeights } from "@/lib/severity";
 import { countableIncidentFilter } from "@/lib/prisma-fields";
+import { getOrSetCachedValue } from "@/lib/smart-cache";
 
 type ReportRange = { start: Date; end: Date; label: string; mode: string; fiscalYear?: number };
 
@@ -90,7 +91,23 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const now = new Date();
   const range = resolveRange(searchParams);
   const scopeUnitId = user.role === "UnitManager" ? user.unitId ?? "__NO_UNIT__" : undefined;
-  const summary = await buildSummary(range.start, range.end, scopeUnitId);
+  const summary = await getOrSetCachedValue({
+    cacheType: "monthlySummary",
+    unitId: scopeUnitId ?? null,
+    dateRange: { from: range.start.toISOString(), to: range.end.toISOString() },
+    reportType: `monthly-report-${range.mode}`,
+    role: user.role,
+    filters: {
+      mode: range.mode,
+      label: range.label,
+      scopeUnitId: scopeUnitId ?? null,
+      ...(typeof searchParams.month === "string" ? { month: searchParams.month } : {}),
+      ...(typeof searchParams.startMonth === "string" ? { startMonth: searchParams.startMonth } : {}),
+      ...(typeof searchParams.endMonth === "string" ? { endMonth: searchParams.endMonth } : {}),
+      ...(typeof searchParams.fiscalYear === "string" ? { fiscalYear: searchParams.fiscalYear } : {}),
+    },
+    loader: () => buildSummary(range.start, range.end, scopeUnitId),
+  });
   const currentBangkokMonth = bangkokMonthKey(now);
   const currentMonth = range.mode === "month" ? bangkokMonthKey(range.start) : currentBangkokMonth;
   const startMonth = range.mode === "range" ? bangkokMonthKey(range.start) : currentBangkokMonth;

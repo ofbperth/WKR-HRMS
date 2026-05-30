@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       loader: () => getDashboardAnalytics(params),
     });
     if (process.env.NODE_ENV === "development") console.info(`[perf] dashboard-api executive ${Date.now() - started}ms`);
-    return Response.json(data);
+    return Response.json({ data, meta: { cached: true } });
   } catch (error) {
     return apiError(error);
   }

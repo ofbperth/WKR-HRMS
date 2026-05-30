@@ -193,7 +193,7 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
   </div>;
 }
 
-export function AddCommentForm({ incidentId }: { incidentId: string }) {
+export function AddCommentForm({ incidentId, onSaved }: { incidentId: string; onSaved?: () => void | Promise<void> }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -202,7 +202,7 @@ export function AddCommentForm({ incidentId }: { incidentId: string }) {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
     setSaving(false);
-    if (!res.ok) alert("เพิ่ม comment ไม่สำเร็จ"); else { setMessage(""); router.refresh(); }
+    if (!res.ok) alert("เพิ่ม comment ไม่สำเร็จ"); else { setMessage(""); await onSaved?.(); router.refresh(); }
   }
   return <div className="space-y-2 rounded-lg border bg-white p-4"><textarea className="min-h-24 w-full rounded-md border px-3 py-2 text-sm" value={message} onChange={e => setMessage(e.target.value)} placeholder="เพิ่ม RM comment / note" /><Button type="button" onClick={submit} disabled={saving}>{saving ? "กำลังบันทึก..." : "เพิ่ม comment"}</Button></div>;
 }
