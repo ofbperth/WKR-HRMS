@@ -147,7 +147,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           <div className="truncate text-sm font-semibold text-slate-900 sm:text-base">ระบบรายงานและบริหารความเสี่ยงโรงพยาบาล</div>
           <div className="hidden text-xs text-muted-foreground sm:block">กระบวนการชัดเจน แยกสิทธิ์ตามบทบาท และทำ Triage ได้เร็ว</div>
         </div>
-        <div className="flex shrink-0 items-center gap-3"><NotificationBell /><form action="/api/auth/logout" method="post"><button className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-emerald-50"><LogOut size={16}/><span className="hidden sm:inline">ออกจากระบบ</span></button></form></div>
+        <div className="flex shrink-0 items-center gap-3"><NotificationBell role={user.role} /><form action="/api/auth/logout" method="post"><button className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-emerald-50"><LogOut size={16}/><span className="hidden sm:inline">ออกจากระบบ</span></button></form></div>
       </header>
       <nav className="flex gap-2 overflow-x-auto border-b border-emerald-100 bg-white/95 px-4 py-3 print:hidden lg:hidden">
         {mobileItems.map(m => <Link key={m.href} className="inline-flex min-h-10 max-w-[13rem] shrink-0 items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-xs font-semibold leading-4 text-slate-700 shadow-sm" href={m.href}><span className="shrink-0 text-emerald-600">{m.icon}</span><span className="min-w-0 whitespace-normal break-words">{m.label}</span></Link>)}

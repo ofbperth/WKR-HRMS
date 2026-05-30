@@ -22,6 +22,8 @@ export type IncidentFilterParams = {
   cursor?: string | string[];
 };
 
+export type IncidentAccessUser = { id: string; role: Role; unitId: string | null };
+
 export const INCIDENT_PAGE_SIZE = 20;
 
 export const incidentInclude = {
@@ -49,14 +51,14 @@ export const incidentListSelect = {
   riskCode: { select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true } },
 } as const;
 
-export function scopeWhereForUser(user: { id: string; role: Role; unitId: string | null }) {
+export function scopeWhereForUser(user: IncidentAccessUser) {
   if (user.role === "Reporter") return { reportedById: user.id };
   if (user.role === "UnitManager") return { incidentUnitId: user.unitId ?? "__NO_UNIT__" };
   if (user.role === "Executive") return {};
   return {};
 }
 
-export function buildIncidentWhere(user: { id: string; role: Role; unitId: string | null }, params: IncidentFilterParams) {
+export function buildIncidentWhere(user: IncidentAccessUser, params: IncidentFilterParams) {
   const where: IncidentWhereInput = { AND: [scopeWhereForUser(user)] };
   const and = where.AND as IncidentWhereInput[];
   const activeFilter = activeIncidentFilter();
@@ -101,7 +103,7 @@ export function buildIncidentWhere(user: { id: string; role: Role; unitId: strin
   return where;
 }
 
-export async function getIncidentList(user: { id: string; role: Role; unitId: string | null }, params: IncidentFilterParams) {
+export async function getIncidentList(user: IncidentAccessUser, params: IncidentFilterParams) {
   const started = Date.now();
   const where = buildIncidentWhere(user, params);
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
@@ -135,7 +137,7 @@ export async function getIncidentList(user: { id: string; role: Role; unitId: st
   };
 }
 
-export async function getIncidentExportRows(user: { id: string; role: Role; unitId: string | null }, params: IncidentFilterParams, take = 1000) {
+export async function getIncidentExportRows(user: IncidentAccessUser, params: IncidentFilterParams, take = 1000) {
   return prisma.incident.findMany({
     where: buildIncidentWhere(user, params),
     select: incidentListSelect,
@@ -144,59 +146,126 @@ export async function getIncidentExportRows(user: { id: string; role: Role; unit
   });
 }
 
-export async function getIncidentForUser(id: string, user: { id: string; role: Role; unitId: string | null }) {
+const incidentDetailInclude = {
+  incidentUnit: true,
+  reporterUnit: true,
+  riskCode: true,
+  reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
+  rca: {
+    select: {
+      id: true,
+      problemStatement: true,
+      timeline: true,
+      contributingHuman: true,
+      contributingProcess: true,
+      contributingEquipment: true,
+      contributingEnvironment: true,
+      contributingCommunication: true,
+      contributingIT: true,
+      rootCause: true,
+      preventiveAction: true,
+      kpi: true,
+      kpiOwnerId: true,
+      needRmSupport: true,
+      status: true,
+      submittedAt: true,
+      approvedAt: true,
+      kpiOwner: { select: { id: true, name: true, email: true, role: true, unitId: true } },
+      approvedBy: { select: { id: true, name: true, role: true } },
+    },
+  },
+  actionPlans: {
+    include: {
+      owner: { select: { id: true, name: true, email: true, role: true, unitId: true } },
+      verifiedBy: { select: { id: true, name: true, role: true } },
+    },
+    orderBy: { dueDate: "asc" as const },
+  },
+} as const;
+
+async function getScopedIncidentCore(id: string, user: IncidentAccessUser) {
   const started = Date.now();
   const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
     where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,
-    include: {
-      incidentUnit: true,
-      reporterUnit: true,
-      riskCode: true,
-      reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
-      comments: { include: { user: { select: { name: true, role: true } } }, orderBy: { createdAt: "desc" }, take: 20 },
-      rca: {
-        select: {
-          id: true,
-          problemStatement: true,
-          timeline: true,
-          contributingHuman: true,
-          contributingProcess: true,
-          contributingEquipment: true,
-          contributingEnvironment: true,
-          contributingCommunication: true,
-          contributingIT: true,
-          rootCause: true,
-          preventiveAction: true,
-          kpi: true,
-          kpiOwnerId: true,
-          needRmSupport: true,
-          status: true,
-          submittedAt: true,
-          approvedAt: true,
-          kpiOwner: { select: { id: true, name: true, email: true, role: true, unitId: true } },
-          approvedBy: { select: { id: true, name: true, role: true } },
-        },
-      },
-      actionPlans: {
-        include: {
-          owner: { select: { id: true, name: true, email: true, role: true, unitId: true } },
-          verifiedBy: { select: { id: true, name: true, role: true } },
-        },
-        orderBy: { dueDate: "asc" },
-      },
-    },
+    include: incidentDetailInclude,
   });
-  if (!incident) return null;
-  const audits = await prisma.auditLog.findMany({ where: { entityType: "Incident", entityId: id }, include: { user: { select: { name: true, role: true } } }, orderBy: { createdAt: "desc" }, take: 30 });
   if (process.env.NODE_ENV === "development") {
-    console.info(`[perf] incident-detail ${Date.now() - started}ms`);
+    console.info(`[perf] incident-core ${Date.now() - started}ms`);
   }
+  return incident;
+}
+
+async function hasScopedIncidentAccess(id: string, user: IncidentAccessUser) {
+  const activeFilter = activeIncidentFilter();
+  const incident = await prisma.incident.findFirst({
+    where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,
+    select: { id: true },
+  });
+  return Boolean(incident);
+}
+
+export async function getIncidentCoreForUser(id: string, user: IncidentAccessUser) {
+  const incident = await getScopedIncidentCore(id, user);
+  if (!incident) return null;
   const { decryptIncidentIdentifier } = await import("@/lib/sensitive-fields");
   return {
     ...incident,
     reporterDisplayName: incident.reportedBy?.name ?? decryptIncidentIdentifier((incident as any).reporterNameEncrypted, null) ?? "Deleted user",
-    audits,
+  };
+}
+
+export async function getIncidentCommentsForUser(id: string, user: IncidentAccessUser, take = 10, cursor?: string) {
+  if (!(await hasScopedIncidentAccess(id, user))) return null;
+  const rows = await prisma.comment.findMany({
+    where: { incidentId: id },
+    include: { user: { select: { name: true, role: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: take + 1,
+  });
+  const hasNextPage = rows.length > take;
+  const data = rows.slice(0, take);
+  return {
+    data,
+    meta: {
+      hasNextPage,
+      nextCursor: hasNextPage ? data[data.length - 1]?.id ?? null : null,
+    },
+  };
+}
+
+export async function getIncidentAuditsForUser(id: string, user: IncidentAccessUser, take = 10, cursor?: string) {
+  if (!(await hasScopedIncidentAccess(id, user))) return null;
+  const rows = await prisma.auditLog.findMany({
+    where: { entityType: "Incident", entityId: id },
+    include: { user: { select: { name: true, role: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: take + 1,
+  });
+  const hasNextPage = rows.length > take;
+  const data = rows.slice(0, take);
+  return {
+    data,
+    meta: {
+      hasNextPage,
+      nextCursor: hasNextPage ? data[data.length - 1]?.id ?? null : null,
+    },
+  };
+}
+
+export async function getIncidentForUser(id: string, user: IncidentAccessUser) {
+  const [incident, comments, audits] = await Promise.all([
+    getIncidentCoreForUser(id, user),
+    getIncidentCommentsForUser(id, user, 20),
+    getIncidentAuditsForUser(id, user, 30),
+  ]);
+  if (!incident) return null;
+  return {
+    ...incident,
+    comments: comments?.data ?? [],
+    audits: audits?.data ?? [],
   };
 }
 

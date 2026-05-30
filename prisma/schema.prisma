@@ -246,6 +246,8 @@ model Notification {
   relatedIncidentId String?
   isRead            Boolean  @default(false)
   createdAt         DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model AuditLog {
@@ -264,6 +266,7 @@ model AuditLog {
   @@index([createdAt])
   @@index([action])
   @@index([entityType])
+  @@index([entityType, entityId, createdAt])
 }
 
 model MonthlyReport {

@@ -3,7 +3,8 @@ import { DashboardChartsSkeleton } from "@/components/dashboard/dashboard-charts
 import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
 import { LinkedStatCard } from "@/components/dashboard/stat-cards";
 import { getDashboardSummary, getFiscalYearRange, getThisMonthRange } from "@/lib/dashboard-analytics";
-import { normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
+import { getOrSetCachedValue } from "@/lib/smart-cache";
+import { buildDashboardCacheInput } from "@/lib/dashboard-cache";
 
 type DashboardSearchParams = Record<string, string | string[] | undefined>;
 
@@ -33,9 +34,13 @@ export function DashboardSummarySkeleton({ cards = 8 }: { cards?: number }) {
   </div>;
 }
 
-export async function RmDashboardSummary({ searchParams }: { searchParams: DashboardSearchParams }) {
+export async function RmDashboardSummary({ searchParams, role }: { searchParams: DashboardSearchParams; role: string }) {
   const started = Date.now();
-  const data = await getDashboardSummary(normalizeDashboardSearchParams(searchParams));
+  const cacheInput = buildDashboardCacheInput({ variant: "rm", role, searchParams });
+  const data = await getOrSetCachedValue({
+    ...cacheInput,
+    loader: () => getDashboardSummary(cacheInput.scopedFilters),
+  });
   logDashboardLoad("rm", started);
   return <div className="space-y-6">
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} />
@@ -55,9 +60,13 @@ export async function RmDashboardSummary({ searchParams }: { searchParams: Dashb
   </div>;
 }
 
-export async function UnitDashboardSummary({ searchParams, unitId }: { searchParams: DashboardSearchParams; unitId: string | null }) {
+export async function UnitDashboardSummary({ searchParams, unitId, role }: { searchParams: DashboardSearchParams; unitId: string | null; role: string }) {
   const started = Date.now();
-  const data = await getDashboardSummary({ ...normalizeDashboardSearchParams(searchParams), scopeUnitId: unitId });
+  const cacheInput = buildDashboardCacheInput({ variant: "unit", role, searchParams, scopeUnitId: unitId });
+  const data = await getOrSetCachedValue({
+    ...cacheInput,
+    loader: () => getDashboardSummary(cacheInput.scopedFilters),
+  });
   logDashboardLoad("unit", started);
   const basePath = "/unit/incidents";
   return <div className="space-y-6">
@@ -76,9 +85,13 @@ export async function UnitDashboardSummary({ searchParams, unitId }: { searchPar
   </div>;
 }
 
-export async function ExecutiveDashboardSummary({ searchParams }: { searchParams: DashboardSearchParams }) {
+export async function ExecutiveDashboardSummary({ searchParams, role }: { searchParams: DashboardSearchParams; role: string }) {
   const started = Date.now();
-  const data = await getDashboardSummary(normalizeDashboardSearchParams(searchParams));
+  const cacheInput = buildDashboardCacheInput({ variant: "executive", role, searchParams });
+  const data = await getOrSetCachedValue({
+    ...cacheInput,
+    loader: () => getDashboardSummary(cacheInput.scopedFilters),
+  });
   logDashboardLoad("executive", started);
   return <div className="space-y-6">
     <DashboardFilter units={data.filters.units} categories={data.filters.categories} />
