@@ -3,6 +3,8 @@ import { dashboardAnalyticsCacheVersion, getDashboardAnalytics } from "@/lib/das
 import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/lib/dashboard-filter";
 import { getOrSetCachedValue } from "@/lib/smart-cache";
 
+export const preferredRegion = "sin1";
+
 export async function GET(request: Request) {
   try {
     const started = Date.now();

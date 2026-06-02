@@ -1002,6 +1002,8 @@ Symptoms:
 
 \- spawn EPERM
 
+\- `EPERM: operation not permitted, rename ...node_modules\\.prisma\\client\\query_engine-windows.dll.node.tmp...`
+
 
 
 Common on:
@@ -1011,6 +1013,10 @@ Common on:
 \- OneDrive paths
 
 \- Restricted folders
+
+\- Stale `next dev` / `next build` node processes locking Prisma engine files
+
+\- Leftover Prisma temp files in `node_modules/.prisma/client`
 
 
 
@@ -1025,6 +1031,14 @@ Fix:
 \- Clear node\_modules
 
 \- Reinstall dependencies
+
+\- Before assuming code is broken, check whether repo-local `node.exe` processes from `next dev` or `next build` are still running
+
+\- If the rename error points to `query_engine-windows.dll.node`, stop only the Node processes that belong to this repo, then delete `query_engine-windows.dll.node.tmp*` files under `node_modules/.prisma/client`
+
+\- Re-run `npm run build` after clearing the lock; in this repo, that resolved the Prisma generate failure and the build completed successfully
+
+\- Treat this as an environment/file-lock issue first, not a source-code regression, unless the build still fails after the lock is cleared
 
 
 

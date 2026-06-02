@@ -2,6 +2,8 @@ import { apiError, requireUser } from "@/lib/auth";
 import { createIncidentWithAutomation } from "@/lib/incident-automation";
 import { getIncidentList, removeSensitiveIncidentIdentifiers } from "@/lib/incident-query";
 
+export const preferredRegion = "sin1";
+
 export async function GET(request: Request) {
   try {
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);

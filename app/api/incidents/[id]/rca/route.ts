@@ -8,6 +8,8 @@ import { canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 
+export const preferredRegion = "sin1";
+
 function removeSensitiveRcaStorage<T extends Record<string, any>>(rca: T) {
   const { rcaEncrypted, ...rest } = rca;
   return rest;

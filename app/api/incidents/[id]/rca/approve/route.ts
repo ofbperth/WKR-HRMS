@@ -4,6 +4,8 @@ import { auditLog } from "@/lib/audit";
 import { rcaApprovalSchema } from "@/lib/validators";
 import { canApproveRca } from "@/lib/rbac";
 
+export const preferredRegion = "sin1";
+
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser(["RMTeam", "Admin"]);

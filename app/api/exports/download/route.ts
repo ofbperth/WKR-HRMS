@@ -4,6 +4,8 @@ import { auditLog } from "@/lib/audit";
 import { buildExport } from "@/lib/export-builders";
 import { verifySignedExportToken } from "@/lib/signed-export";
 
+export const preferredRegion = "sin1";
+
 function canDownload(kind: string, role: string) {
   if (kind === "audit-log-csv") return role === "Admin";
   if (kind === "rca-csv") return ["UnitManager", "RMTeam", "Admin"].includes(role);
