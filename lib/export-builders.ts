@@ -4,10 +4,9 @@ import { formatDateTime } from "@/lib/format";
 import { buildIncidentWhere } from "@/lib/incident-query";
 import type { IncidentAccessUser } from "@/lib/incident-query";
 import type { SignedExportFilters } from "@/lib/signed-export";
+import type { ExportKind } from "@/lib/types";
 
 type ExportUser = { id: string; role: string; unitId: string | null };
-
-export type ExportKind = "incident-csv" | "action-csv" | "rca-csv" | "audit-log-csv";
 
 const exportPageSize = 1000;
 const textEncoder = new TextEncoder();

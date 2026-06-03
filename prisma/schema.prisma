@@ -43,6 +43,7 @@ model User {
   notifications     Notification[]
   auditLogs         AuditLog[]
   exportAccessGrants ExportAccessGrant[]
+  exportJobs       ExportJob[]
   invitesSent       UserInvite[] @relation("InvitedBy")
 }
 
@@ -406,5 +407,33 @@ model ExportAccessGrant {
 
   @@index([userId, createdAt])
   @@index([kind, createdAt])
+  @@index([expiresAt])
+}
+
+model ExportJob {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+  kind            String
+  role            String
+  unitId          String?  @map("unit_id")
+  reason          String
+  scope           String
+  filtersJson     String   @map("filters_json")
+  status          String
+  attemptCount    Int      @default(0) @map("attempt_count")
+  requestedAt     DateTime @default(now()) @map("requested_at")
+  startedAt       DateTime? @map("started_at")
+  finishedAt      DateTime? @map("finished_at")
+  expiresAt       DateTime? @map("expires_at")
+  filename        String?
+  contentType     String?  @map("content_type")
+  rowCount        Int?     @map("row_count")
+  storageObjectId String?  @unique @map("storage_object_id")
+  lastError       String?  @map("last_error")
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+  @@index([kind, requestedAt])
   @@index([expiresAt])
 }
