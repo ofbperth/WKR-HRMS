@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canAccessApiPath, canAccessPath, canApproveRca, canManageIncident, canSeeSensitive, canSubmitRca } from "@/lib/rbac";
+import { assertExportScope, scopeForExport } from "@/lib/export-scope";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
 import { removeSensitiveIncidentIdentifiers, scopeWhereForUser } from "@/lib/incident-query";
 import { isGoogleEmailAllowed } from "@/lib/auth-settings";
@@ -67,5 +68,12 @@ describe("role based access control", () => {
   it("accepts Google allowed domains with or without a leading at sign", () => {
     expect(isGoogleEmailAllowed("ofbperth@gmail.com", { allowedDomains: ["@gmail.com"], allowedEmails: [] })).toBe(true);
     expect(isGoogleEmailAllowed("ofbperth@gmail.com", { allowedDomains: ["gmail.com"], allowedEmails: [] })).toBe(true);
+  });
+
+  it("prevents hospital-wide incident export by non RM/Admin roles", () => {
+    expect(scopeForExport("incident-csv", { id: "reporter-1", role: "Reporter", unitId: "unit-a" }, {})).toBe("OWN");
+    expect(scopeForExport("incident-csv", { id: "unit-head", role: "UnitManager", unitId: "unit-a" }, {})).toBe("UNIT");
+    expect(() => assertExportScope("incident-csv", { id: "unit-head", role: "UnitManager", unitId: "unit-a" }, { unitId: "unit-b" })).toThrow("EXPORT_SCOPE_FORBIDDEN");
+    expect(() => assertExportScope("incident-csv", { id: "rm-1", role: "RMTeam", unitId: null }, {})).not.toThrow();
   });
 });

@@ -1,6 +1,7 @@
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
+import { validateActionOwnerAssignment } from "@/lib/action-policy";
 import { actionPlanSchema } from "@/lib/validators";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
 import { isIncidentClosed } from "@/lib/incident-close";
@@ -16,6 +17,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (!incident.rca || incident.rca.status !== "Approved") return Response.json({ error: "RCA_APPROVAL_REQUIRED" }, { status: 409 });
     const dueDate = new Date(`${input.dueDate}T00:00:00`);
     if (Number.isNaN(dueDate.getTime())) return Response.json({ error: "INVALID_DUE_DATE" }, { status: 400 });
+    await validateActionOwnerAssignment({
+      actor: user,
+      ownerId: input.ownerId,
+      incidentUnitId: incident.incidentUnitId,
+    });
 
     const action = await prisma.actionPlan.create({
       data: {
@@ -31,10 +37,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     });
     await prisma.incident.update({ where: { id: params.id }, data: { status: "ActionOngoing" } });
-    await auditLog({ userId: user.id, action: "create action", entityType: "ActionPlan", entityId: action.id, newValue: { incidentId: params.id, ownerId: input.ownerId } });
+    await auditLog({ userId: user.id, role: user.role, action: "create action", entityType: "ActionPlan", entityId: action.id, newValue: { incidentId: params.id, ownerId: input.ownerId } });
     await prisma.notification.create({ data: { userId: input.ownerId, type: "action-assigned", title: "Action assigned", message: `${incident.incidentNo}: ${action.title}`, relatedIncidentId: params.id } });
     return Response.json(action, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "ACTION_OWNER_MUST_BE_ACTIVE") return Response.json({ error: "ACTION_OWNER_MUST_BE_ACTIVE" }, { status: 400 });
+    if (error instanceof Error && error.message === "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN") return Response.json({ error: "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN" }, { status: 403 });
     return apiError(error);
   }
 }

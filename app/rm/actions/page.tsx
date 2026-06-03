@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { GovernedExportButton } from "@/components/exports/governed-export-button";
 import { AppShell } from "@/components/layout/sidebar";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
@@ -28,7 +29,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   return <AppShell user={user}><div className="space-y-6">
     <div><h1 className="text-2xl font-bold">แผนการแก้ไขของ RM</h1><p className="mt-2 text-slate-600">ติดตามแผนการแก้ไข ผู้รับผิดชอบ งานเกินกำหนด และคิวตรวจสอบ</p></div>
     <div className="grid gap-4 md:grid-cols-3"><Card><CardHeader><CardTitle>แผนที่เปิดอยู่</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{openCount}</CardContent></Card><Card><CardHeader><CardTitle>เกินกำหนด</CardTitle></CardHeader><CardContent className="text-3xl font-bold text-red-700">{overdue}</CardContent></Card><Card><CardHeader><CardTitle>รอตรวจสอบ</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{doneCount}</CardContent></Card></div>
-    <div className="flex gap-2"><a className="rounded-md border bg-white px-3 py-2 text-sm" href="/api/actions/export">Export Action CSV</a></div>
+    <div className="flex gap-2"><GovernedExportButton endpoint="/api/actions/export" label="Export Action CSV" reasonPrompt="กรุณาระบุเหตุผลในการส่งออก Action Plan" /></div>
     <ActionTable actions={actions} detailBase="/rm/search" />
     <Pagination basePath="/rm/actions" searchParams={searchParams} page={page} total={total} pageSize={pageSize} />
   </div></AppShell>;

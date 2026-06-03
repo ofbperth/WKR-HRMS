@@ -7,6 +7,8 @@ import { createSignedExportToken, exportTtlSeconds, signedExportUrl, type Signed
 export async function signedExportRedirect(request: Request, input: {
   kind: ExportKind;
   user: { id: string; role: string; unitId: string | null };
+  grantId: string;
+  tokenJti: string;
   filters?: SignedExportFilters;
 }) {
   const token = await createSignedExportToken({
@@ -14,6 +16,8 @@ export async function signedExportRedirect(request: Request, input: {
     userId: input.user.id,
     role: input.user.role,
     unitId: input.user.unitId,
+    grantId: input.grantId,
+    tokenJti: input.tokenJti,
     filters: input.filters,
   });
   const url = signedExportUrl(request.url, token);

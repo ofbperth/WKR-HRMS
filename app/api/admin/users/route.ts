@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, requireUser } from "@/lib/auth";
+import { auditLog, writeAuditLog } from "@/lib/audit";
 import { adminUserSchema } from "@/lib/validators";
 import { encryptToStorage } from "@/lib/encryption";
 import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     if ((rest.authProvider ?? "CREDENTIALS") !== "GOOGLE" && !password) return Response.json({ error: "Password required for credentials login" }, { status: 400 });
     const passwordHash = password ? await bcrypt.hash(password, 12) : null;
     const item = await prisma.user.create({ data: { ...rest, unitId: unitId || null, passwordHash, authProvider: rest.authProvider ?? "CREDENTIALS" }, include: { unit: true } });
-    await prisma.auditLog.create({ data: { userId: actor.id, action: "CREATE", entityType: "User", entityId: item.id, newValue: JSON.stringify({ email: item.email, role: item.role }) } });
+    await auditLog({ userId: actor.id, role: actor.role, action: "CREATE", entityType: "User", entityId: item.id, newValue: { email: item.email, role: item.role } });
     return Response.json(stripPassword(item), { status: 201 });
   } catch (error) { return apiError(error); }
 }
@@ -75,9 +76,9 @@ export async function PATCH(req: Request) {
     if (unitId !== undefined) data.unitId = unitId || null;
     if (password) data.passwordHash = await bcrypt.hash(password, 12);
     const item = await prisma.user.update({ where: { id: body.id }, data, include: { unit: true } });
-    await prisma.auditLog.create({ data: { userId: actor.id, action: "UPDATE", entityType: "User", entityId: item.id, oldValue: JSON.stringify(auditUserValue(old)), newValue: JSON.stringify(auditUserValue(item)) } });
-    if (old && old.role !== item.role) await prisma.auditLog.create({ data: { userId: actor.id, action: "USER_ROLE_CHANGED", entityType: "User", entityId: item.id, oldValue: JSON.stringify({ role: old.role }), newValue: JSON.stringify({ role: item.role }) } });
-    if (old && old.isActive && !item.isActive) await prisma.auditLog.create({ data: { userId: actor.id, action: "USER_DEACTIVATED", entityType: "User", entityId: item.id } });
+    await auditLog({ userId: actor.id, role: actor.role, action: "UPDATE", entityType: "User", entityId: item.id, oldValue: auditUserValue(old), newValue: auditUserValue(item) });
+    if (old && old.role !== item.role) await auditLog({ userId: actor.id, role: actor.role, action: "USER_ROLE_CHANGED", entityType: "User", entityId: item.id, oldValue: { role: old.role }, newValue: { role: item.role } });
+    if (old && old.isActive && !item.isActive) await auditLog({ userId: actor.id, role: actor.role, action: "USER_DEACTIVATED", entityType: "User", entityId: item.id });
     return Response.json(stripPassword(item));
   } catch (error) { return apiError(error); }
 }
@@ -109,13 +110,13 @@ export async function DELETE(req: Request) {
         await tx.notification.deleteMany({ where: { userId: id } });
         await tx.userInvite.updateMany({ where: { invitedById: id }, data: { invitedById: null } as any });
         await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } as any });
-        await tx.auditLog.create({ data: { userId: actor.id, userRole: actor.role, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: JSON.stringify(auditUserValue(old)) } as any });
+        await writeAuditLog(tx as any, { userId: actor.id, role: actor.role, action: "USER_HARD_DELETED", entityType: "User", entityId: id, oldValue: auditUserValue(old) });
         await tx.user.delete({ where: { id } });
       });
       return Response.json({ ok: true, id });
     }
     const item = await prisma.user.update({ where: { id }, data: { isActive: false }, include: { unit: true } });
-    await prisma.auditLog.create({ data: { userId: actor.id, action: "USER_DEACTIVATED", entityType: "User", entityId: item.id } });
+    await auditLog({ userId: actor.id, role: actor.role, action: "USER_DEACTIVATED", entityType: "User", entityId: item.id });
     return Response.json(stripPassword(item));
   } catch (error) { return apiError(error); }
 }
@@ -129,7 +130,7 @@ export async function PUT(req: Request) {
     if (!old) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
     const authProvider = old.passwordHash ? "CREDENTIALS" : "GOOGLE";
     const item = await prisma.user.update({ where: { id }, data: { googleId: null, image: null, authProvider }, include: { unit: true } });
-    await prisma.auditLog.create({ data: { userId: actor.id, action: "GOOGLE_ACCOUNT_UNLINKED", entityType: "User", entityId: item.id, oldValue: JSON.stringify({ googleId: old.googleId }), newValue: JSON.stringify({ email: item.email }) } });
+    await auditLog({ userId: actor.id, role: actor.role, action: "GOOGLE_ACCOUNT_UNLINKED", entityType: "User", entityId: item.id, oldValue: { googleId: old.googleId }, newValue: { email: item.email } });
     return Response.json(stripPassword(item));
   } catch (error) { return apiError(error); }
 }

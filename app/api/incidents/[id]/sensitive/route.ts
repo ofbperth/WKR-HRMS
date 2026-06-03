@@ -35,8 +35,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     });
 
     return Response.json({
-      patientHn: decryptIncidentIdentifier((incident as any).hnEncrypted, incident.patientHn) || "-",
-      patientAn: decryptIncidentIdentifier((incident as any).anEncrypted, incident.patientAn) || "-",
+      patientHn: decryptIncidentIdentifier((incident as any).hnEncrypted) || "-",
+      patientAn: decryptIncidentIdentifier((incident as any).anEncrypted) || "-",
     });
   } catch (error) {
     return apiError(error);

@@ -1,5 +1,6 @@
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateActionOwnerAssignment } from "@/lib/action-policy";
 import { auditLog } from "@/lib/audit";
 import { notifyRmTeam } from "@/lib/notifications";
 import { actionUpdateSchema } from "@/lib/validators";
@@ -17,6 +18,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (!canWorkAsOwner(user, existing) && user.role !== "RMTeam" && !canReassignOwner) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (existing.status === "Verified") return Response.json({ error: "ACTION_ALREADY_VERIFIED" }, { status: 409 });
     const ownerId = canReassignOwner && input.ownerId !== undefined ? input.ownerId || null : existing.ownerId;
+    if (ownerId !== existing.ownerId) {
+      await validateActionOwnerAssignment({
+        actor: user,
+        ownerId,
+        incidentUnitId: existing.incident.incidentUnitId,
+      });
+    }
 
     const updated = await prisma.actionPlan.update({
       where: { id: params.id },
@@ -30,11 +38,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       },
     });
     if (input.status === "Done") await prisma.incident.update({ where: { id: existing.incidentId }, data: { status: "WaitingVerification" } });
-    await auditLog({ userId: user.id, action: "update action", entityType: "ActionPlan", entityId: params.id, oldValue: existing, newValue: updated });
+    await auditLog({ userId: user.id, role: user.role, action: "update action", entityType: "ActionPlan", entityId: params.id, oldValue: existing, newValue: updated });
     if (ownerId && ownerId !== existing.ownerId) await prisma.notification.create({ data: { userId: ownerId, type: "action-assigned", title: "Action assigned", message: `${existing.incident.incidentNo}: ${existing.title}`, relatedIncidentId: existing.incidentId } });
     if (input.status === "Done") await notifyRmTeam({ type: "action-done", title: "Action ready for verification", message: `${existing.incident.incidentNo}: ${existing.title}`, relatedIncidentId: existing.incidentId });
     return Response.json(updated);
   } catch (error) {
+    if (error instanceof Error && error.message === "ACTION_OWNER_MUST_BE_ACTIVE") return Response.json({ error: "ACTION_OWNER_MUST_BE_ACTIVE" }, { status: 400 });
+    if (error instanceof Error && error.message === "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN") return Response.json({ error: "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN" }, { status: 403 });
     return apiError(error);
   }
 }
