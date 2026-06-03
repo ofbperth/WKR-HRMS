@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "crypto";
 import { jwtVerify, SignJWT } from "jose";
-import type { ExportKind } from "@/lib/export-builders";
+import type { ExportKind } from "@/lib/types";
 
 const minTtlSeconds = 15 * 60;
 const maxTtlSeconds = 60 * 60;

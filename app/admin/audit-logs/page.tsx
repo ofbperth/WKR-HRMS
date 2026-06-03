@@ -35,9 +35,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">ประวัติการตรวจสอบ</h1>
-          <p className="mt-2 text-slate-600">
-            ประวัติด้านความปลอดภัย การเข้าสู่ระบบ workflow export และกิจกรรมของผู้ดูแลระบบ
-          </p>
+          <p className="mt-2 text-slate-600">ประวัติด้านความปลอดภัย การเข้าสู่ระบบ workflow export และกิจกรรมของผู้ดูแลระบบ</p>
         </div>
 
         <form className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-4" action="/admin/audit-logs">
@@ -46,6 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
           <button className="rounded-md bg-primary px-3 py-2 text-sm text-white">ตัวกรอง</button>
           <GovernedExportButton
             endpoint="/api/admin/audit-logs"
+            exportKind="audit-log-csv"
             label="Export CSV"
             filters={exportFilters}
             reasonPrompt="กรุณาระบุเหตุผลในการส่งออก audit log เพื่อบันทึกการตรวจสอบ"
@@ -68,23 +67,17 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
               </thead>
               <tbody className="divide-y">
                 {logs.length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-8 text-center text-slate-500" colSpan={6}>
-                      ยังไม่มีประวัติการตรวจสอบ
-                    </td>
+                  <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>ยังไม่มีประวัติการตรวจสอบ</td></tr>
+                ) : logs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="px-4 py-3">{formatDateTime(log.createdAt)}</td>
+                    <td className="px-4 py-3">{log.user?.email ?? "ระบบ"}</td>
+                    <td className="px-4 py-3 font-medium">{log.action}</td>
+                    <td className="px-4 py-3">{log.entityType}</td>
+                    <td className="px-4 py-3">{log.entityId ?? "-"}</td>
+                    <td className="max-w-md truncate px-4 py-3 text-xs text-slate-600">{log.newValue ?? "-"}</td>
                   </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="px-4 py-3">{formatDateTime(log.createdAt)}</td>
-                      <td className="px-4 py-3">{log.user?.email ?? "ระบบ"}</td>
-                      <td className="px-4 py-3 font-medium">{log.action}</td>
-                      <td className="px-4 py-3">{log.entityType}</td>
-                      <td className="px-4 py-3">{log.entityId ?? "-"}</td>
-                      <td className="max-w-md truncate px-4 py-3 text-xs text-slate-600">{log.newValue ?? "-"}</td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>

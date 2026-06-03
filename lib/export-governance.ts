@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "crypto";
 import { auditLog } from "@/lib/audit";
-import type { ExportKind } from "@/lib/export-builders";
+import type { ExportKind } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 import { assertExportScope, scopeForExport } from "@/lib/export-scope";
 import { createSignedExportToken, exportTtlSeconds, signedExportUrl, type SignedExportFilters } from "@/lib/signed-export";

@@ -82,7 +82,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">ค้นหา</Button>
         <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
-        <GovernedExportButton endpoint="/api/incidents/export" label="ส่งออก CSV" className="inline-flex h-10 items-center rounded-md border px-4 text-sm" filters={exportFilters} reasonPrompt="กรุณาระบุเหตุผลในการส่งออกข้อมูล incident" />
+        <GovernedExportButton endpoint="/api/incidents/export" exportKind="incident-csv" label="ส่งออก CSV" className="inline-flex h-10 items-center rounded-md border px-4 text-sm" filters={exportFilters} reasonPrompt="กรุณาระบุเหตุผลในการส่งออกข้อมูล incident" />
       </div>
     </form>
 
