@@ -2,15 +2,18 @@ import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateIncidentClassificationSchema, reporterUpdateIncidentSchema } from "@/lib/validators";
 import { auditLog } from "@/lib/audit";
-import { getIncidentForUser, removeSensitiveIncidentIdentifiers } from "@/lib/incident-query";
+import { removeSensitiveIncidentIdentifiers } from "@/lib/incident-query";
+import { incidentRepository } from "@/lib/incident-repository";
 import { canManageIncident } from "@/lib/rbac";
 import { severityOptionsFor } from "@/lib/severity";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
-import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
+import { decryptLegacyIncidentIdentifier, encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
 import { isIncidentClosed } from "@/lib/incident-close";
+import { deleteIncidentWithLifecycle } from "@/lib/incident-lifecycle";
+import { isIncidentDetailUpdate } from "@/lib/incident-update-routing";
 
 function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
@@ -18,10 +21,6 @@ function canEditIncidentDetails(user: { id: string; role: Role; unitId: string |
 
 function isRcaSubmittedOrBeyond(incident: { status: string; rca?: { status: string } | null }) {
   return ["RCASubmitted", "ActionOngoing", "WaitingVerification", "Closed"].includes(incident.status) || ["Submitted", "Approved"].includes(incident.rca?.status ?? "");
-}
-
-function isIncidentDetailUpdate(input: Record<string, unknown>) {
-  return ["occurredDate", "occurredTime", "incidentUnitId", "location", "affectedType", "title", "description", "immediateAction", "clinicalOrGeneral", "medicationRight"].some(key => key in input);
 }
 
 function normalizeIncidentDetailBody(input: Record<string, unknown>) {
@@ -38,10 +37,10 @@ function normalizeIncidentDetailBody(input: Record<string, unknown>) {
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);
-    const incident = await getIncidentForUser(params.id, user);
+    const incident = await incidentRepository.getForUser(params.id, user);
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
     await auditLog({ userId: user.id, role: user.role, action: "VIEW_INCIDENT", entityType: "Incident", entityId: params.id });
-    return Response.json(removeSensitiveIncidentIdentifiers(incident));
+    return Response.json(incident);
   } catch (error) {
     return apiError(error);
   }
@@ -55,25 +54,12 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     if (!canManageIncident(user.role) && !canUnitManageIncident(user, existing)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (existing.reviewedAt && user.role === "UnitManager") return Response.json({ error: "TRIAGE_ALREADY_SUBMITTED" }, { status: 409 });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany({ where: { relatedIncidentId: existing.id } });
-      await tx.actionPlan.deleteMany({ where: { incidentId: existing.id } });
-      await tx.rCA.deleteMany({ where: { incidentId: existing.id } });
-      await tx.comment.deleteMany({ where: { incidentId: existing.id } });
-      await tx.attachment.deleteMany({ where: { incidentId: existing.id } });
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: "REJECT_HARD_DELETE_INCIDENT",
-          entityType: "Incident",
-          entityId: existing.id,
-          oldValue: JSON.stringify({ incidentNo: existing.incidentNo, title: existing.title, status: existing.status, severity: existing.severity }),
-        },
-      });
-      await tx.incident.delete({ where: { id: existing.id } });
+    const deleted = await deleteIncidentWithLifecycle({
+      incidentId: existing.id,
+      actor: { id: user.id, role: user.role },
     });
     await invalidateSmartCache();
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, mode: deleted.mode });
   } catch (error) {
     return apiError(error);
   }
@@ -97,16 +83,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       if (!riskCode || riskCode.clinicalOrGeneral !== targetType) return Response.json({ error: "INVALID_RISK_CODE_FOR_INCIDENT_TYPE" }, { status: 400 });
       if (!(severityOptionsFor(targetType) as readonly string[]).includes(targetSeverity)) return Response.json({ error: "INVALID_SEVERITY_FOR_INCIDENT_TYPE" }, { status: 400 });
       const occurredAt = input.occurredDate && input.occurredTime ? new Date(`${input.occurredDate}T${input.occurredTime}:00`) : existing.occurredAt;
+      const currentPatientHn = decryptLegacyIncidentIdentifier((existing as any).hnEncrypted, existing.patientHn);
+      const currentPatientAn = decryptLegacyIncidentIdentifier((existing as any).anEncrypted, (existing as any).patientAn);
       const updateData: any = {
         occurredAt,
         incidentUnitId: input.incidentUnitId ?? existing.incidentUnitId,
         location: input.location?.trim() ?? existing.location,
-        patientHn: input.patientHn === undefined ? existing.patientHn : null,
-        patientAn: input.patientAn === undefined ? (existing as any).patientAn : null,
+        patientHn: null,
+        patientAn: null,
         ...(input.patientHn !== undefined || input.patientAn !== undefined
           ? encryptedIncidentIdentifiers({
-              patientHn: input.patientHn ?? existing.patientHn,
-              patientAn: input.patientAn ?? (existing as any).patientAn,
+              patientHn: input.patientHn === undefined ? currentPatientHn : input.patientHn,
+              patientAn: input.patientAn === undefined ? currentPatientAn : input.patientAn,
               reporterName: user.name,
             })
           : {}),
@@ -158,11 +146,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       for (const key of ["severity", "riskCodeId", "simpleCategory", "status", "isSentinel", "needRmSupport"] as const) {
         if (String(existing[key]) !== String(input[key])) changes[key] = { from: existing[key], to: input[key] };
       }
-      await auditLog({ userId: user.id, action: "update incident", entityType: "Incident", entityId: params.id, oldValue: existing, newValue: changes });
-      if (existing.severity !== input.severity) await auditLog({ userId: user.id, action: "change severity", entityType: "Incident", entityId: params.id, oldValue: existing.severity, newValue: input.severity });
-      if (existing.riskCodeId !== input.riskCodeId) await auditLog({ userId: user.id, action: "change risk code", entityType: "Incident", entityId: params.id, oldValue: existing.riskCodeId, newValue: input.riskCodeId });
-      if (existing.status !== input.status) await auditLog({ userId: user.id, action: "change status", entityType: "Incident", entityId: params.id, oldValue: existing.status, newValue: input.status });
-      if (existing.isSentinel !== input.isSentinel) await auditLog({ userId: user.id, action: "mark sentinel", entityType: "Incident", entityId: params.id, oldValue: existing.isSentinel, newValue: input.isSentinel });
+      await auditLog({ userId: user.id, role: user.role, action: "update incident", entityType: "Incident", entityId: params.id, oldValue: existing, newValue: changes });
+      if (existing.severity !== input.severity) await auditLog({ userId: user.id, role: user.role, action: "change severity", entityType: "Incident", entityId: params.id, oldValue: existing.severity, newValue: input.severity });
+      if (existing.riskCodeId !== input.riskCodeId) await auditLog({ userId: user.id, role: user.role, action: "change risk code", entityType: "Incident", entityId: params.id, oldValue: existing.riskCodeId, newValue: input.riskCodeId });
+      if (existing.status !== input.status) await auditLog({ userId: user.id, role: user.role, action: "change status", entityType: "Incident", entityId: params.id, oldValue: existing.status, newValue: input.status });
+      if (existing.isSentinel !== input.isSentinel) await auditLog({ userId: user.id, role: user.role, action: "mark sentinel", entityType: "Incident", entityId: params.id, oldValue: existing.isSentinel, newValue: input.isSentinel });
       await invalidateSmartCache();
       return Response.json(removeSensitiveIncidentIdentifiers(updated));
     }

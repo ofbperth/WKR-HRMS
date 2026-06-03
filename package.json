@@ -19,6 +19,12 @@
     "test:build": "npm run build",
     "test:phase7": "tsx scripts/phase7-api-check.ts",
     "security:backfill-sensitive": "tsx scripts/encrypt-sensitive-backfill.ts",
+    "security:apply-identifier-recovery": "tsx scripts/apply-sensitive-identifier-recovery.ts",
+    "security:enforce-identifier-constraint": "tsx scripts/enforce-sensitive-identifier-constraint.ts",
+    "security:report-identifier-status": "tsx scripts/report-sensitive-identifier-status.ts",
+    "security:remediate-audit-sensitive": "tsx scripts/remediate-audit-sensitive-data.ts",
+    "security:scan-audit-sensitive": "tsx scripts/scan-audit-sensitive-data.ts",
+    "security:verify-identifier-recovery": "tsx scripts/verify-sensitive-identifier-recovery.ts",
     "retention:run": "tsx scripts/run-retention-cleanup.ts",
     "db:reset": "prisma migrate reset"
   },
@@ -38,6 +44,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",
     "recharts": "^2.13.3",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^2.5.5",
     "zod": "^3.23.8"
   },

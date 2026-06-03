@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { Severity } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
-import { auditLog } from "@/lib/audit";
+import { auditLog, writeAuditLog } from "@/lib/audit";
 import { notifyRmTeam, notifyRoles } from "@/lib/notifications";
 import { isHighSeverityForType, isSentinelSeverity, severityOptionsFor } from "@/lib/severity";
 import { createIncidentSchema } from "@/lib/validators";
@@ -81,18 +81,20 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
           },
           include: { riskCode: true, incidentUnit: true, reportedBy: true },
         } as any);
-        await tx.auditLog.create({
-          data: {
-            userId: currentUser.id,
-            action: "create incident",
-            entityType: "Incident",
-            entityId: created.id,
-            newValue: JSON.stringify({ incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport, rcaDueAt: (created as any).rcaDueAt }),
-          },
+        await writeAuditLog(tx as any, {
+          userId: currentUser.id,
+          action: "create incident",
+          entityType: "Incident",
+          entityId: created.id,
+          newValue: { incidentNo: created.incidentNo, severity: created.severity, status: created.status, isSentinel: created.isSentinel, needRmSupport: created.needRmSupport, rcaDueAt: (created as any).rcaDueAt },
         });
         if (auto.isSentinel) {
-          await tx.auditLog.create({
-            data: { userId: currentUser.id, action: "mark sentinel", entityType: "Incident", entityId: created.id, newValue: JSON.stringify({ isSentinel: true, severity: created.severity }) },
+          await writeAuditLog(tx as any, {
+            userId: currentUser.id,
+            action: "mark sentinel",
+            entityType: "Incident",
+            entityId: created.id,
+            newValue: { isSentinel: true, severity: created.severity },
           });
         }
         return created as any;
