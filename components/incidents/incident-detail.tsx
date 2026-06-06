@@ -59,6 +59,11 @@ type DetailIncident = DbIncident & {
 
 type CurrentUser = Pick<DbUser, "id" | "role" | "unitId" | "name" | "email">;
 
+export function getReporterDisplayValue(incident: Pick<DetailIncident, "reportedBy" | "reporterDisplayName">, currentUserRole: CurrentUser["role"]) {
+  if (currentUserRole === "Admin") return incident.reportedBy?.name ?? incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ";
+  return incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ";
+}
+
 export function IncidentDetail({ incident, currentUser }: { incident: DetailIncident; currentUser: CurrentUser }) {
   const manage = canManageIncident(currentUser.role);
   const canRevealSensitive = canSeeSensitive(currentUser.role);
@@ -81,7 +86,7 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
         <Info label="กำหนดส่ง RCA" value={formatDateTime(incident.rcaDueAt)} />
         <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
         <Info label="สถานที่" value={incident.location || "-"} />
-        <Info label="ผู้รายงาน" value={incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ"} />
+        <Info label="ผู้รายงาน" value={getReporterDisplayValue(incident, currentUser.role)} />
         <div>
           <div className="font-medium text-slate-500">ข้อมูลระบุตัวผู้ป่วย</div>
           {canRevealSensitive

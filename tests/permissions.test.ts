@@ -4,6 +4,7 @@ import { assertExportScope, scopeForExport } from "@/lib/export-scope";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
 import { removeSensitiveIncidentIdentifiers, scopeWhereForUser } from "@/lib/incident-query";
 import { isGoogleEmailAllowed } from "@/lib/auth-settings";
+import { getReporterDisplayValue } from "@/components/incidents/incident-detail";
 
 describe("role based access control", () => {
   it("scopes reporter incidents to their own reports", () => {
@@ -63,6 +64,24 @@ describe("role based access control", () => {
     expect(result.reportedBy.name).toBe("[RESTRICTED]");
     expect(result).not.toHaveProperty("hnEncrypted");
     expect(result.rca).not.toHaveProperty("rcaEncrypted");
+  });
+
+  it("shows reporter identity to Admin on incident detail", () => {
+    expect(getReporterDisplayValue({
+      reportedBy: { id: "reporter-1", name: "Reporter Name", email: "reporter@example.com", role: "Reporter", unitId: "unit-a" },
+      reporterDisplayName: "Fallback Reporter",
+    } as any, "Admin")).toBe("Reporter Name");
+  });
+
+  it("keeps reporter identity restricted for non Admin roles on incident detail", () => {
+    expect(getReporterDisplayValue({
+      reportedBy: { id: "reporter-1", name: "Reporter Name", email: "reporter@example.com", role: "Reporter", unitId: "unit-a" },
+      reporterDisplayName: "Fallback Reporter",
+    } as any, "RMTeam")).toBe("จำกัดสิทธิ์");
+    expect(getReporterDisplayValue({
+      reportedBy: null,
+      reporterDisplayName: "Deleted Reporter",
+    } as any, "RMTeam")).toBe("Deleted Reporter");
   });
 
   it("accepts Google allowed domains with or without a leading at sign", () => {
