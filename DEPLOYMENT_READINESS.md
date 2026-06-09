@@ -41,6 +41,9 @@ Version note: `v0.9-local-approved`
 - `NEXTAUTH_SECRET`: production-only random secret kept for auth compatibility. Do not reuse the development value.
 - `NEXTAUTH_URL`: canonical HTTPS app URL, for example the Vercel production URL or custom domain.
 - `APP_BASE_URL`: canonical HTTPS app URL used for Google OAuth callback construction.
+- `RESEND_API_KEY`: API key for scheduled summary email delivery through Resend.
+- `RESEND_FROM_EMAIL`: verified sender identity used for scheduled summary emails.
+- `CRON_SECRET`: bearer secret used by Vercel Cron when calling protected cron routes.
 - `ENCRYPTION_KEY`: 32 random bytes encoded as base64 or hex. Required in production for HN, AN, reporter name, and RCA narrative encryption.
 - `GOOGLE_CLIENT_ID`: Google OAuth web client ID.
 - `GOOGLE_CLIENT_SECRET`: Google OAuth web client secret.
@@ -56,6 +59,8 @@ Version note: `v0.9-local-approved`
 2. Add all required environment variables in Vercel Project Settings for Production. Do not commit `.env`.
 3. Set `NEXTAUTH_URL` and `APP_BASE_URL` to the final HTTPS production URL.
 4. Add the Google OAuth callback URL in Google Cloud: `<APP_BASE_URL>/api/auth/callback/google`.
+5. Configure scheduled email envs in Vercel: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `CRON_SECRET`.
+6. Confirm `vercel.json` includes the `/api/cron/email-summary` schedule `30 1 * * 1,3` for Monday/Wednesday 08:30 Asia/Bangkok.
 5. Keep Google login disabled in app settings until the Google client ID/secret, allowed domains/emails, and first admin path are confirmed.
 6. Deploy only after `npx prisma validate`, `npx prisma generate`, `npm run build`, `npm run test:qa`, and `npm run test:phase7` are completed or blockers are documented.
 
@@ -78,6 +83,7 @@ Version note: `v0.9-local-approved`
 - Do not log HN, AN, reporter name, RCA narrative, patient-identifiable text, OAuth secrets, session tokens, or raw database URLs.
 - Apply data minimization: collect only necessary patient identifiers, keep narrative fields free of patient names where possible, and use role-limited access for review workflows.
 - Confirm role-based access and unit visibility before production release.
+- Confirm scheduled summary emails contain only aggregate counts, non-identifiable RCA reminder fields, and secure app links.
 - Keep retention jobs in dry-run until production policy and approval are confirmed.
 - Review export signed URL TTL and access control before enabling production exports.
 - Confirm audit logging is active for sensitive actions.
