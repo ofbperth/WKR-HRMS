@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
+import { auditLog } from "@/lib/audit";
 import { SESSION_COOKIE, getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (user) {
     try {
-      await prisma.auditLog.create({ data: { userId: user.id, userRole: user.role, action: "LOGOUT", entityType: "User", entityId: user.id } as any });
+      await auditLog({ userId: user.id, role: user.role, action: "LOGOUT", entityType: "User", entityId: user.id });
     } catch (error) {
       console.warn("Unable to write logout audit log", error);
     }

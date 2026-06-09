@@ -1,6 +1,7 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { jwtVerify, SignJWT } from "jose";
-import type { ExportKind } from "@/lib/export-builders";
+import type { ExportKind } from "@/lib/types";
 
 const minTtlSeconds = 15 * 60;
 const maxTtlSeconds = 60 * 60;
@@ -23,13 +24,18 @@ export async function createSignedExportToken(input: {
   userId: string;
   role: string;
   unitId: string | null;
+  grantId: string;
+  tokenJti?: string;
   filters?: SignedExportFilters;
 }) {
+  const tokenJti = input.tokenJti ?? randomUUID();
   return new SignJWT({
     kind: input.kind,
     userId: input.userId,
     role: input.role,
     unitId: input.unitId,
+    grantId: input.grantId,
+    jti: tokenJti,
     filters: input.filters ?? {},
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -48,6 +54,8 @@ export async function verifySignedExportToken(token: string) {
     userId: payload.userId,
     role: payload.role,
     unitId: typeof payload.unitId === "string" ? payload.unitId : null,
+    grantId: typeof payload.grantId === "string" ? payload.grantId : null,
+    tokenJti: typeof payload.jti === "string" ? payload.jti : null,
     filters: typeof payload.filters === "object" && payload.filters ? payload.filters as SignedExportFilters : {},
   };
 }

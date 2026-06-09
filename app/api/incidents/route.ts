@@ -1,6 +1,7 @@
 import { apiError, requireUser } from "@/lib/auth";
 import { createIncidentWithAutomation } from "@/lib/incident-automation";
-import { getIncidentList, removeSensitiveIncidentIdentifiers } from "@/lib/incident-query";
+import { removeSensitiveIncidentIdentifiers } from "@/lib/incident-query";
+import { incidentRepository } from "@/lib/incident-repository";
 
 export const preferredRegion = "sin1";
 
@@ -9,8 +10,8 @@ export async function GET(request: Request) {
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);
     const url = new URL(request.url);
     const params = Object.fromEntries(url.searchParams.entries());
-    const incidents = await getIncidentList(user, params);
-    return Response.json({ data: incidents.data.map(removeSensitiveIncidentIdentifiers), meta: incidents.meta });
+    const incidents = await incidentRepository.listForUser(user, params);
+    return Response.json(incidents);
   } catch (error) {
     return apiError(error);
   }

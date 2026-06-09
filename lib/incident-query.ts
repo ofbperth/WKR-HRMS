@@ -159,6 +159,16 @@ export async function getIncidentExportRows(user: IncidentAccessUser, params: In
   });
 }
 
+export async function getIncidentExportRowsPage(user: IncidentAccessUser, params: IncidentFilterParams, skip: number, take: number) {
+  return prisma.incident.findMany({
+    where: buildIncidentWhere(user, params),
+    select: incidentListSelect,
+    orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+    skip,
+    take,
+  });
+}
+
 const incidentDetailInclude = {
   incidentUnit: true,
   reporterUnit: true,
@@ -176,6 +186,7 @@ const incidentDetailInclude = {
       contributingCommunication: true,
       contributingIT: true,
       rootCause: true,
+      rcaEncrypted: true,
       preventiveAction: true,
       kpi: true,
       kpiOwnerId: true,
@@ -221,10 +232,20 @@ async function hasScopedIncidentAccess(id: string, user: IncidentAccessUser) {
 export async function getIncidentCoreForUser(id: string, user: IncidentAccessUser) {
   const incident = await getScopedIncidentCore(id, user);
   if (!incident) return null;
-  const { decryptIncidentIdentifier } = await import("@/lib/sensitive-fields");
+  const { decryptIncidentIdentifier, decryptLegacyIncidentIdentifier, decryptRcaNarrative } = await import("@/lib/sensitive-fields");
+  const sensitiveRca = incident.rca ? decryptRcaNarrative((incident.rca as any).rcaEncrypted) : null;
   return {
     ...incident,
-    reporterDisplayName: incident.reportedBy?.name ?? decryptIncidentIdentifier((incident as any).reporterNameEncrypted, null) ?? "Deleted user",
+    rca: incident.rca
+      ? {
+          ...incident.rca,
+          problemStatement: sensitiveRca?.problemStatement ?? incident.rca.problemStatement,
+          timeline: sensitiveRca?.timeline ?? incident.rca.timeline,
+          rootCause: sensitiveRca?.rootCause ?? incident.rca.rootCause,
+          preventiveAction: sensitiveRca?.preventiveAction ?? incident.rca.preventiveAction,
+        }
+      : incident.rca,
+    reporterDisplayName: incident.reportedBy?.name ?? decryptLegacyIncidentIdentifier((incident as any).reporterNameEncrypted, null) ?? "Deleted user",
   };
 }
 

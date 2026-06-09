@@ -3,7 +3,15 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { canAccessApiPath, canAccessPath, roleHome } from "@/lib/rbac";
 
 const publicPaths = ["/login"];
-const publicApiPrefixes = ["/api/auth/login", "/api/auth/logout", "/api/auth/google", "/api/auth/callback/google", "/api/cron/email-summary"];
+const publicApiPrefixes = [
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/google",
+  "/api/auth/callback/google",
+  "/api/internal/export-jobs/process",
+  "/api/cron/generated-file-cleanup",
+  "/api/cron/email-summary",
+];
 const unitOnboardingPaths = ["/onboarding/unit", "/api/onboarding/unit", "/api/auth/me", "/api/notifications"];
 
 export async function middleware(request: NextRequest) {

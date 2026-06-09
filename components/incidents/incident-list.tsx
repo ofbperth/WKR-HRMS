@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
+import { GovernedExportButton } from "@/components/exports/governed-export-button";
 import { formatDateTime, formatRcaDueCountdown } from "@/lib/format";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,10 +36,10 @@ type IncidentListMeta = { page: number; pageSize: number; total: number; totalPa
 
 export function IncidentList({ incidents, meta, lookup, basePath, searchParams, detailBasePath, showRcaDueCountdown = false }: { incidents: IncidentRow[]; meta?: IncidentListMeta; lookup: Lookup; basePath: string; searchParams: SearchParams; canSeeSensitive?: boolean; detailBasePath?: string; showRcaDueCountdown?: boolean }) {
   const router = useRouter();
-  const query = new URLSearchParams();
+  const exportFilters: Record<string, string | string[]> = {};
   Object.entries(searchParams).forEach(([key, value]) => {
-    if (typeof value === "string" && value && key !== "page" && key !== "cursor") query.set(key, value);
-    if (Array.isArray(value) && key !== "page" && key !== "cursor") value.filter(Boolean).forEach((item) => query.append(key, item));
+    if (typeof value === "string" && value && key !== "page" && key !== "cursor") exportFilters[key] = value;
+    if (Array.isArray(value) && key !== "page" && key !== "cursor") exportFilters[key] = value.filter(Boolean);
   });
   const page = meta?.page ?? getPage(searchParams.page, incidents.length);
   const pageSize = meta?.pageSize;
@@ -81,7 +82,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">ค้นหา</Button>
         <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
-        <a className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={`/api/incidents/export?${query.toString()}`}>ส่งออก CSV</a>
+        <GovernedExportButton endpoint="/api/incidents/export" exportKind="incident-csv" label="ส่งออก CSV" className="inline-flex h-10 items-center rounded-md border px-4 text-sm" filters={exportFilters} reasonPrompt="กรุณาระบุเหตุผลในการส่งออกข้อมูล incident" />
       </div>
     </form>
 

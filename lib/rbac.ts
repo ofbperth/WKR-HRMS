@@ -38,6 +38,8 @@ export function canAccessPath(role: string, pathname: string) {
 export function canAccessApiPath(role: string, pathname: string) {
   if (pathname.startsWith("/api/auth/me")) return true;
   if (pathname.startsWith("/api/onboarding/unit")) return true;
+  if (pathname.startsWith("/api/internal/export-jobs/process")) return false;
+  if (pathname.startsWith("/api/cron/generated-file-cleanup")) return false;
   if (pathname.startsWith("/api/admin")) return role === "Admin";
   if (pathname.startsWith("/api/dashboard/executive")) return ["Executive", "RMTeam", "Admin"].includes(role);
   if (pathname.startsWith("/api/dashboard/rm")) return ["RMTeam", "Admin"].includes(role);

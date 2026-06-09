@@ -7,13 +7,9 @@ import { canUnitManageIncident } from "@/lib/workflow-permissions";
 import { canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
+import { rcaRepository } from "@/lib/rca-repository";
 
 export const preferredRegion = "sin1";
-
-function removeSensitiveRcaStorage<T extends Record<string, any>>(rca: T) {
-  const { rcaEncrypted, ...rest } = rca;
-  return rest;
-}
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -31,17 +27,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const rca = await prisma.rCA.upsert({
       where: { incidentId: params.id },
       update: {
-        problemStatement: input.problemStatement.trim(),
-        timeline: input.timeline?.trim() || null,
+        problemStatement: null,
+        timeline: null,
         contributingHuman: input.contributingHuman?.trim() || null,
         contributingProcess: input.contributingProcess?.trim() || null,
         contributingEquipment: input.contributingEquipment?.trim() || null,
         contributingEnvironment: input.contributingEnvironment?.trim() || null,
         contributingCommunication: input.contributingCommunication?.trim() || null,
         contributingIT: input.contributingIT?.trim() || null,
-        rootCause: input.rootCause.trim(),
+        rootCause: null,
         rcaEncrypted,
-        preventiveAction: input.preventiveAction.trim(),
+        preventiveAction: null,
         kpi: input.kpi?.trim() || null,
         kpiOwnerId: input.kpiOwnerId || null,
         needRmSupport: input.needRmSupport,
@@ -50,17 +46,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       } as any,
       create: {
         incidentId: params.id,
-        problemStatement: input.problemStatement.trim(),
-        timeline: input.timeline?.trim() || null,
+        problemStatement: null,
+        timeline: null,
         contributingHuman: input.contributingHuman?.trim() || null,
         contributingProcess: input.contributingProcess?.trim() || null,
         contributingEquipment: input.contributingEquipment?.trim() || null,
         contributingEnvironment: input.contributingEnvironment?.trim() || null,
         contributingCommunication: input.contributingCommunication?.trim() || null,
         contributingIT: input.contributingIT?.trim() || null,
-        rootCause: input.rootCause.trim(),
+        rootCause: null,
         rcaEncrypted,
-        preventiveAction: input.preventiveAction.trim(),
+        preventiveAction: null,
         kpi: input.kpi?.trim() || null,
         kpiOwnerId: input.kpiOwnerId || null,
         needRmSupport: input.needRmSupport,
@@ -74,7 +70,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       await notifyRmTeam({ type: "rca-submitted", title: "RCA submitted", message: `${incident.incidentNo} is ready for RM approval`, relatedIncidentId: params.id });
     }
     await invalidateSmartCache();
-    return Response.json(removeSensitiveRcaStorage(rca));
+    return Response.json(await rcaRepository.getForUser(params.id, user));
   } catch (error) {
     return apiError(error);
   }

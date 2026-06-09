@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { ACTION_PLAN_STATUS_VALUES, AFFECTED_TYPE_VALUES, AUTH_PROVIDER_VALUES, CLINICAL_OR_GENERAL_VALUES, INCIDENT_STATUS_VALUES, RCA_STATUS_VALUES, ROLE_VALUES, SEVERITY_VALUES } from "@/lib/types";
+import {
+  ACTION_PLAN_STATUS_VALUES,
+  AFFECTED_TYPE_VALUES,
+  AUTH_PROVIDER_VALUES,
+  CLINICAL_OR_GENERAL_VALUES,
+  INCIDENT_STATUS_VALUES,
+  RCA_STATUS_VALUES,
+  ROLE_VALUES,
+  SEVERITY_VALUES,
+} from "@/lib/types";
 import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
 
 export const roles = ROLE_VALUES;
@@ -14,6 +23,23 @@ export const unitTypeValues = ["หน่วยงาน", "ทีม"] as const
 export const medicationRightValues = ["Right patient", "Right drug", "Right dose", "Right route", "Right time", "Right documentation"] as const;
 
 export const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
+
+function addSensitiveNarrativeIssue(ctx: z.RefinementCtx, field: string) {
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: [field],
+    message: "ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด",
+  });
+}
+
+function forbidSensitiveNarrative<T extends Record<string, unknown>>(value: T, ctx: z.RefinementCtx, fields: readonly (keyof T & string)[]) {
+  for (const field of fields) {
+    const text = value[field];
+    if (typeof text === "string" && text && containsLikelyPatientIdentifier(text)) {
+      addSensitiveNarrativeIssue(ctx, field);
+    }
+  }
+}
 
 const createIncidentBaseSchema = z.object({
   occurredDate: z.string().min(1, "กรุณาระบุวันที่เกิดเหตุ"),
@@ -35,18 +61,13 @@ const createIncidentBaseSchema = z.object({
 });
 
 export const createIncidentSchema = createIncidentBaseSchema.superRefine((value, ctx) => {
-  for (const field of ["title", "description", "immediateAction"] as const) {
-    const text = value[field];
-    if (text && containsLikelyPatientIdentifier(text)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [field],
-        message: "ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด",
-      });
-    }
-  }
+  forbidSensitiveNarrative(value, ctx, ["title", "description", "immediateAction"]);
   if (value.medicationRight && value.riskCodeId === "") {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["riskCodeId"], message: "กรุณาเลือก Medication Administration risk code ก่อนระบุ 6 Rights" });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["riskCodeId"],
+      message: "กรุณาเลือก Medication Administration risk code ก่อนระบุ 6 Rights",
+    });
   }
 });
 
@@ -70,7 +91,9 @@ export const triageClassificationSchema = z.object({
 
 export const reporterUpdateIncidentSchema = createIncidentBaseSchema.partial().extend({ id: z.string().min(1) });
 
-export const commentSchema = z.object({ message: z.string().min(1, "กรุณาใส่ข้อความ") });
+export const commentSchema = z.object({ message: z.string().min(1, "กรุณาใส่ข้อความ") }).superRefine((value, ctx) => {
+  forbidSensitiveNarrative(value, ctx, ["message"]);
+});
 
 export const rcaSchema = z.object({
   problemStatement: z.string().min(3),
@@ -87,6 +110,8 @@ export const rcaSchema = z.object({
   kpiOwnerId: z.string().optional().nullable(),
   needRmSupport: z.boolean().default(false),
   submit: z.boolean().default(false),
+}).superRefine((value, ctx) => {
+  forbidSensitiveNarrative(value, ctx, ["problemStatement", "timeline", "rootCause", "preventiveAction"]);
 });
 
 export const rcaApprovalSchema = z.object({
@@ -102,6 +127,8 @@ export const actionPlanSchema = z.object({
   dueDate: z.string().min(1),
   kpiName: z.string().optional().nullable(),
   kpiTarget: z.string().optional().nullable(),
+}).superRefine((value, ctx) => {
+  forbidSensitiveNarrative(value, ctx, ["description"]);
 });
 
 export const actionUpdateSchema = z.object({
@@ -111,11 +138,20 @@ export const actionUpdateSchema = z.object({
   evidenceUrl: z.string().optional().nullable(),
   kpiResult: z.string().optional().nullable(),
   effectivenessReview: z.string().optional().nullable(),
+}).superRefine((value, ctx) => {
+  forbidSensitiveNarrative(value, ctx, ["evidenceText", "kpiResult", "effectivenessReview"]);
 });
 
 export const actionVerifySchema = z.object({
   verified: z.boolean(),
   effectivenessReview: z.string().optional().nullable(),
+}).superRefine((value, ctx) => {
+  forbidSensitiveNarrative(value, ctx, ["effectivenessReview"]);
+});
+
+export const exportRequestSchema = z.object({
+  reason: z.string().trim().min(10, "EXPORT_REASON_REQUIRED"),
+  filters: z.record(z.union([z.string(), z.array(z.string())])).default({}),
 });
 
 export const adminUserSchema = z.object({
@@ -146,7 +182,12 @@ export const userInviteSchema = z.object({
   expiresAt: z.string().min(1),
 });
 
-export const unitSchema = z.object({ name: z.string().min(1), type: z.enum(unitTypeValues).default("หน่วยงาน"), isActive: z.boolean().default(true) });
+export const unitSchema = z.object({
+  name: z.string().min(1),
+  type: z.enum(unitTypeValues).default("หน่วยงาน"),
+  isActive: z.boolean().default(true),
+});
+
 export const riskCodeSchema = z.object({
   code: z.string().min(1),
   nameTh: z.string().min(1),

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { auditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
 import { signSession, SESSION_COOKIE } from "@/lib/auth";
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     console.warn("Unable to update lastLoginAt", error);
   }
   try {
-    await prisma.auditLog.create({ data: { userId: user.id, userRole: user.role, action: "LOGIN_CREDENTIALS_SUCCESS", entityType: "User", entityId: user.id, newValue: JSON.stringify({ email: user.email, role: user.role }) } as any });
+    await auditLog({ userId: user.id, role: user.role, action: "LOGIN_CREDENTIALS_SUCCESS", entityType: "User", entityId: user.id, newValue: { email: user.email, role: user.role } });
   } catch (error) {
     console.warn("Unable to write login audit log", error);
   }

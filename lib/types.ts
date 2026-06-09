@@ -24,6 +24,12 @@ export type AffectedType = typeof AFFECTED_TYPE_VALUES[number];
 export const CLINICAL_OR_GENERAL_VALUES = ["Clinical", "General"] as const;
 export type ClinicalOrGeneral = typeof CLINICAL_OR_GENERAL_VALUES[number];
 
+export const EXPORT_KIND_VALUES = ["incident-csv", "action-csv", "rca-csv", "audit-log-csv"] as const;
+export type ExportKind = typeof EXPORT_KIND_VALUES[number];
+
+export const EXPORT_JOB_STATUS_VALUES = ["Queued", "Running", "Succeeded", "Failed", "Expired"] as const;
+export type ExportJobStatus = typeof EXPORT_JOB_STATUS_VALUES[number];
+
 export function isRole(value: string): value is Role {
   return (ROLE_VALUES as readonly string[]).includes(value);
 }
