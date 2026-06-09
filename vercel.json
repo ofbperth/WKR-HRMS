@@ -2,6 +2,10 @@
   "regions": ["sin1"],
   "crons": [
     {
+      "path": "/api/cron/email-summary",
+      "schedule": "30 1 * * 1,3"
+    },
+    {
       "path": "/api/cron/generated-file-cleanup",
       "schedule": "0 0 * * 6"
     }

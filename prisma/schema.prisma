@@ -328,6 +328,24 @@ model AutomationRun {
   @@index([status])
 }
 
+model ScheduledEmailLog {
+  id             String   @id @default(cuid())
+  jobType        String   @map("job_type")
+  scheduledFor   DateTime @map("scheduled_for")
+  recipientEmail String   @map("recipient_email")
+  recipientScope String   @map("recipient_scope")
+  unitId         String?  @map("unit_id")
+  status         String
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([jobType, scheduledFor, recipientEmail])
+  @@index([jobType, scheduledFor])
+  @@index([recipientScope, unitId])
+  @@index([status])
+}
+
 model RetentionRun {
   id              String   @id @default(cuid())
   mode            String

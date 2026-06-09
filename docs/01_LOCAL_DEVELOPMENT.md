@@ -50,6 +50,35 @@ Open `http://localhost:3000`.
 | `npm run security:backfill-sensitive` | Encrypt existing sensitive values after `ENCRYPTION_KEY` is set. |
 | `npm run retention:run` | Run retention cleanup script. |
 
+## Scheduled Email Summary Setup
+
+Environment variables for weekly email summary:
+
+```env
+APP_BASE_URL="http://localhost:3000"
+RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxx"
+RESEND_FROM_EMAIL="WKR-HRMS <noreply@example.com>"
+CRON_SECRET="replace-with-random-cron-secret"
+```
+
+- `APP_BASE_URL` is used to build secure links back into WKR-HRMS.
+- `CRON_SECRET` must match the `Authorization: Bearer <CRON_SECRET>` header when testing locally.
+- `RESEND_*` should use test/sandbox values in development.
+
+Dry-run example:
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:CRON_SECRET" }
+Invoke-WebRequest -Uri "http://localhost:3000/api/cron/email-summary?dryRun=true" -Headers $headers
+```
+
+Live local send example:
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:CRON_SECRET" }
+Invoke-WebRequest -Uri "http://localhost:3000/api/cron/email-summary" -Headers $headers -Method POST
+```
+
 ## Prisma Commands
 
 ```bash
