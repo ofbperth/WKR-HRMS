@@ -26,6 +26,7 @@ describe("role based access control", () => {
 
   it("keeps RCA submit and approval restricted to authorized roles", () => {
     expect(canSubmitRca("UnitManager")).toBe(true);
+    expect(canSubmitRca("RMTeam")).toBe(true);
     expect(canSubmitRca("Admin")).toBe(true);
     expect(canSubmitRca("Reporter")).toBe(false);
     expect(canApproveRca("RMTeam")).toBe(true);
