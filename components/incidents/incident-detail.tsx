@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { formatDateTime, statusLabel } from "@/lib/format";
-import { canManageIncident, canSeeSensitive } from "@/lib/rbac";
+import { canManageIncident, canSeeSensitive, canSubmitRca } from "@/lib/rbac";
 import { severityDescriptions } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
@@ -70,6 +70,7 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
   const canEditDetails = (isIncidentOwner || unitCanWork || manage) && !rcaSubmitted && incident.status !== "Rejected";
   const canTriage = (manage || unitCanWork) && !incident.reviewedAt && !["Closed", "Rejected"].includes(incident.status);
   const rcaAllowed = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status);
+  const canWorkRca = !incidentClosed && rcaAllowed && (manage || unitCanWork || canSubmitRca(currentUser.role) && currentUser.role !== "UnitManager");
   const canAddComment = manage;
   const canClose = manage && canCloseIncident(incident);
 
@@ -118,6 +119,9 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
           <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
         </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
         {(!incidentClosed && ((unitCanWork || currentUser.role === "Admin") && rcaAllowed)) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดฟอร์ม RCA..." />}>
+          <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} incidentClosed={incidentClosed} />
+        </Suspense> : null}
+        {currentUser.role === "RMTeam" && !incidentClosed && rcaAllowed && incident.rca?.status !== "Submitted" ? <Suspense fallback={<InlineSectionSkeleton label="Loading RCA form..." />}>
           <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} incidentClosed={incidentClosed} />
         </Suspense> : null}
       </CardContent></Card>
@@ -181,7 +185,7 @@ async function IncidentRcaSection({
   manage: boolean;
   incidentClosed: boolean;
 }) {
-  const showForm = !incidentClosed && (unitCanWork || currentUser.role === "Admin") && rcaAllowed;
+  const showForm = !incidentClosed && rcaAllowed && (manage || unitCanWork || canSubmitRca(currentUser.role) && currentUser.role !== "UnitManager");
   const users = showForm ? await getActiveUsers() : [];
   return <>
     <AiRcaAssistantCard incident={incident} role={currentUser.role} />

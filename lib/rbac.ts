@@ -61,7 +61,7 @@ export function canManageIncident(role: string) {
 }
 
 export function canSubmitRca(role: string) {
-  return role === "UnitManager" || role === "Admin";
+  return role === "UnitManager" || role === "RMTeam" || role === "Admin";
 }
 
 export function canApproveRca(role: string) {
