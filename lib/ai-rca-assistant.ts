@@ -29,8 +29,7 @@ export type AiRcaPromptIncident = {
 };
 
 export function shouldShowAiRcaAssistant(role: Role | string) {
-  if (!["UnitManager", "RMTeam", "Admin"].includes(role)) return false;
-  return true;
+  return ["UnitManager", "RMTeam", "Admin"].includes(role);
 }
 
 export function buildGeminiRcaPrompt(incident: AiRcaPromptIncident) {
@@ -54,20 +53,6 @@ export function buildGeminiRcaPrompt(incident: AiRcaPromptIncident) {
     `- Existing triage/RCA-required status: ${buildWorkflowStatus(incident)}`,
     `- Known contributing factors: ${buildKnownContributingFactors(incident.rca)}`,
     "",
-    "กรุณาวิเคราะห์ให้ครบหัวข้อดังนี้",
-    "1. Timeline analysis",
-    "2. 5 Whys",
-    "3. Fishbone",
-    "4. Root cause",
-    "5. Contributing factors",
-    "6. Corrective action",
-    "7. Preventive action",
-    "8. Strong action recommendation",
-    "9. KPI",
-    "10. KPI owner",
-    "11. Follow-up date",
-    "12. Risk of recurrence",
-    "",
     "ถ้าข้อมูล narrative ส่วนใดยังไม่ de-identify พอ ให้เตือนก่อนเริ่มวิเคราะห์และระบุว่าต้องให้ผู้ใช้แก้ไขเอง",
   ];
 
@@ -75,14 +60,15 @@ export function buildGeminiRcaPrompt(incident: AiRcaPromptIncident) {
 }
 
 function buildDeidentifiedSummary(incident: AiRcaPromptIncident) {
-  if (incident.description?.trim()) return MANUAL_DEIDENTIFY_NOTICE;
-  const parts = [
+  const structuralSummary = [
     `เหตุการณ์หมวด ${incident.clinicalOrGeneral || "-"}`,
-    `SIMPLE ${incident.simpleCategory || "-"}`,
     `severity ${incident.severity || "-"}`,
     `ในหน่วย ${incident.incidentUnit.name || "-"}`,
-  ];
-  return parts.join(" ");
+    `(NRLS ${incident.riskCode.code || "-"}, SIMPLE ${incident.simpleCategory || "-"})`,
+  ].join(" ");
+  const narrative = sanitizeNarrative(incident.description);
+  if (!narrative) return structuralSummary;
+  return `${structuralSummary}. ${narrative}`;
 }
 
 function buildWorkflowStatus(incident: AiRcaPromptIncident) {
@@ -103,12 +89,30 @@ function buildKnownContributingFactors(rca?: PromptRca | null) {
   ] as const;
   const available = labels.filter(([, value]) => Boolean(value?.trim()));
   if (available.length === 0) return "-";
-  return available.map(([label]) => `${label}: ${MANUAL_DEIDENTIFY_NOTICE}`).join("; ");
+  return available.map(([label, value]) => `${label}: ${buildProtectedNarrativeField(value)}`).join("; ");
 }
 
 function buildProtectedNarrativeField(value?: string | null) {
   if (!value?.trim()) return "-";
-  return MANUAL_DEIDENTIFY_NOTICE;
+  return sanitizeNarrative(value) ?? MANUAL_DEIDENTIFY_NOTICE;
+}
+
+function sanitizeNarrative(value?: string | null) {
+  if (!value?.trim()) return null;
+  const sanitized = value
+    .replace(/\b(HN|AN)\s*[:#-]?\s*[A-Za-z0-9-]{3,}\b/gi, "$1 [REDACTED]")
+    .replace(/\b\d{3}-\d{3}-\d{4}\b/g, "[REDACTED PHONE]")
+    .replace(/\b\d{9,10}\b/g, "[REDACTED PHONE]")
+    .replace(/\b\d{13}\b/g, "[REDACTED ID]")
+    .replace(/\b\d-\d{4}-\d{5}-\d{2}-\d\b/g, "[REDACTED ID]")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]")
+    .replace(/\b(Mr|Mrs|Ms|Dr)\.?\s+[A-Za-z]+(?:\s+[A-Za-z]+)?\b/g, "[REDACTED NAME]")
+    .replace(/(?:นาย|นางสาว|นาง|คุณ|แพทย์หญิง|แพทย์ชาย|พญ\.?|นพ\.?)\s*[ก-๙A-Za-z]+(?:\s+[ก-๙A-Za-z]+)?/g, "[REDACTED NAME]")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!sanitized || sanitized.length < 12) return null;
+  if (/\b\d{6,}\b/.test(sanitized)) return null;
+  return sanitized;
 }
 
 function formatPromptDateTime(value?: Date | null) {
