@@ -6,6 +6,7 @@ import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionPlanForm, ActionUpdateForm, CloseIncidentButton, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
+import { AiRcaAssistantCard } from "@/components/incidents/ai-rca-assistant";
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 import { IncidentCommentsPanel } from "@/components/incidents/incident-comments-panel";
 import { IncidentAuditsPanel } from "@/components/incidents/incident-audits-panel";
@@ -183,6 +184,7 @@ async function IncidentRcaSection({
   const showForm = !incidentClosed && (unitCanWork || currentUser.role === "Admin") && rcaAllowed;
   const users = showForm ? await getActiveUsers() : [];
   return <>
+    <AiRcaAssistantCard incident={incident} role={currentUser.role} />
     {showForm ? <RcaForm incidentId={incident.id} rca={incident.rca} users={users} /> : null}
     {manage && incident.rca?.status === "Submitted" ? <RcaApprovalForm incidentId={incident.id} /> : null}
   </>;
