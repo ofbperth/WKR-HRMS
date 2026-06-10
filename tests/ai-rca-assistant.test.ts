@@ -3,12 +3,10 @@ import { buildGeminiRcaPrompt, MANUAL_DEIDENTIFY_NOTICE, shouldShowAiRcaAssistan
 
 describe("AI RCA Assistant", () => {
   it("shows only on RCA detail paths for authorized roles", () => {
-    expect(shouldShowAiRcaAssistant("/rm/rca/incident-1", "RMTeam")).toBe(true);
-    expect(shouldShowAiRcaAssistant("/unit/rca/incident-1", "UnitManager")).toBe(true);
-    expect(shouldShowAiRcaAssistant("/rm/rca/incident-1", "Admin")).toBe(true);
-    expect(shouldShowAiRcaAssistant("/rm/search/incident-1", "RMTeam")).toBe(false);
-    expect(shouldShowAiRcaAssistant("/unit/incidents/incident-1", "UnitManager")).toBe(false);
-    expect(shouldShowAiRcaAssistant("/rm/rca/incident-1", "Reporter")).toBe(false);
+    expect(shouldShowAiRcaAssistant("RMTeam")).toBe(true);
+    expect(shouldShowAiRcaAssistant("UnitManager")).toBe(true);
+    expect(shouldShowAiRcaAssistant("Admin")).toBe(true);
+    expect(shouldShowAiRcaAssistant("Reporter")).toBe(false);
   });
 
   it("builds a de-identified prompt without leaking direct identifiers from narrative fields", () => {

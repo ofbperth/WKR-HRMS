@@ -28,10 +28,9 @@ export type AiRcaPromptIncident = {
   rca?: PromptRca | null;
 };
 
-export function shouldShowAiRcaAssistant(pathname: string | null, role: Role | string) {
+export function shouldShowAiRcaAssistant(role: Role | string) {
   if (!["UnitManager", "RMTeam", "Admin"].includes(role)) return false;
-  if (!pathname) return false;
-  return pathname.startsWith("/rm/rca/") || pathname.startsWith("/unit/rca/");
+  return true;
 }
 
 export function buildGeminiRcaPrompt(incident: AiRcaPromptIncident) {

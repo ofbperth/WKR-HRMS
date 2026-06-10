@@ -74,6 +74,8 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
   const canAddComment = manage;
   const canClose = manage && canCloseIncident(incident);
 
+  const aiRcaAssistant = canWorkRca ? <AiRcaAssistantCard incident={incident} role={currentUser.role} /> : null;
+
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{incident.incidentNo}</h1><p className="mt-1 text-slate-600">{incident.title}</p></div><div className="flex flex-wrap items-center gap-2"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} /><SentinelBadge value={incident.isSentinel} /><RmSupportBadge value={incident.needRmSupport} />{canClose ? <CloseIncidentButton incidentId={incident.id} /> : null}</div></div>
     <div className="grid gap-4 lg:grid-cols-3">
@@ -112,6 +114,7 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+        {aiRcaAssistant}
         {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">สถานะ: {statusLabel(incident.rca.status)}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">ส่งเมื่อ {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
           <Info label="ปัญหา" value={incident.rca.problemStatement || "-"} />
@@ -188,7 +191,6 @@ async function IncidentRcaSection({
   const showForm = !incidentClosed && rcaAllowed && (manage || unitCanWork || canSubmitRca(currentUser.role) && currentUser.role !== "UnitManager");
   const users = showForm ? await getActiveUsers() : [];
   return <>
-    <AiRcaAssistantCard incident={incident} role={currentUser.role} />
     {showForm ? <RcaForm incidentId={incident.id} rca={incident.rca} users={users} /> : null}
     {manage && incident.rca?.status === "Submitted" ? <RcaApprovalForm incidentId={incident.id} /> : null}
   </>;

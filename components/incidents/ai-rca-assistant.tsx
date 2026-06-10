@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,12 +8,11 @@ import { AI_RCA_PRIVACY_NOTICE, buildGeminiRcaPrompt, GEMINI_CANVAS_URL, shouldS
 import type { Role } from "@/lib/types";
 
 export function AiRcaAssistantCard({ incident, role }: { incident: AiRcaPromptIncident; role: Role | string }) {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const prompt = buildGeminiRcaPrompt(incident);
 
-  if (!shouldShowAiRcaAssistant(pathname, role)) return null;
+  if (!shouldShowAiRcaAssistant(role)) return null;
 
   async function copyPrompt() {
     try {
