@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense } from "react";
 import { formatDateTime, statusLabel } from "@/lib/format";
 import { canManageIncident, canSeeSensitive, canSubmitRca } from "@/lib/rbac";
