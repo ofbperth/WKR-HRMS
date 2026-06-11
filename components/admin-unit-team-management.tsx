@@ -19,6 +19,15 @@ type TeamItem = {
 };
 
 type TabKey = "units" | "teams";
+type UnitPageMeta = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage?: boolean;
+};
+
+const unitPageSize = 10;
 
 async function readErrorCode(response: Response) {
   const body = await response.json().catch(() => null) as { error?: string } | null;
@@ -30,6 +39,17 @@ function teamAdminErrorMessage(errorCode: string | null) {
   if (errorCode === "DB_SCHEMA_NOT_READY") return "บันทึกทีมไม่ได้ เพราะฐานข้อมูลของ environment นี้ยังไม่ได้ apply migration สำหรับ Team";
   if (errorCode === "VALIDATION_ERROR") return "บันทึกทีมไม่สำเร็จ เพราะข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง";
   return "บันทึกทีมไม่สำเร็จ";
+}
+
+async function fetchUnitPage(targetPage: number) {
+  const data = await fetch(`/api/admin/units?page=${targetPage}&pageSize=${unitPageSize}`)
+    .then((response) => response.json())
+    .catch(() => null);
+  const items = Array.isArray(data?.data) ? data.data as UnitItem[] : [];
+  const meta = data?.meta && typeof data.meta.total === "number"
+    ? data.meta as UnitPageMeta
+    : { page: targetPage, pageSize: unitPageSize, total: items.length, totalPages: 1 };
+  return { items, meta };
 }
 
 export function AdminUnitTeamManagement() {
@@ -68,19 +88,33 @@ function UnitAdminPanel() {
   const [items, setItems] = useState<UnitItem[]>([]);
   const [editing, setEditing] = useState<UnitItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<UnitPageMeta>({ page: 1, pageSize: unitPageSize, total: 0, totalPages: 1 });
 
-  async function load() {
+  async function load(targetPage = page) {
     setLoading(true);
-    const data = await fetch("/api/admin/units?all=1")
-      .then((response) => response.json())
-      .catch(() => []);
-    setItems(Array.isArray(data) ? data.filter((item) => item.type !== "ทีม") : []);
+    const { items: nextItems, meta: nextMeta } = await fetchUnitPage(targetPage);
+    setItems(nextItems);
+    setMeta(nextMeta);
+    setPage(nextMeta.page);
     setLoading(false);
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    let active = true;
+    async function syncPage() {
+      setLoading(true);
+      const { items: nextItems, meta: nextMeta } = await fetchUnitPage(page);
+      if (!active) return;
+      setItems(nextItems);
+      setMeta(nextMeta);
+      setLoading(false);
+    }
+    void syncPage();
+    return () => {
+      active = false;
+    };
+  }, [page]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,7 +136,7 @@ function UnitAdminPanel() {
     }
     setEditing(null);
     event.currentTarget.reset();
-    await load();
+    await load(page);
   }
 
   async function deactivate(id: string) {
@@ -117,7 +151,8 @@ function UnitAdminPanel() {
       return;
     }
     if (editing?.id === id) setEditing(null);
-    await load();
+    const isLastItemOnPage = items.length === 1 && page > 1;
+    await load(isLastItemOnPage ? page - 1 : page);
   }
 
   return (
@@ -177,6 +212,32 @@ function UnitAdminPanel() {
           </div>
         )}
       </div>
+      {!loading && meta.total > meta.pageSize ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm shadow-sm">
+          <div className="text-slate-600">
+            แสดง {(meta.page - 1) * meta.pageSize + 1}-{Math.min(meta.page * meta.pageSize, meta.total)} จาก {meta.total} หน่วยงาน
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={meta.page <= 1}
+            >
+              ก่อนหน้า
+            </button>
+            <span className="text-slate-600">หน้า {meta.page} / {meta.totalPages}</span>
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => setPage((current) => Math.min(meta.totalPages, current + 1))}
+              disabled={meta.page >= meta.totalPages}
+            >
+              ถัดไป
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
