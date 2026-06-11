@@ -78,7 +78,6 @@ function exportObjectKey(job: { kind: string; id: string; requestedAt: Date | st
 }
 
 export async function createExportJob(input: {
-  request: Request;
   kind: ExportKind;
   user: ExportUser;
   reason: string;
@@ -121,7 +120,6 @@ export async function createExportJob(input: {
     },
   });
 
-  void queueExportJobProcessing({ requestUrl: input.request.url, jobId: job.id });
   return job;
 }
 
@@ -156,6 +154,14 @@ async function queueExportJobProcessing(input: { requestUrl?: string; jobId: str
 
   try {
     await processQueuedExportJob(input.jobId);
+  } catch {
+    // processQueuedExportJob already records failure details on the job itself.
+  }
+}
+
+export async function processExportJobBestEffort(jobId: string) {
+  try {
+    await processQueuedExportJob(jobId);
   } catch {
     // processQueuedExportJob already records failure details on the job itself.
   }
@@ -330,7 +336,7 @@ export function serializeExportJob(job: any) {
   };
 }
 
-export async function retryExportJob(input: { request: Request; user: ExportUser; jobId: string }) {
+export async function retryExportJob(input: { user: ExportUser; jobId: string }) {
   const job = await (prisma as any).exportJob.findUnique({ where: { id: input.jobId } });
   if (!job) throw new Error("NOT_FOUND");
   if (job.userId !== input.user.id) throw new Error("FORBIDDEN");
@@ -374,7 +380,6 @@ export async function retryExportJob(input: { request: Request; user: ExportUser
     entityId: updated.id,
     newValue: { kind: updated.kind, previousStatus: status },
   });
-  void queueExportJobProcessing({ requestUrl: input.request.url, jobId: updated.id });
   return serializeExportJob(updated);
 }
 

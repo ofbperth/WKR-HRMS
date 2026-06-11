@@ -1,8 +1,10 @@
 import { apiError, requireUser } from "@/lib/auth";
-import { createExportJob } from "@/lib/export-jobs";
+import { createExportJob, processExportJobBestEffort } from "@/lib/export-jobs";
 import { prisma } from "@/lib/prisma";
 import { buildPageMeta, getPagingParams } from "@/lib/server-pagination";
 import { exportRequestSchema } from "@/lib/validators";
+
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   try {
@@ -36,12 +38,12 @@ export async function POST(request: Request) {
     const user = await requireUser(["Admin"]);
     const body = exportRequestSchema.parse(await request.json());
     const job = await createExportJob({
-      request,
       kind: "audit-log-csv",
       user,
       reason: body.reason,
       filters: body.filters,
     });
+    await processExportJobBestEffort(job.id);
     return Response.json({ jobId: job.id, status: job.status });
   } catch (error) {
     if (error instanceof Error && error.message === "EXPORT_RATE_LIMITED") return Response.json({ error: "EXPORT_RATE_LIMITED" }, { status: 429 });
