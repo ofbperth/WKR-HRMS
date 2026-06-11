@@ -34,6 +34,13 @@ async function readErrorCode(response: Response) {
   return body?.error || null;
 }
 
+function unitAdminErrorMessage(errorCode: string | null) {
+  if (errorCode === "CONFLICT") return "บันทึกหน่วยงานไม่สำเร็จ เพราะชื่อหน่วยงานซ้ำ";
+  if (errorCode === "FORBIDDEN") return "คุณไม่มีสิทธิ์จัดการหน่วยงาน";
+  if (errorCode === "VALIDATION_ERROR") return "บันทึกหน่วยงานไม่สำเร็จ เพราะข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง";
+  return "บันทึกหน่วยงานไม่สำเร็จ";
+}
+
 function teamAdminErrorMessage(errorCode: string | null) {
   if (errorCode === "CONFLICT") return "บันทึกทีมไม่สำเร็จ เพราะชื่อทีมหรือรหัสทีมซ้ำ";
   if (errorCode === "DB_SCHEMA_NOT_READY") return "บันทึกทีมไม่ได้ เพราะฐานข้อมูลของ environment นี้ยังไม่ได้ apply migration สำหรับ Team";
@@ -50,6 +57,16 @@ async function fetchUnitPage(targetPage: number) {
     ? data.meta as UnitPageMeta
     : { page: targetPage, pageSize: unitPageSize, total: items.length, totalPages: 1 };
   return { items, meta };
+}
+
+async function findUnitPageForItem(itemId: string) {
+  const data = await fetch("/api/admin/units?all=1")
+    .then((response) => response.json())
+    .catch(() => null);
+  const items = Array.isArray(data) ? data as UnitItem[] : [];
+  const index = items.findIndex((item) => item.id === itemId);
+  if (index < 0) return 1;
+  return Math.floor(index / unitPageSize) + 1;
 }
 
 export function AdminUnitTeamManagement() {
@@ -90,6 +107,8 @@ function UnitAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<UnitPageMeta>({ page: 1, pageSize: unitPageSize, total: 0, totalPages: 1 });
+  const [notice, setNotice] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   async function load(targetPage = page) {
     setLoading(true);
@@ -118,6 +137,7 @@ function UnitAdminPanel() {
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const isEditing = !!editing?.id;
     const fd = new FormData(event.currentTarget);
     const payload = {
       id: editing?.id,
@@ -131,12 +151,16 @@ function UnitAdminPanel() {
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      alert("บันทึกหน่วยงานไม่สำเร็จ");
+      alert(unitAdminErrorMessage(await readErrorCode(response)));
       return;
     }
+    const savedItem = await response.json() as UnitItem;
+    const targetPage = await findUnitPageForItem(savedItem.id);
+    setNotice(isEditing ? `บันทึกการแก้ไขหน่วยงาน ${savedItem.name} แล้ว` : `เพิ่มหน่วยงาน ${savedItem.name} แล้ว`);
+    setHighlightedId(savedItem.id);
     setEditing(null);
     event.currentTarget.reset();
-    await load(page);
+    await load(targetPage);
   }
 
   async function deactivate(id: string) {
@@ -151,6 +175,7 @@ function UnitAdminPanel() {
       return;
     }
     if (editing?.id === id) setEditing(null);
+    if (highlightedId === id) setHighlightedId(null);
     const isLastItemOnPage = items.length === 1 && page > 1;
     await load(isLastItemOnPage ? page - 1 : page);
   }
@@ -176,6 +201,8 @@ function UnitAdminPanel() {
         </div>
       </form>
 
+      {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{notice}</div> : null}
+
       <div className="rounded-lg border bg-white shadow-sm">
         {loading ? (
           <div className="p-4 text-sm">กำลังโหลด...</div>
@@ -184,7 +211,10 @@ function UnitAdminPanel() {
         ) : (
           <div className="divide-y">
             {items.map((item) => (
-              <div key={item.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
+              <div
+                key={item.id}
+                className={`flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between ${highlightedId === item.id ? "bg-emerald-50" : ""}`}
+              >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="font-semibold">{item.name}</div>
@@ -273,7 +303,7 @@ function TeamAdminPanel() {
   }
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
