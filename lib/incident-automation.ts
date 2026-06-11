@@ -9,6 +9,7 @@ import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
 import { generateIncidentNo } from "@/lib/incident-number";
+import { assertIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
 export { generateIncidentNo } from "@/lib/incident-number";
 
 function resolveAutomation(severity: Severity, clinicalOrGeneral: string) {
@@ -33,6 +34,7 @@ async function runPostCreateTask(label: string, task: () => Promise<unknown>) {
 
 export async function createIncidentWithAutomation(raw: unknown, currentUser: { id: string; unitId: string | null; name: string }) {
   const input = createIncidentSchema.parse(raw);
+  assertIncidentDetailNoIdentifiers(input.description);
   if (!currentUser.unitId) throw new Error("USER_UNIT_REQUIRED");
   const riskCode = await prisma.riskCode.findUnique({ where: { id: input.riskCodeId } });
   if (!riskCode || !riskCode.isActive) throw new Error("INVALID_RISK_CODE");

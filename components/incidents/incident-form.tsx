@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar } from "lucide-react";
 import type { z } from "zod";
+import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
 import { createIncidentSchema, medicationRightValues } from "@/lib/validators";
 import { clinicalSeverityDescriptions, generalSeverityDetails, severityDescriptions, severityOptionsFor } from "@/lib/severity";
-import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
 import type { DbRiskCode, DbUnit } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
   const [riskQuery, setRiskQuery] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdNo, setCreatedNo] = useState<string | null>(null);
-  const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(createIncidentSchema), defaultValues });
+  const { register, handleSubmit, watch, setError, setValue, trigger, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(createIncidentSchema), defaultValues });
   const values = watch();
   const selectedClinicalOrGeneral = values.clinicalOrGeneral || "Clinical";
   const severityOptions = useMemo(() => severityOptionsFor(selectedClinicalOrGeneral), [selectedClinicalOrGeneral]);
@@ -51,7 +51,7 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
   }, [riskCodes, riskQuery, selectedClinicalOrGeneral]);
   const selectedRisk = riskCodes.find(r => r.id === values.riskCodeId);
   const isMedicationAdministration = selectedRisk?.code === "CPM205" || /Administration/i.test(selectedRisk?.nameTh ?? "");
-  const pdpaNameDetected = containsLikelyPatientIdentifier([values.title, values.description, values.immediateAction].filter(Boolean).join(" "));
+  const incidentDetailValidation = validateIncidentDetailNoIdentifiers(values.description ?? "");
 
   useEffect(() => {
     if (selectedRisk && selectedRisk.clinicalOrGeneral !== selectedClinicalOrGeneral) {
@@ -97,8 +97,8 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
   }
 
   async function onSubmit(input: FormValues) {
-    if (pdpaNameDetected) {
-      alert("ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด");
+    if (!incidentDetailValidation.valid) {
+      setError("description", { type: "manual", message: incidentDetailValidation.message });
       setStep(1);
       return;
     }
@@ -107,6 +107,11 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
     setSubmitting(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (data?.error === "INCIDENT_DETAIL_IDENTIFIER_DETECTED") {
+        setError("description", { type: "server", message: data.message || INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE });
+        setStep(1);
+        return;
+      }
       alert(data.error || "บันทึกไม่สำเร็จ");
       return;
     }
@@ -145,11 +150,20 @@ export function IncidentForm({ units, riskCodes }: { units: DbUnit[]; riskCodes:
         <Field label="AN ผู้ป่วย (ถ้ามี)"><Input placeholder="สำหรับผู้ป่วยใน ระบบจะปิดบังตามสิทธิ์" {...register("patientAn")} /></Field>
       </div>
       <div className="md:col-span-2"><Field label="ชื่อเหตุการณ์แบบสั้น" error={errors.title?.message}><Input placeholder="เช่น จ่ายยาผิดขนาดก่อนถึงผู้ป่วย" {...register("title")} /></Field></div>
-      {pdpaNameDetected ? <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด</div> : null}
       <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium leading-6 text-red-800">
         ห้ามใส่ชื่อ-นามสกุล หรือข้อมูลที่สามารถระบุตัวตนผู้ป่วยในรายละเอียดเหตุการณ์ เพื่อให้เป็นไปตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ให้ใช้ HN/AN ในช่องที่กำหนดเท่านั้น และบันทึกเฉพาะข้อมูลที่จำเป็นต่อการบริหารความเสี่ยง
       </div>
-      <div className="md:col-span-2"><Field label="รายละเอียดเหตุการณ์" error={errors.description?.message}><textarea className="min-h-32 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("description")} /></Field></div>
+      <div className="md:col-span-2">
+        <Field label="รายละเอียดเหตุการณ์" error={errors.description?.message}>
+          <textarea className={`min-h-32 w-full rounded-md border bg-white px-3 py-2 text-sm ${errors.description || !incidentDetailValidation.valid ? "border-red-500 ring-2 ring-red-100" : ""}`} {...register("description")} />
+        </Field>
+        {!incidentDetailValidation.valid ? <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <p>{incidentDetailValidation.message}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {incidentDetailValidation.categories.map((category) => <span key={category} className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-red-700">{category}</span>)}
+          </div>
+        </div> : null}
+      </div>
       <div className="md:col-span-2"><Field label="การแก้ไขเบื้องต้น"><textarea className="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm" {...register("immediateAction")} /></Field></div>
       <div className="md:col-span-2 flex flex-wrap justify-end gap-2 border-t pt-4"><Button type="button" onClick={goToStep2}>ถัดไป</Button></div>
     </CardContent></Card> : null}

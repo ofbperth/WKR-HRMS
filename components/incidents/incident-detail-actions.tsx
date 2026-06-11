@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TimeInput } from "@/components/ui/time-input";
+import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
 import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, incidentStatusValues, medicationRightValues } from "@/lib/validators";
 import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
@@ -38,7 +39,9 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
   });
   const initialRisk = riskCodes.find(r => r.id === incident.riskCodeId);
   const [riskQuery, setRiskQuery] = useState(initialRisk ? `${initialRisk.code} ${initialRisk.nameTh}` : "");
+  const [detailError, setDetailError] = useState<string | null>(null);
   const severityOptions = severityOptionsFor(form.clinicalOrGeneral);
+  const incidentDetailValidation = validateIncidentDetailNoIdentifiers(form.description);
   const availableRiskCodes = useMemo(() => riskCodes.filter(r => r.clinicalOrGeneral === form.clinicalOrGeneral), [riskCodes, form.clinicalOrGeneral]);
   const filteredRiskCodes = useMemo(() => {
     const q = riskQuery.trim().toLowerCase();
@@ -74,14 +77,23 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
   }
 
   async function save() {
+    if (!incidentDetailValidation.valid) {
+      setDetailError(incidentDetailValidation.message);
+      return;
+    }
     setSaving(true);
     const res = await fetch(`/api/incidents/${incident.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, medicationRight: form.medicationRight || null }) });
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (data?.error === "INCIDENT_DETAIL_IDENTIFIER_DETECTED") {
+        setDetailError(data.message || INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE);
+        return;
+      }
       alert(data.error || "บันทึกไม่สำเร็จ");
       return;
     }
+    setDetailError(null);
     setEditing(false);
     router.refresh();
   }
@@ -96,7 +108,16 @@ export function IncidentDetailEditor({ incident, units, riskCodes }: { incident:
     <label className="space-y-1 text-sm"><span className="font-medium">ประเภทผู้ได้รับผลกระทบ</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.affectedType} onChange={e => setForm({ ...form, affectedType: e.target.value })}>{affectedTypes.map(type => <option key={type} value={type}>{affectedTypeDisplay(type)}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">กลุ่มเหตุการณ์</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.clinicalOrGeneral} onChange={e => updateClinicalOrGeneral(e.target.value)}>{clinicalOrGeneralValues.map(type => <option key={type} value={type}>{type === "Clinical" ? "เกี่ยวกับการดูแลรักษาผู้ป่วย" : "ทั่วไป / ระบบงาน / สิ่งแวดล้อม"}</option>)}</select></label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">ชื่อเหตุการณ์</span><input className="h-10 w-full rounded-md border px-3" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></label>
-    <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">รายละเอียด</span><textarea className="min-h-28 w-full rounded-md border px-3 py-2" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
+    <label className="space-y-1 text-sm md:col-span-2">
+      <span className="font-medium">รายละเอียด</span>
+      <textarea className={`min-h-28 w-full rounded-md border px-3 py-2 ${detailError || !incidentDetailValidation.valid ? "border-red-500 ring-2 ring-red-100" : ""}`} value={form.description} onChange={e => { setForm({ ...form, description: e.target.value }); setDetailError(null); }} />
+      {!incidentDetailValidation.valid || detailError ? <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <p>{detailError ?? incidentDetailValidation.message}</p>
+        {!incidentDetailValidation.valid ? <div className="mt-2 flex flex-wrap gap-2">
+          {incidentDetailValidation.categories.map((category) => <span key={category} className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-red-700">{category}</span>)}
+        </div> : null}
+      </div> : null}
+    </label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">การแก้ไขเบื้องต้น</span><textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={form.immediateAction} onChange={e => setForm({ ...form, immediateAction: e.target.value })} /></label>
     <div className="space-y-2 text-sm md:col-span-2">
       <label className="space-y-1 font-medium"><span>NRLS code</span><input className="h-10 w-full rounded-md border px-3" value={riskQuery} onChange={e => setRiskQuery(e.target.value)} placeholder="ค้นหารหัส NRLS / ชื่อเหตุการณ์ / หมวด SIMPLE" /></label>
