@@ -121,13 +121,13 @@ export async function createExportJob(input: {
     },
   });
 
-  void triggerExportWorker({ requestUrl: input.request.url, jobId: job.id }).catch(() => undefined);
+  void queueExportJobProcessing({ requestUrl: input.request.url, jobId: job.id });
   return job;
 }
 
 export async function triggerExportWorker(input: { requestUrl?: string; jobId?: string }) {
   const baseUrl = appBaseUrl(input.requestUrl);
-  await fetch(`${baseUrl}/api/internal/export-jobs/process`, {
+  const response = await fetch(`${baseUrl}/api/internal/export-jobs/process`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -136,6 +136,29 @@ export async function triggerExportWorker(input: { requestUrl?: string; jobId?: 
     body: JSON.stringify(input.jobId ? { jobId: input.jobId } : {}),
     cache: "no-store",
   });
+  if (!response.ok) {
+    throw new Error(`EXPORT_WORKER_TRIGGER_FAILED:${response.status}`);
+  }
+}
+
+async function queueExportJobProcessing(input: { requestUrl?: string; jobId: string }) {
+  try {
+    await triggerExportWorker(input);
+    return;
+  } catch (triggerError) {
+    await auditLog({
+      action: "EXPORT_WORKER_TRIGGER_FALLBACK",
+      entityType: "ExportJob",
+      entityId: input.jobId,
+      newValue: triggerError instanceof Error ? { message: triggerError.message } : undefined,
+    }).catch(() => undefined);
+  }
+
+  try {
+    await processQueuedExportJob(input.jobId);
+  } catch {
+    // processQueuedExportJob already records failure details on the job itself.
+  }
 }
 
 export async function claimExportJob(jobId?: string) {
@@ -351,7 +374,7 @@ export async function retryExportJob(input: { request: Request; user: ExportUser
     entityId: updated.id,
     newValue: { kind: updated.kind, previousStatus: status },
   });
-  void triggerExportWorker({ requestUrl: input.request.url, jobId: updated.id }).catch(() => undefined);
+  void queueExportJobProcessing({ requestUrl: input.request.url, jobId: updated.id });
   return serializeExportJob(updated);
 }
 
