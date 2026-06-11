@@ -6,6 +6,7 @@ import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionPlanForm, ActionUpdateForm, CloseIncidentButton, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
+import { IncidentTeamAssignment } from "@/components/incidents/incident-team-assignment";
 import { AiRcaAssistantCard } from "@/components/incidents/ai-rca-assistant";
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 import { IncidentCommentsPanel } from "@/components/incidents/incident-comments-panel";
@@ -55,6 +56,11 @@ type DetailIncident = DbIncident & {
     kpiResult: string | null;
     effectivenessReview: string | null;
     verifiedAt: Date | null;
+  }>;
+  incidentTeams: Array<{
+    id: string;
+    assignedAt: Date;
+    team: { id: string; name: string; code: string | null; description: string | null; isActive: boolean; sortOrder: number };
   }>;
 };
 
@@ -116,6 +122,9 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
     {(canTriage || (manage && !incidentClosed)) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือจัดประเภท..." />}>
       <IncidentClassificationSection incident={incident} currentUser={currentUser} canTriage={canTriage} manage={manage} unitCanWork={unitCanWork} incidentClosed={incidentClosed} />
     </Suspense> : null}
+    {(manage || unitCanWork || incident.incidentTeams.length > 0) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดทีมที่เกี่ยวข้อง..." />}>
+      <IncidentTeamSection incident={incident} editable={manage || unitCanWork} />
+    </Suspense> : null}
 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
@@ -142,7 +151,7 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
     </div>
 
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card><CardHeader><CardTitle>ความคิดเห็น</CardTitle></CardHeader><CardContent><IncidentCommentsPanel incidentId={incident.id} canAddComment={canAddComment} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>ความเห็น</CardTitle></CardHeader><CardContent><IncidentCommentsPanel incidentId={incident.id} canAddComment={canAddComment} /></CardContent></Card>
       <Card><CardHeader><CardTitle>ประวัติการตรวจสอบ</CardTitle></CardHeader><CardContent><IncidentAuditsPanel incidentId={incident.id} /></CardContent></Card>
     </div>
   </div>;
@@ -176,6 +185,11 @@ async function IncidentClassificationSection({
     return <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={lookup.riskCodes} /></div>;
   }
   return null;
+}
+
+async function IncidentTeamSection({ incident, editable }: { incident: DetailIncident; editable: boolean }) {
+  const lookup = await getLookupData();
+  return <IncidentTeamAssignment incidentId={incident.id} teams={lookup.teams} assignedTeams={incident.incidentTeams} editable={editable} />;
 }
 
 async function IncidentRcaSection({

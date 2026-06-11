@@ -9,7 +9,13 @@ export async function GET(request: Request) {
   try {
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);
     const url = new URL(request.url);
-    const params = Object.fromEntries(url.searchParams.entries());
+    const params: Record<string, string | string[]> = {};
+    url.searchParams.forEach((value, key) => {
+      const current = params[key];
+      if (current === undefined) params[key] = value;
+      else if (Array.isArray(current)) current.push(value);
+      else params[key] = [current, value];
+    });
     const incidents = await incidentRepository.listForUser(user, params);
     return Response.json(incidents);
   } catch (error) {

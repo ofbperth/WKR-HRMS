@@ -53,6 +53,15 @@ export type DbUnit = {
   isActive?: boolean;
 };
 
+export type DbTeam = {
+  id: string;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
 export type DbRiskCode = {
   id: string;
   code: string;
