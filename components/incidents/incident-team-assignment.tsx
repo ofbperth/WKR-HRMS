@@ -76,7 +76,7 @@ export function IncidentTeamAssignment({
           <input type="checkbox" checked={selectedIds.includes(team.id)} onChange={() => toggle(team.id)} className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="min-w-0">
             <span className="block font-medium">{team.name}</span>
-            <span className="block text-xs text-slate-500">{team.code || "-"}{team.description ? ` | ${team.description}` : ""}</span>
+            <span className="block text-xs text-slate-500">{team.code || "-"}</span>
           </span>
         </label>)}
       </div>
