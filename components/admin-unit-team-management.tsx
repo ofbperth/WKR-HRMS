@@ -20,6 +20,18 @@ type TeamItem = {
 
 type TabKey = "units" | "teams";
 
+async function readErrorCode(response: Response) {
+  const body = await response.json().catch(() => null) as { error?: string } | null;
+  return body?.error || null;
+}
+
+function teamAdminErrorMessage(errorCode: string | null) {
+  if (errorCode === "CONFLICT") return "บันทึกทีมไม่สำเร็จ เพราะชื่อทีมหรือรหัสทีมซ้ำ";
+  if (errorCode === "DB_SCHEMA_NOT_READY") return "บันทึกทีมไม่ได้ เพราะฐานข้อมูลของ environment นี้ยังไม่ได้ apply migration สำหรับ Team";
+  if (errorCode === "VALIDATION_ERROR") return "บันทึกทีมไม่สำเร็จ เพราะข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง";
+  return "บันทึกทีมไม่สำเร็จ";
+}
+
 export function AdminUnitTeamManagement() {
   const [tab, setTab] = useState<TabKey>("units");
 
@@ -173,13 +185,29 @@ function TeamAdminPanel() {
   const [items, setItems] = useState<TeamItem[]>([]);
   const [editing, setEditing] = useState<TeamItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const data = await fetch("/api/admin/teams?all=1")
-      .then((response) => response.json())
-      .catch(() => []);
-    setItems(Array.isArray(data) ? data : []);
+    setLoadError(null);
+    try {
+      const response = await fetch("/api/admin/teams?all=1");
+      if (!response.ok) {
+        const errorCode = await readErrorCode(response);
+        setItems([]);
+        if (errorCode === "DB_SCHEMA_NOT_READY") {
+          setLoadError("ยังใช้งานทีมไม่ได้ เพราะฐานข้อมูลของ environment นี้ยังไม่ได้ apply migration สำหรับ Team");
+        } else {
+          setLoadError("โหลดข้อมูลทีมไม่สำเร็จ");
+        }
+        return;
+      }
+      const data = await response.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setItems([]);
+      setLoadError("โหลดข้อมูลทีมไม่สำเร็จ");
+    }
     setLoading(false);
   }
 
@@ -202,7 +230,7 @@ function TeamAdminPanel() {
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      alert("บันทึกทีมไม่สำเร็จ");
+      alert(teamAdminErrorMessage(await readErrorCode(response)));
       return;
     }
     setEditing(null);
@@ -218,7 +246,8 @@ function TeamAdminPanel() {
       body: JSON.stringify({ id }),
     });
     if (!response.ok) {
-      alert("ปิดใช้งานทีมไม่สำเร็จ");
+      const errorCode = await readErrorCode(response);
+      alert(errorCode === "DB_SCHEMA_NOT_READY" ? "ปิดใช้งานทีมไม่ได้ เพราะฐานข้อมูลของ environment นี้ยังไม่ได้ apply migration สำหรับ Team" : "ปิดใช้งานทีมไม่สำเร็จ");
       return;
     }
     if (editing?.id === id) setEditing(null);
@@ -252,6 +281,8 @@ function TeamAdminPanel() {
       <div className="rounded-lg border bg-white shadow-sm">
         {loading ? (
           <div className="p-4 text-sm">กำลังโหลด...</div>
+        ) : loadError ? (
+          <div className="p-4 text-sm text-amber-700">{loadError}</div>
         ) : !items.length ? (
           <div className="p-4 text-sm text-slate-500">ยังไม่มีข้อมูลทีม</div>
         ) : (

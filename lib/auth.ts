@@ -33,7 +33,7 @@ export function apiError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
     return Response.json({ error: "DB_RELATION_BLOCKED" }, { status: 409 });
   }
-  if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2011", "P2014"].includes(error.code)) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2011", "P2014", "P2021"].includes(error.code)) {
     return Response.json({ error: "DB_SCHEMA_NOT_READY" }, { status: 409 });
   }
   const message = error instanceof Error ? error.message : "UNKNOWN";
