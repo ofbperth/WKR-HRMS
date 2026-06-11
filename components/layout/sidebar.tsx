@@ -1,4 +1,5 @@
 import type React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { BarChart3, ClipboardCheck, ClipboardList, FileCheck2, FilePlus2, FileText, Grid3X3, Home, Hospital, LayoutDashboard, LogOut, Search, Settings, ShieldAlert, UserCircle, Users } from "lucide-react";
 import type { Role } from "@/lib/types";
@@ -127,7 +128,9 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
     <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-emerald-100 bg-white/95 shadow-xl shadow-emerald-950/5 backdrop-blur print:hidden lg:flex">
       <div className="shrink-0 p-5 pb-3">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-300 p-2.5 text-white shadow-lg shadow-emerald-500/20"><Hospital size={24} /></div>
+          <div className="overflow-hidden rounded-xl shadow-lg shadow-emerald-500/15 ring-1 ring-emerald-100">
+            <Image src="/icons/icon-192.png" alt="WKR-HRMS logo" width={44} height={44} className="h-11 w-11" priority />
+          </div>
           <div><div className="text-lg font-bold tracking-normal text-emerald-700">WKR-HRMS</div><div className="text-xs text-muted-foreground">ระบบบริหารความเสี่ยงโรงพยาบาล</div></div>
         </div>
       </div>
