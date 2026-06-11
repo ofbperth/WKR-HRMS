@@ -4,7 +4,7 @@ import { auditLog } from "@/lib/audit";
 import { notifyRmTeam } from "@/lib/notifications";
 import { rcaSchema } from "@/lib/validators";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
-import { canSubmitRca } from "@/lib/rbac";
+import { canManageIncident, canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import { rcaRepository } from "@/lib/rca-repository";
@@ -13,12 +13,12 @@ export const preferredRegion = "sin1";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireUser(["UnitManager", "Admin"]);
+    const user = await requireUser(["UnitManager", "RMTeam", "Admin"]);
     if (!canSubmitRca(user.role)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     const input = rcaSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
-    if (user.role !== "Admin" && !canUnitManageIncident(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+    if (!canManageIncident(user.role) && !canUnitManageIncident(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (!["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status)) return Response.json({ error: "RCA_NOT_ALLOWED_FOR_STATUS" }, { status: 409 });
 
     const submittedAt = input.submit ? new Date() : incident.rca?.submittedAt ?? null;

@@ -1,6 +1,7 @@
 export const REPORTING_TIME_ZONE = "Asia/Bangkok";
 
 const BANGKOK_UTC_OFFSET_HOURS = 7;
+const DAY_MS = 86_400_000;
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 const monthOnlyPattern = /^(\d{4})-(\d{2})$/;
 
@@ -77,6 +78,24 @@ export function bangkokDateKey(value: Date | string) {
   }).formatToParts(date);
   const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
   return `${get("year")}-${pad(get("month"))}-${pad(get("day"))}`;
+}
+
+export function bangkokDayNumber(value: Date | string) {
+  const start = bangkokStartOfDay(bangkokDateKey(value));
+  return start ? Math.floor(start.getTime() / DAY_MS) : NaN;
+}
+
+export function bangkokDayDiff(target: Date | string, base = new Date()) {
+  return bangkokDayNumber(target) - bangkokDayNumber(base);
+}
+
+export function bangkokNowMinusDays(days: number, now = new Date()) {
+  return new Date(now.getTime() - days * DAY_MS);
+}
+
+export function bangkokScheduledDateTime(dateKey: string, hour: number, minute: number) {
+  const start = bangkokStartOfDay(dateKey);
+  return start ? new Date(start.getTime() + ((hour * 60) + minute) * 60_000) : null;
 }
 
 export function bangkokMonthKey(value: Date | string) {
