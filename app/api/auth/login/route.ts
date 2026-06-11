@@ -27,7 +27,8 @@ export async function POST(request: Request) {
     console.warn("Unable to write login audit log", error);
   }
   const token = await signSession({ id: user.id, email: user.email, name: user.name, role, unitId: user.unitId });
-  const res = NextResponse.json({ ok: true, redirectTo: `/pdpa?next=${encodeURIComponent(roleHome[role])}` });
+  const next = !user.unitId ? "/onboarding/unit" : roleHome[role];
+  const res = NextResponse.json({ ok: true, redirectTo: `/pdpa?next=${encodeURIComponent(next)}` });
   res.cookies.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 8 });
   return res;
 }

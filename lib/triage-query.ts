@@ -21,8 +21,16 @@ export function buildTriageIncidentWhere(user: { id: string; role: Role; unitId:
     if (occurredAt) where.occurredAt = occurredAt;
   }
   if (typeof params.unitId === "string" && params.unitId) where.incidentUnitId = params.unitId;
+  const teamIds = Array.isArray(params.teamId)
+    ? params.teamId.filter(Boolean)
+    : typeof params.teamId === "string" && params.teamId
+      ? [params.teamId]
+      : [];
+  if (teamIds.length === 1) where.incidentTeams = { some: { teamId: teamIds[0] } };
+  if (teamIds.length > 1) where.incidentTeams = { some: { teamId: { in: teamIds } } };
   if (typeof params.severity === "string" && params.severity) where.severity = params.severity;
   if (typeof params.simpleCategory === "string" && params.simpleCategory) where.simpleCategory = params.simpleCategory;
+  if (Array.isArray(params.simpleCategory) && params.simpleCategory.length) where.simpleCategory = { in: params.simpleCategory.filter(Boolean) };
   if (typeof params.riskCodeId === "string" && params.riskCodeId) where.riskCodeId = params.riskCodeId;
   if (typeof params.sentinel === "string" && params.sentinel) where.isSentinel = params.sentinel === "true";
   if (typeof params.needRmSupport === "string" && params.needRmSupport) where.needRmSupport = params.needRmSupport === "true";
@@ -39,7 +47,7 @@ export function buildTriageIncidentWhere(user: { id: string; role: Role; unitId:
   return where;
 }
 
-export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>) {
+export async function getTriageIncidentList(user: { id: string; role: Role; unitId: string | null }, params: Record<string, string | string[] | undefined>): Promise<{ data: any[]; meta: { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null } }> {
   const where = buildTriageIncidentWhere(user, params);
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
@@ -54,7 +62,7 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
   const highTake = Math.max(0, Math.min(INCIDENT_PAGE_SIZE + 1, highTotal - offset));
   const highRows = highTake > 0 ? await prisma.incident.findMany({
     where: highWhere,
-    select: incidentListSelect,
+    select: incidentListSelect as any,
     orderBy,
     skip: offset,
     take: highTake,
@@ -63,15 +71,15 @@ export async function getTriageIncidentList(user: { id: string; role: Role; unit
   const normalSkip = Math.max(0, offset - highTotal);
   const normalRows = normalTake > 0 ? await prisma.incident.findMany({
     where: normalWhere,
-    select: incidentListSelect,
+    select: incidentListSelect as any,
     orderBy,
     skip: normalSkip,
     take: normalTake,
   }) : [];
-  const rows = [...highRows, ...normalRows];
+  const rows: any[] = [...(highRows as any[]), ...(normalRows as any[])];
   const total = highTotal + normalTotal;
   const hasNextPage = rows.length > INCIDENT_PAGE_SIZE;
-  const data = rows.slice(0, INCIDENT_PAGE_SIZE);
+  const data: any[] = rows.slice(0, INCIDENT_PAGE_SIZE);
   return {
     data,
     meta: {

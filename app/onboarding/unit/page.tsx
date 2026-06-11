@@ -18,6 +18,10 @@ export default async function UnitOnboardingPage({ searchParams }: { searchParam
   const role = typeof rawRole === "string" && isRole(rawRole) ? rawRole : null;
   if (!role) redirect("/login");
   if (user.unitId) redirect(roleHome[role]);
-  const units = await prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const units = await prisma.unit.findMany({
+    where: { isActive: true, NOT: { type: "à¸—à¸µà¸¡" } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
   return <main className="min-h-screen bg-slate-50"><UnitSelector units={units} next={sanitizeNext(searchParams.next)} /></main>;
 }

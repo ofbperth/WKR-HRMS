@@ -1,0 +1,88 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { DbTeam } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+
+type AssignedTeam = {
+  id: string;
+  assignedAt: Date;
+  team: DbTeam;
+};
+
+export function IncidentTeamAssignment({
+  incidentId,
+  teams,
+  assignedTeams,
+  editable,
+}: {
+  incidentId: string;
+  teams: DbTeam[];
+  assignedTeams: AssignedTeam[];
+  editable: boolean;
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>(assignedTeams.map((item) => item.team.id));
+
+  const filteredTeams = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return teams.filter((team) => !q || `${team.name} ${team.code ?? ""} ${team.description ?? ""}`.toLowerCase().includes(q));
+  }, [query, teams]);
+
+  function toggle(teamId: string) {
+    setSelectedIds((current) => current.includes(teamId) ? current.filter((id) => id !== teamId) : [...current, teamId]);
+  }
+
+  async function save() {
+    setSaving(true);
+    const response = await fetch(`/api/incidents/${incidentId}/teams`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamIds: selectedIds }),
+    });
+    setSaving(false);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      alert(data.error || "à¸šà¸±à¸™à¸—à¸¶à¸à¸—à¸µà¸¡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+      return;
+    }
+    router.refresh();
+  }
+
+  return <div className="space-y-3 rounded-lg border bg-white p-4">
+    <div>
+      <h3 className="text-lg font-semibold">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</h3>
+      <p className="text-sm text-slate-500">à¹€à¸¥à¸·à¸­à¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡à¸à¸±à¸šà¸­à¸¸à¸šà¸±à¸•à¸´à¸à¸²à¸£à¸“à¹Œà¸™à¸µà¹‰</p>
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {selectedIds.length ? teams.filter((team) => selectedIds.includes(team.id)).map((team) => (
+        <span key={team.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          {team.name}
+        </span>
+      )) : <div className="text-sm text-slate-500">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸°à¸šà¸¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</div>}
+    </div>
+    {editable ? <>
+      <input
+        className="h-10 w-full rounded-md border px-3 text-sm"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="à¸„à¹‰à¸™à¸«à¸²à¸—à¸µà¸¡"
+      />
+      <div className="max-h-72 overflow-auto rounded-lg border">
+        {filteredTeams.map((team) => <label key={team.id} className="flex cursor-pointer items-start gap-3 border-b px-3 py-3 text-sm hover:bg-slate-50">
+          <input type="checkbox" checked={selectedIds.includes(team.id)} onChange={() => toggle(team.id)} className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="min-w-0">
+            <span className="block font-medium">{team.name}</span>
+            <span className="block text-xs text-slate-500">{team.code || "-"}{team.description ? ` | ${team.description}` : ""}</span>
+          </span>
+        </label>)}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={save} disabled={saving}>{saving ? "à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸..." : "à¸šà¸±à¸™à¸—à¸¶à¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡"}</Button>
+      </div>
+    </> : null}
+  </div>;
+}

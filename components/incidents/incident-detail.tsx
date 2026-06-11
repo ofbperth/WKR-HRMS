@@ -6,6 +6,7 @@ import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionPlanForm, ActionUpdateForm, CloseIncidentButton, IncidentClassificationEditor, IncidentDetailEditor, RcaApprovalForm, RcaForm, TriageClassificationForm } from "@/components/incidents/incident-detail-actions";
+import { IncidentTeamAssignment } from "@/components/incidents/incident-team-assignment";
 import { PatientIdentifierReveal } from "@/components/incidents/patient-identifier-reveal";
 import { IncidentCommentsPanel } from "@/components/incidents/incident-comments-panel";
 import { IncidentAuditsPanel } from "@/components/incidents/incident-audits-panel";
@@ -54,6 +55,11 @@ type DetailIncident = DbIncident & {
     kpiResult: string | null;
     effectivenessReview: string | null;
     verifiedAt: Date | null;
+  }>;
+  incidentTeams: Array<{
+    id: string;
+    assignedAt: Date;
+    team: { id: string; name: string; code: string | null; description: string | null; isActive: boolean; sortOrder: number };
   }>;
 };
 
@@ -113,6 +119,10 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
       <IncidentClassificationSection incident={incident} currentUser={currentUser} canTriage={canTriage} manage={manage} unitCanWork={unitCanWork} incidentClosed={incidentClosed} />
     </Suspense> : null}
 
+    {(manage || unitCanWork || incident.incidentTeams.length > 0) ? <Suspense fallback={<InlineSectionSkeleton label="à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡..." />}>
+      <IncidentTeamSection incident={incident} editable={manage || unitCanWork} />
+    </Suspense> : null}
+
     <div className="grid gap-4 lg:grid-cols-2">
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
@@ -168,6 +178,11 @@ async function IncidentClassificationSection({
     return <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={lookup.riskCodes} /></div>;
   }
   return null;
+}
+
+async function IncidentTeamSection({ incident, editable }: { incident: DetailIncident; editable: boolean }) {
+  const lookup = await getLookupData();
+  return <IncidentTeamAssignment incidentId={incident.id} teams={lookup.teams} assignedTeams={incident.incidentTeams} editable={editable} />;
 }
 
 async function IncidentRcaSection({

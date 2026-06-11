@@ -154,6 +154,10 @@ export const exportRequestSchema = z.object({
   filters: z.record(z.union([z.string(), z.array(z.string())])).default({}),
 });
 
+export const teamAssignmentSchema = z.object({
+  teamIds: z.array(z.string().min(1)).max(100),
+});
+
 export const adminUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
@@ -195,4 +199,12 @@ export const riskCodeSchema = z.object({
   clinicalOrGeneral: z.enum(clinicalOrGeneralValues),
   simpleCategory: z.string().min(1),
   isActive: z.boolean().default(true),
+});
+
+export const teamSchema = z.object({
+  name: z.string().trim().min(1),
+  code: z.string().trim().optional().nullable(),
+  description: z.string().trim().optional().nullable(),
+  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).default(0),
 });

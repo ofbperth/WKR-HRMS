@@ -11,6 +11,7 @@ export type IncidentFilterParams = {
   from?: string;
   to?: string;
   unitId?: string;
+  teamId?: string | string[];
   severity?: string;
   simpleCategory?: string | string[];
   riskCodeId?: string;
@@ -53,6 +54,12 @@ export const incidentListSelect = {
   incidentUnit: { select: { id: true, name: true, type: true, isActive: true } },
   reporterUnit: { select: { id: true, name: true, type: true, isActive: true } },
   riskCode: { select: { id: true, code: true, nameTh: true, nameEn: true, clinicalOrGeneral: true, simpleCategory: true, isActive: true } },
+  incidentTeams: {
+    select: {
+      team: { select: { id: true, name: true, code: true, isActive: true, sortOrder: true } },
+    },
+    orderBy: [{ team: { sortOrder: "asc" } }, { team: { name: "asc" } }],
+  },
 } as const;
 
 export function scopeWhereForUser(user: IncidentAccessUser) {
@@ -74,6 +81,13 @@ export function buildIncidentWhere(user: IncidentAccessUser, params: IncidentFil
     if (occurredAt) and.push({ occurredAt });
   }
   if (params.unitId) and.push({ incidentUnitId: params.unitId });
+  const teamIds = Array.isArray(params.teamId)
+    ? params.teamId.filter(Boolean)
+    : params.teamId
+      ? [params.teamId]
+      : [];
+  if (teamIds.length === 1) and.push({ incidentTeams: { some: { teamId: teamIds[0] } } });
+  if (teamIds.length > 1) and.push({ incidentTeams: { some: { teamId: { in: teamIds } } } });
   if (params.severity) and.push({ severity: params.severity });
   const simpleCategories = Array.isArray(params.simpleCategory)
     ? params.simpleCategory.filter(Boolean)
@@ -116,7 +130,7 @@ export function buildIncidentWhere(user: IncidentAccessUser, params: IncidentFil
   return where;
 }
 
-export async function getIncidentList(user: IncidentAccessUser, params: IncidentFilterParams) {
+export async function getIncidentList(user: IncidentAccessUser, params: IncidentFilterParams): Promise<{ data: any[]; meta: { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null } }> {
   const started = Date.now();
   const where = buildIncidentWhere(user, params);
   const requestedPage = typeof params.page === "string" ? Number(params.page) : 1;
@@ -126,14 +140,15 @@ export async function getIncidentList(user: IncidentAccessUser, params: Incident
     prisma.incident.count({ where }),
     prisma.incident.findMany({
       where,
-      select: incidentListSelect,
+      select: incidentListSelect as any,
       orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : { skip: (page - 1) * INCIDENT_PAGE_SIZE }),
       take: INCIDENT_PAGE_SIZE + 1,
     }),
   ]);
-  const hasNextPage = rows.length > INCIDENT_PAGE_SIZE;
-  const data = rows.slice(0, INCIDENT_PAGE_SIZE);
+  const typedRows: any[] = rows as any[];
+  const hasNextPage = typedRows.length > INCIDENT_PAGE_SIZE;
+  const data: any[] = typedRows.slice(0, INCIDENT_PAGE_SIZE);
   if (process.env.NODE_ENV === "development") {
     console.info(`[perf] incident-list ${Date.now() - started}ms count=${data.length}`);
   }
@@ -150,19 +165,19 @@ export async function getIncidentList(user: IncidentAccessUser, params: Incident
   };
 }
 
-export async function getIncidentExportRows(user: IncidentAccessUser, params: IncidentFilterParams, take = 1000) {
+export async function getIncidentExportRows(user: IncidentAccessUser, params: IncidentFilterParams, take = 1000): Promise<any[]> {
   return prisma.incident.findMany({
     where: buildIncidentWhere(user, params),
-    select: incidentListSelect,
+    select: incidentListSelect as any,
     orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
     take,
   });
 }
 
-export async function getIncidentExportRowsPage(user: IncidentAccessUser, params: IncidentFilterParams, skip: number, take: number) {
+export async function getIncidentExportRowsPage(user: IncidentAccessUser, params: IncidentFilterParams, skip: number, take: number): Promise<any[]> {
   return prisma.incident.findMany({
     where: buildIncidentWhere(user, params),
-    select: incidentListSelect,
+    select: incidentListSelect as any,
     orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
     skip,
     take,
@@ -205,14 +220,21 @@ const incidentDetailInclude = {
     },
     orderBy: { dueDate: "asc" as const },
   },
+  incidentTeams: {
+    include: {
+      team: true,
+      assignedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } },
+    },
+    orderBy: [{ team: { sortOrder: "asc" } }, { team: { name: "asc" } }],
+  },
 } as const;
 
-async function getScopedIncidentCore(id: string, user: IncidentAccessUser) {
+async function getScopedIncidentCore(id: string, user: IncidentAccessUser): Promise<any | null> {
   const started = Date.now();
   const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
     where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,
-    include: incidentDetailInclude,
+    include: incidentDetailInclude as any,
   });
   if (process.env.NODE_ENV === "development") {
     console.info(`[perf] incident-core ${Date.now() - started}ms`);
@@ -229,8 +251,8 @@ async function hasScopedIncidentAccess(id: string, user: IncidentAccessUser) {
   return Boolean(incident);
 }
 
-export async function getIncidentCoreForUser(id: string, user: IncidentAccessUser) {
-  const incident = await getScopedIncidentCore(id, user);
+export async function getIncidentCoreForUser(id: string, user: IncidentAccessUser): Promise<any | null> {
+  const incident: any = await getScopedIncidentCore(id, user);
   if (!incident) return null;
   const { decryptIncidentIdentifier, decryptLegacyIncidentIdentifier, decryptRcaNarrative } = await import("@/lib/sensitive-fields");
   const sensitiveRca = incident.rca ? decryptRcaNarrative((incident.rca as any).rcaEncrypted) : null;
@@ -334,7 +356,22 @@ export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>
 }
 
 export const getActiveUnits = cache(async function getActiveUnits() {
-  return prisma.unit.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isActive: true }, orderBy: { name: "asc" } });
+  return prisma.unit.findMany({
+    where: {
+      isActive: true,
+      NOT: { type: "à¸—à¸µà¸¡" },
+    },
+    select: { id: true, name: true, type: true, isActive: true },
+    orderBy: { name: "asc" },
+  });
+});
+
+export const getActiveTeams = cache(async function getActiveTeams() {
+  return prisma.team.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, code: true, description: true, isActive: true, sortOrder: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
 });
 
 export const getActiveRiskCodes = cache(async function getActiveRiskCodes() {
@@ -352,6 +389,6 @@ export const getDashboardFilterLookups = cache(async function getDashboardFilter
 });
 
 export const getLookupData = cache(async function getLookupData() {
-  const [filterLookups, riskCodes] = await Promise.all([getDashboardFilterLookups(), getActiveRiskCodes()]);
-  return { ...filterLookups, riskCodes };
+  const [filterLookups, riskCodes, teams] = await Promise.all([getDashboardFilterLookups(), getActiveRiskCodes(), getActiveTeams()]);
+  return { ...filterLookups, riskCodes, teams };
 });

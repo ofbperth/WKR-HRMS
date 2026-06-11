@@ -45,6 +45,7 @@ model User {
   exportAccessGrants ExportAccessGrant[]
   exportJobs       ExportJob[]
   invitesSent       UserInvite[] @relation("InvitedBy")
+  assignedIncidentTeams IncidentTeam[] @relation("IncidentTeamAssignedBy")
 }
 
 model Unit {
@@ -59,6 +60,19 @@ model Unit {
   userInvites       UserInvite[]
   reportedIncidents Incident[] @relation("ReporterUnit")
   incidentIncidents Incident[] @relation("IncidentUnit")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  incidentTeams IncidentTeam[]
 }
 
 model RiskCode {
@@ -125,6 +139,7 @@ model Incident {
   actionPlans ActionPlan[]
   comments    Comment[]
   attachments Attachment[]
+  incidentTeams IncidentTeam[]
 
   @@index([incidentNo])
   @@index([createdAt])
@@ -147,6 +162,23 @@ model Incident {
   @@index([riskCodeId, occurredAt])
   @@index([clinicalOrGeneral, occurredAt])
   @@index([simpleCategory, occurredAt])
+}
+
+model IncidentTeam {
+  id           String   @id @default(cuid())
+  incidentId   String
+  teamId       String
+  assignedById String?
+  assignedAt   DateTime @default(now())
+  note         String?
+
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  assignedBy User?    @relation("IncidentTeamAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([incidentId, teamId])
+  @@index([incidentId])
+  @@index([teamId])
 }
 
 model RCA {

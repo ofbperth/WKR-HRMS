@@ -97,7 +97,7 @@ function buildAuditWhere(filters: SignedExportFilters) {
 
 export async function buildIncidentCsv(user: ExportUser, filters: SignedExportFilters) {
   const where = buildIncidentWhere(user as IncidentAccessUser, filters);
-  const header = ["Incident No", "Occurred At", "Reported At", "Incident Unit", "Reporter Unit", "Title", "Risk Code", "Clinical/General", "SIMPLE Category", "Severity", "Sentinel", "Need RM Support", "Status", "Reporter", "Patient HN", "Patient AN"];
+  const header = ["Incident No", "Occurred At", "Reported At", "Incident Unit", "Reporter Unit", "Related Teams", "Title", "Risk Code", "Clinical/General", "SIMPLE Category", "Severity", "Sentinel", "Need RM Support", "Status", "Reporter", "Patient HN", "Patient AN"];
   return buildCsvInPages({
     filename: csvFilename("incident-export"),
     header,
@@ -118,6 +118,10 @@ export async function buildIncidentCsv(user: ExportUser, filters: SignedExportFi
         incidentUnit: { select: { name: true } },
         reporterUnit: { select: { name: true } },
         riskCode: { select: { code: true } },
+        incidentTeams: {
+          select: { team: { select: { name: true, sortOrder: true } } },
+          orderBy: [{ team: { sortOrder: "asc" } }, { team: { name: "asc" } }],
+        },
       },
       orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
       skip,
@@ -129,6 +133,7 @@ export async function buildIncidentCsv(user: ExportUser, filters: SignedExportFi
       formatDateTime(incident.reportedAt),
       incident.incidentUnit.name,
       incident.reporterUnit.name,
+      incident.incidentTeams.map(({ team }) => team.name).join(", "),
       incident.title,
       incident.riskCode.code,
       incident.clinicalOrGeneral,

@@ -9,7 +9,7 @@ import { RmSupportBadge, SentinelBadge, SeverityBadge, StatusBadge } from "@/com
 import { Button } from "@/components/ui/button";
 import { getPage, pageSlice, Pagination } from "@/components/ui/pagination";
 import { incidentStatusValues, severityValues } from "@/lib/validators";
-import type { DbRiskCode, DbUnit } from "@/lib/types";
+import type { DbRiskCode, DbTeam, DbUnit } from "@/lib/types";
 import { clinicalOrGeneralDisplay } from "@/lib/i18n/th";
 import { statusLabel } from "@/lib/format";
 
@@ -29,8 +29,9 @@ type IncidentRow = {
   incidentUnit: Pick<DbUnit, "id" | "name" | "type" | "isActive">;
   reporterUnit: Pick<DbUnit, "id" | "name" | "type" | "isActive">;
   riskCode: Pick<DbRiskCode, "id" | "code" | "nameTh" | "nameEn" | "clinicalOrGeneral" | "simpleCategory" | "isActive">;
+  incidentTeams?: Array<{ team: Pick<DbTeam, "id" | "name" | "code" | "isActive" | "sortOrder"> }>;
 };
-type Lookup = { units: DbUnit[]; riskCodes: DbRiskCode[]; simpleCategories: string[] };
+type Lookup = { units: DbUnit[]; teams: DbTeam[]; riskCodes: DbRiskCode[]; simpleCategories: string[] };
 type SearchParams = Record<string, string | string[] | undefined>;
 type IncidentListMeta = { page: number; pageSize: number; total: number; totalPages: number; hasNextPage: boolean; nextCursor: string | null };
 
@@ -47,6 +48,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
   const visibleIncidents = meta ? incidents : pageSlice(incidents, page);
   const getDetailHref = (incidentId: string) => `${detailBasePath ?? basePath}/${incidentId}`;
   const selectedSimpleCategories = asArray(searchParams.simpleCategory);
+  const selectedTeams = asArray(searchParams.teamId);
 
   function openIncidentDetail(incidentId: string) {
     router.push(getDetailHref(incidentId));
@@ -65,6 +67,15 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <DateFilterField name="to" defaultValue={asString(searchParams.to)} />
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุกระดับความรุนแรง</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+      <fieldset className="min-w-0 rounded-md border px-3 py-2 text-sm">
+        <legend className="px-1 text-xs font-semibold text-slate-500">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</legend>
+        <div className="max-h-28 space-y-1 overflow-auto pr-1">
+          {lookup.teams.map((team) => <label key={team.id} className="flex min-h-7 items-center gap-2">
+            <input className="h-4 w-4 shrink-0" type="checkbox" name="teamId" value={team.id} defaultChecked={selectedTeams.includes(team.id)} />
+            <span className="truncate">{team.name}</span>
+          </label>)}
+        </div>
+      </fieldset>
       <fieldset className="min-w-0 rounded-md border px-3 py-2 text-sm">
         <legend className="px-1 text-xs font-semibold text-slate-500">SIMPLE</legend>
         <div className="max-h-28 space-y-1 overflow-auto pr-1">
@@ -138,6 +149,9 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <SentinelBadge value={incident.isSentinel} />
             <RmSupportBadge value={incident.needRmSupport} />
           </div>
+          {incident.incidentTeams?.length ? <div className="flex flex-wrap gap-2">
+            {incident.incidentTeams.map(({ team }) => <span key={team.id} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">{team.name}</span>)}
+          </div> : null}
         </Link>)}
       </div>
       <div className="hidden divide-y md:block">
@@ -173,6 +187,12 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="text-xs font-semibold uppercase text-slate-500">NRLS code</div>
             <div className="break-words [overflow-wrap:anywhere]"><span className="font-semibold">{incident.riskCode.code}</span> - <span className="text-slate-600">{incident.riskCode.nameTh}</span></div>
           </div>
+          {incident.incidentTeams?.length ? <div className="col-span-12 min-w-0">
+            <div className="text-xs font-semibold uppercase text-slate-500">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {incident.incidentTeams.map(({ team }) => <span key={team.id} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">{team.name}</span>)}
+            </div>
+          </div> : null}
         </div>)}
       </div>
     </div>
