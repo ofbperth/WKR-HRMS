@@ -10,18 +10,20 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     if (url.searchParams.get("all") === "1") {
       const activeOnly = url.searchParams.get("active") === "1";
-      return Response.json(await prisma.unit.findMany({
-        where: {
-          ...(activeOnly ? { isActive: true } : {}),
-          NOT: { type: "à¸—à¸µà¸¡" },
-        },
-        orderBy: { name: "asc" },
-      }));
+      return Response.json(
+        await prisma.unit.findMany({
+          where: {
+            ...(activeOnly ? { isActive: true } : {}),
+            NOT: { type: "ทีม" },
+          },
+          orderBy: { name: "asc" },
+        }),
+      );
     }
     const { page, pageSize, skip, take } = getPagingParams(url);
     const [data, total] = await prisma.$transaction([
-      prisma.unit.findMany({ where: { NOT: { type: "à¸—à¸µà¸¡" } }, orderBy: { name: "asc" }, skip, take }),
-      prisma.unit.count({ where: { NOT: { type: "à¸—à¸µà¸¡" } } }),
+      prisma.unit.findMany({ where: { NOT: { type: "ทีม" } }, orderBy: { name: "asc" }, skip, take }),
+      prisma.unit.count({ where: { NOT: { type: "ทีม" } } }),
     ]);
     return Response.json({ data, meta: buildPageMeta(page, pageSize, total) });
   } catch (error) {
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
     const user = await requireUser(["Admin"]);
     const parsed = unitSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
-    const item = await prisma.unit.create({ data: { ...parsed.data, type: "à¸«à¸™à¹ˆà¸§à¸¢à¸‡à¸²à¸™" } });
+    const item = await prisma.unit.create({ data: { ...parsed.data, type: "หน่วยงาน" } });
     await auditLog({ userId: user.id, role: user.role, action: "CREATE", entityType: "Unit", entityId: item.id, newValue: item });
     return Response.json(item, { status: 201 });
   } catch (error) {
@@ -49,7 +51,13 @@ export async function PATCH(req: Request) {
     const parsed = unitSchema.partial().safeParse(body);
     if (!body.id || !parsed.success) return Response.json({ error: "Invalid input" }, { status: 400 });
     const old = await prisma.unit.findUnique({ where: { id: body.id } });
-    const item = await prisma.unit.update({ where: { id: body.id }, data: { ...parsed.data, ...(parsed.data.name !== undefined || parsed.data.isActive !== undefined ? { type: "à¸«à¸™à¹ˆà¸§à¸¢à¸‡à¸²à¸™" } : {}) } });
+    const item = await prisma.unit.update({
+      where: { id: body.id },
+      data: {
+        ...parsed.data,
+        ...(parsed.data.name !== undefined || parsed.data.isActive !== undefined ? { type: "หน่วยงาน" } : {}),
+      },
+    });
     await auditLog({ userId: user.id, role: user.role, action: "UPDATE", entityType: "Unit", entityId: item.id, oldValue: old, newValue: item });
     return Response.json(item);
   } catch (error) {
@@ -69,4 +77,3 @@ export async function DELETE(req: Request) {
     return apiError(error);
   }
 }
-

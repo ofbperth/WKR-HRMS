@@ -19,7 +19,7 @@ export default async function UnitOnboardingPage({ searchParams }: { searchParam
   if (!role) redirect("/login");
   if (user.unitId) redirect(roleHome[role]);
   const units = await prisma.unit.findMany({
-    where: { isActive: true, NOT: { type: "à¸—à¸µà¸¡" } },
+    where: { isActive: true, NOT: { type: "ทีม" } },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

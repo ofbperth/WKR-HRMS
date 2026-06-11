@@ -359,7 +359,7 @@ export const getActiveUnits = cache(async function getActiveUnits() {
   return prisma.unit.findMany({
     where: {
       isActive: true,
-      NOT: { type: "à¸—à¸µà¸¡" },
+      NOT: { type: "ทีม" },
     },
     select: { id: true, name: true, type: true, isActive: true },
     orderBy: { name: "asc" },
