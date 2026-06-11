@@ -76,6 +76,25 @@ const defaultTeams = [
   { name: "HR / Personnel Safety", code: "HR", description: "Personnel safety" },
 ];
 
+async function seedTeams() {
+  for (const [index, team] of defaultTeams.entries()) {
+    await prisma.team.upsert({
+      where: { name: team.name },
+      update: {
+        code: team.code,
+        description: team.description,
+        isActive: true,
+        sortOrder: index + 1,
+      },
+      create: {
+        ...team,
+        isActive: true,
+        sortOrder: index + 1,
+      },
+    });
+  }
+}
+
 async function seedMasterData() {
   for (const unit of units) {
     await prisma.unit.upsert({
@@ -104,12 +123,7 @@ async function seedMasterData() {
     create: { id: "default", googleEnabled: false, allowedDomains: "[]", allowedEmails: "[]", allowAutoProvision: false, defaultRole: "Reporter", defaultIsActive: false },
   });
 
-  const teamCount = await prisma.team.count();
-  if (teamCount === 0) {
-    await prisma.team.createMany({
-      data: defaultTeams.map((team, index) => ({ ...team, isActive: true, sortOrder: index + 1 })),
-    });
-  }
+  await seedTeams();
 }
 
 async function seedDevUsers() {

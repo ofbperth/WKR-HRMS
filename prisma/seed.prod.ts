@@ -1,6 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 import { nrlsRiskCodes } from "../lib/nrls-risk-codes";
 
+function normalizeSeedDatabaseUrl() {
+  const value = process.env.DATABASE_URL;
+  if (!value) return;
+  try {
+    const url = new URL(value);
+    const isPooler = url.hostname.includes("pooler.supabase.com") || url.port === "6543";
+    if (!isPooler) return;
+    if (!url.searchParams.has("pgbouncer")) url.searchParams.set("pgbouncer", "true");
+    if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "1");
+    process.env.DATABASE_URL = url.toString();
+  } catch {
+    // Prisma will report invalid DATABASE_URL with its native validation.
+  }
+}
+
+normalizeSeedDatabaseUrl();
+
 const prisma = new PrismaClient();
 
 const units = [
@@ -30,6 +47,25 @@ const defaultTeams = [
   { name: "HR / Personnel Safety", code: "HR", description: "Personnel safety" },
 ];
 
+async function seedTeams() {
+  for (const [index, team] of defaultTeams.entries()) {
+    await prisma.team.upsert({
+      where: { name: team.name },
+      update: {
+        code: team.code,
+        description: team.description,
+        isActive: true,
+        sortOrder: index + 1,
+      },
+      create: {
+        ...team,
+        isActive: true,
+        sortOrder: index + 1,
+      },
+    });
+  }
+}
+
 async function main() {
   for (const unit of units) {
     await prisma.unit.upsert({
@@ -53,12 +89,7 @@ async function main() {
     create: { id: "default", googleEnabled: false, allowedDomains: "[]", allowedEmails: "[]", allowAutoProvision: false, defaultRole: "Reporter", defaultIsActive: false },
   });
 
-  const teamCount = await prisma.team.count();
-  if (teamCount === 0) {
-    await prisma.team.createMany({
-      data: defaultTeams.map((team, index) => ({ ...team, isActive: true, sortOrder: index + 1 })),
-    });
-  }
+  await seedTeams();
 
   console.log("Production seed completed without sample users");
 }
