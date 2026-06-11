@@ -72,7 +72,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
         <div className="max-h-28 space-y-1 overflow-auto pr-1">
           {lookup.teams.map((team) => <label key={team.id} className="flex min-h-7 items-center gap-2">
             <input className="h-4 w-4 shrink-0" type="checkbox" name="teamId" value={team.id} defaultChecked={selectedTeams.includes(team.id)} />
-            <span className="truncate">{team.name}</span>
+            <span className="truncate">{team.code || team.name}</span>
           </label>)}
         </div>
       </fieldset>
