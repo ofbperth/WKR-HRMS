@@ -15,9 +15,7 @@ type TeamItem = {
   id: string;
   name: string;
   code: string | null;
-  description: string | null;
   isActive: boolean;
-  sortOrder: number;
 };
 
 type TabKey = "units" | "teams";
@@ -196,8 +194,6 @@ function TeamAdminPanel() {
       id: editing?.id,
       name: String(fd.get("name") || ""),
       code: String(fd.get("code") || ""),
-      description: String(fd.get("description") || ""),
-      sortOrder: String(fd.get("sortOrder") || "0"),
       isActive: fd.get("isActive") === "on",
     };
     const response = await fetch("/api/admin/teams", {
@@ -239,12 +235,6 @@ function TeamAdminPanel() {
           <Field label="รหัสทีม">
             <Input name="code" defaultValue={editing?.code || ""} />
           </Field>
-          <Field label="รายละเอียด">
-            <Input name="description" defaultValue={editing?.description || ""} />
-          </Field>
-          <Field label="Sort order">
-            <Input name="sortOrder" type="number" min="0" defaultValue={editing?.sortOrder ?? 0} />
-          </Field>
           <label className="mt-6 flex items-center gap-2 text-sm">
             <input name="isActive" type="checkbox" defaultChecked={editing?.isActive ?? true} /> เปิดใช้งาน
           </label>
@@ -277,8 +267,7 @@ function TeamAdminPanel() {
                       {item.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
                     </span>
                   </div>
-                  <div className="text-sm text-slate-600">Code: {item.code || "-"} | Sort: {item.sortOrder}</div>
-                  <div className="text-sm text-slate-600">{item.description || "-"}</div>
+                  <div className="text-sm text-slate-600">Code: {item.code || "-"}</div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" className="rounded-md border px-3 py-1 text-sm" onClick={() => setEditing(item)}>
