@@ -68,7 +68,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="unitId" defaultValue={asString(searchParams.unitId)}><option value="">ทุกหน่วยงาน</option>{lookup.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="severity" defaultValue={asString(searchParams.severity)}><option value="">ทุกระดับความรุนแรง</option>{severityValues.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
       <fieldset className="min-w-0 rounded-md border px-3 py-2 text-sm">
-        <legend className="px-1 text-xs font-semibold text-slate-500">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</legend>
+        <legend className="px-1 text-xs font-semibold text-slate-500">ทีมที่เกี่ยวข้อง</legend>
         <div className="max-h-28 space-y-1 overflow-auto pr-1">
           {lookup.teams.map((team) => <label key={team.id} className="flex min-h-7 items-center gap-2">
             <input className="h-4 w-4 shrink-0" type="checkbox" name="teamId" value={team.id} defaultChecked={selectedTeams.includes(team.id)} />
@@ -188,7 +188,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
             <div className="break-words [overflow-wrap:anywhere]"><span className="font-semibold">{incident.riskCode.code}</span> - <span className="text-slate-600">{incident.riskCode.nameTh}</span></div>
           </div>
           {incident.incidentTeams?.length ? <div className="col-span-12 min-w-0">
-            <div className="text-xs font-semibold uppercase text-slate-500">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</div>
+            <div className="text-xs font-semibold uppercase text-slate-500">ทีมที่เกี่ยวข้อง</div>
             <div className="mt-1 flex flex-wrap gap-2">
               {incident.incidentTeams.map(({ team }) => <span key={team.id} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">{team.name}</span>)}
             </div>

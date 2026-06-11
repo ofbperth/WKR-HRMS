@@ -46,7 +46,7 @@ export function IncidentTeamAssignment({
     setSaving(false);
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      alert(data.error || "à¸šà¸±à¸™à¸—à¸¶à¸à¸—à¸µà¸¡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+      alert(data.error || "บันทึกทีมไม่สำเร็จ");
       return;
     }
     router.refresh();
@@ -54,22 +54,22 @@ export function IncidentTeamAssignment({
 
   return <div className="space-y-3 rounded-lg border bg-white p-4">
     <div>
-      <h3 className="text-lg font-semibold">à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</h3>
-      <p className="text-sm text-slate-500">à¹€à¸¥à¸·à¸­à¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡à¸à¸±à¸šà¸­à¸¸à¸šà¸±à¸•à¸´à¸à¸²à¸£à¸“à¹Œà¸™à¸µà¹‰</p>
+      <h3 className="text-lg font-semibold">ทีมที่เกี่ยวข้อง</h3>
+      <p className="text-sm text-slate-500">เลือกทีมที่เกี่ยวข้องกับอุบัติการณ์นี้</p>
     </div>
     <div className="flex flex-wrap gap-2">
       {selectedIds.length ? teams.filter((team) => selectedIds.includes(team.id)).map((team) => (
         <span key={team.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
           {team.name}
         </span>
-      )) : <div className="text-sm text-slate-500">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸°à¸šà¸¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</div>}
+      )) : <div className="text-sm text-slate-500">ยังไม่ได้ระบุทีมที่เกี่ยวข้อง</div>}
     </div>
     {editable ? <>
       <input
         className="h-10 w-full rounded-md border px-3 text-sm"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="à¸„à¹‰à¸™à¸«à¸²à¸—à¸µà¸¡"
+        placeholder="ค้นหาทีม"
       />
       <div className="max-h-72 overflow-auto rounded-lg border">
         {filteredTeams.map((team) => <label key={team.id} className="flex cursor-pointer items-start gap-3 border-b px-3 py-3 text-sm hover:bg-slate-50">
@@ -81,7 +81,7 @@ export function IncidentTeamAssignment({
         </label>)}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={save} disabled={saving}>{saving ? "à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸..." : "à¸šà¸±à¸™à¸—à¸¶à¸à¸—à¸µà¸¡à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡"}</Button>
+        <Button type="button" onClick={save} disabled={saving}>{saving ? "กำลังบันทึก..." : "บันทึกทีมที่เกี่ยวข้อง"}</Button>
       </div>
     </> : null}
   </div>;

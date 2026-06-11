@@ -1,4 +1,6 @@
-﻿import { Suspense } from "react";
+"use client";
+
+import { Suspense } from "react";
 import { formatDateTime, statusLabel } from "@/lib/format";
 import { canManageIncident, canSeeSensitive, canSubmitRca } from "@/lib/rbac";
 import { severityDescriptions } from "@/lib/severity";
@@ -67,8 +69,8 @@ type DetailIncident = DbIncident & {
 type CurrentUser = Pick<DbUser, "id" | "role" | "unitId" | "name" | "email">;
 
 export function getReporterDisplayValue(incident: Pick<DetailIncident, "reportedBy" | "reporterDisplayName">, currentUserRole: CurrentUser["role"]) {
-  if (currentUserRole === "Admin") return incident.reportedBy?.name ?? incident.reporterDisplayName ?? "à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸—à¸µà¹ˆà¸–à¸¹à¸à¸¥à¸š";
-  return incident.reportedBy ? "à¸ˆà¸³à¸à¸±à¸”à¸ªà¸´à¸—à¸˜à¸´à¹Œ" : incident.reporterDisplayName ?? "à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸—à¸µà¹ˆà¸–à¸¹à¸à¸¥à¸š";
+  if (currentUserRole === "Admin") return incident.reportedBy?.name ?? incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ";
+  return incident.reportedBy ? "จำกัดสิทธิ์" : incident.reporterDisplayName ?? "ผู้ใช้ที่ถูกลบ";
 }
 
 export function IncidentDetail({ incident, currentUser }: { incident: DetailIncident; currentUser: CurrentUser }) {
@@ -90,39 +92,39 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{incident.incidentNo}</h1><p className="mt-1 text-slate-600">{incident.title}</p></div><div className="flex flex-wrap items-center gap-2"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} /><SentinelBadge value={incident.isSentinel} /><RmSupportBadge value={incident.needRmSupport} />{canClose ? <CloseIncidentButton incidentId={incident.id} /> : null}</div></div>
     <div className="grid gap-4 lg:grid-cols-3">
-      <Card className="lg:col-span-2"><CardHeader><CardTitle>à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”à¹€à¸«à¸•à¸¸à¸à¸²à¸£à¸“à¹Œ</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
-        <Info label="à¸§à¸±à¸™à¸—à¸µà¹ˆà¸£à¸²à¸¢à¸‡à¸²à¸™" value={formatDateTime(incident.reportedAt)} />
-        <Info label="à¸§à¸±à¸™à¹€à¸§à¸¥à¸²à¸—à¸µà¹ˆà¹€à¸à¸´à¸”à¹€à¸«à¸•à¸¸" value={formatDateTime(incident.occurredAt)} />
-        <Info label="à¸à¸³à¸«à¸™à¸”à¸ªà¹ˆà¸‡ RCA" value={formatDateTime(incident.rcaDueAt)} />
-        <Info label="à¸«à¸™à¹ˆà¸§à¸¢à¸‡à¸²à¸™à¸—à¸µà¹ˆà¹€à¸à¸´à¸”à¹€à¸«à¸•à¸¸" value={incident.incidentUnit.name} />
-        <Info label="à¸ªà¸–à¸²à¸™à¸—à¸µà¹ˆ" value={incident.location || "-"} />
-        <Info label="à¸œà¸¹à¹‰à¸£à¸²à¸¢à¸‡à¸²à¸™" value={getReporterDisplayValue(incident, currentUser.role)} />
+      <Card className="lg:col-span-2"><CardHeader><CardTitle>รายละเอียดเหตุการณ์</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+        <Info label="วันที่รายงาน" value={formatDateTime(incident.reportedAt)} />
+        <Info label="วันเวลาที่เกิดเหตุ" value={formatDateTime(incident.occurredAt)} />
+        <Info label="กำหนดส่ง RCA" value={formatDateTime(incident.rcaDueAt)} />
+        <Info label="หน่วยงานที่เกิดเหตุ" value={incident.incidentUnit.name} />
+        <Info label="สถานที่" value={incident.location || "-"} />
+        <Info label="ผู้รายงาน" value={getReporterDisplayValue(incident, currentUser.role)} />
         <div>
-          <div className="font-medium text-slate-500">à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸£à¸°à¸šà¸¸à¸•à¸±à¸§à¸œà¸¹à¹‰à¸›à¹ˆà¸§à¸¢</div>
+          <div className="font-medium text-slate-500">ข้อมูลระบุตัวผู้ป่วย</div>
           {canRevealSensitive
             ? <PatientIdentifierReveal incidentId={incident.id} patientHn={null} patientAn={null} requesterName={`${currentUser.name} (${currentUser.email})`} />
-            : <div className="rounded-lg border bg-slate-50 p-3 text-sm font-medium text-slate-700">à¸ˆà¸³à¸à¸±à¸”à¸ªà¸´à¸—à¸˜à¸´à¹Œ</div>}
+            : <div className="rounded-lg border bg-slate-50 p-3 text-sm font-medium text-slate-700">จำกัดสิทธิ์</div>}
         </div>
-        <div><div className="font-medium text-slate-500">à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.description}</p></div>
-        <div><div className="font-medium text-slate-500">à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚à¹€à¸šà¸·à¹‰à¸­à¸‡à¸•à¹‰à¸™</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.immediateAction || "-"}</p></div>
-        {canEditDetails ? <Suspense fallback={<InlineSectionSkeleton label="à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¹à¸à¹‰à¹„à¸‚à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”..." />}>
+        <div><div className="font-medium text-slate-500">รายละเอียด</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.description}</p></div>
+        <div><div className="font-medium text-slate-500">การแก้ไขเบื้องต้น</div><p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-3">{incident.immediateAction || "-"}</p></div>
+        {canEditDetails ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือแก้ไขรายละเอียด..." />}>
           <IncidentDetailEditorSection incident={incident} />
         </Suspense> : null}
       </CardContent></Card>
-      <Card><CardHeader><CardTitle>à¸à¸²à¸£à¸ˆà¸±à¸”à¸›à¸£à¸°à¹€à¸ à¸—</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
-        <Info label="à¸›à¸£à¸°à¹€à¸ à¸—à¸œà¸¹à¹‰à¹„à¸”à¹‰à¸£à¸±à¸šà¸œà¸¥à¸à¸£à¸°à¸—à¸š" value={affectedTypeDisplay(incident.affectedType)} />
-        <Info label="à¸à¸¥à¸¸à¹ˆà¸¡à¹€à¸«à¸•à¸¸à¸à¸²à¸£à¸“à¹Œ" value={clinicalOrGeneralDisplay(incident.clinicalOrGeneral)} />
-        <Info label="à¸«à¸¡à¸§à¸” SIMPLE à¸ˆà¸²à¸ NRLS code" value={incident.simpleCategory} />
+      <Card><CardHeader><CardTitle>การจัดประเภท</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
+        <Info label="ประเภทผู้ได้รับผลกระทบ" value={affectedTypeDisplay(incident.affectedType)} />
+        <Info label="กลุ่มเหตุการณ์" value={clinicalOrGeneralDisplay(incident.clinicalOrGeneral)} />
+        <Info label="หมวด SIMPLE จาก NRLS code" value={incident.simpleCategory} />
         <Info label="NRLS code" value={`${incident.riskCode.code} ${incident.riskCode.nameTh}`} />
-        <Info label="à¸„à¸§à¸²à¸¡à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡à¹ƒà¸™à¸à¸²à¸£à¸šà¸£à¸´à¸«à¸²à¸£à¸¢à¸² 6 Rights" value={incident.medicationRight || "-"} />
-        <Info label="à¸„à¸§à¸²à¸¡à¸«à¸¡à¸²à¸¢à¸£à¸°à¸”à¸±à¸šà¸„à¸§à¸²à¸¡à¸£à¸¸à¸™à¹à¸£à¸‡" value={severityDescriptions[incident.severity]} />
+        <Info label="ความถูกต้องในการบริหารยา 6 Rights" value={incident.medicationRight || "-"} />
+        <Info label="ความหมายระดับความรุนแรง" value={severityDescriptions[incident.severity]} />
       </CardContent></Card>
     </div>
 
-    {(canTriage || (manage && !incidentClosed)) ? <Suspense fallback={<InlineSectionSkeleton label="à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¸ˆà¸±à¸”à¸›à¸£à¸°à¹€à¸ à¸—..." />}>
+    {(canTriage || (manage && !incidentClosed)) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือจัดประเภท..." />}>
       <IncidentClassificationSection incident={incident} currentUser={currentUser} canTriage={canTriage} manage={manage} unitCanWork={unitCanWork} incidentClosed={incidentClosed} />
     </Suspense> : null}
-    {(manage || unitCanWork || incident.incidentTeams.length > 0) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดทีมที่เกี่ยวข้อง..." />}> 
+    {(manage || unitCanWork || incident.incidentTeams.length > 0) ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดทีมที่เกี่ยวข้อง..." />}>
       <IncidentTeamSection incident={incident} editable={manage || unitCanWork} />
     </Suspense> : null}
 
@@ -130,12 +132,12 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
       <Card><CardHeader><CardTitle>RCA</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
         {aiRcaAssistant}
         {incident.rca ? <div className="rounded-lg border bg-slate-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">à¸ªà¸–à¸²à¸™à¸°: {statusLabel(incident.rca.status)}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">à¸ªà¹ˆà¸‡à¹€à¸¡à¸·à¹ˆà¸­ {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
-          <Info label="à¸›à¸±à¸à¸«à¸²" value={incident.rca.problemStatement || "-"} />
-          <Info label="à¸ªà¸²à¹€à¸«à¸•à¸¸à¸£à¸²à¸" value={incident.rca.rootCause || "-"} />
-          <Info label="à¹à¸™à¸§à¸—à¸²à¸‡à¸›à¹‰à¸­à¸‡à¸à¸±à¸™à¸‹à¹‰à¸³" value={incident.rca.preventiveAction || "-"} />
-        </div> : <p className="text-slate-500">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µ RCA</p>}
-        {(!incidentClosed && ((unitCanWork || currentUser.role === "Admin") && rcaAllowed)) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸Ÿà¸­à¸£à¹Œà¸¡ RCA..." />}>
+          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">สถานะ: {statusLabel(incident.rca.status)}</span>{incident.rca.submittedAt ? <span className="text-xs text-slate-500">ส่งเมื่อ {formatDateTime(incident.rca.submittedAt)}</span> : null}</div>
+          <Info label="ปัญหา" value={incident.rca.problemStatement || "-"} />
+          <Info label="สาเหตุราก" value={incident.rca.rootCause || "-"} />
+          <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
+        </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
+        {(!incidentClosed && ((unitCanWork || currentUser.role === "Admin") && rcaAllowed)) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดฟอร์ม RCA..." />}>
           <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} incidentClosed={incidentClosed} />
         </Suspense> : null}
         {currentUser.role === "RMTeam" && !incidentClosed && rcaAllowed && incident.rca?.status !== "Submitted" ? <Suspense fallback={<InlineSectionSkeleton label="Loading RCA form..." />}>
@@ -143,16 +145,16 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
         </Suspense> : null}
       </CardContent></Card>
 
-      <Card><CardHeader><CardTitle>à¹à¸œà¸™à¹à¸à¹‰à¹„à¸‚</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
-        <Suspense fallback={<InlineSectionSkeleton label="à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¹à¸œà¸™à¹à¸à¹‰à¹„à¸‚..." />}>
+      <Card><CardHeader><CardTitle>แผนแก้ไข</CardTitle></CardHeader><CardContent className="space-y-4 text-sm">
+        <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดเครื่องมือแผนแก้ไข..." />}>
           <IncidentActionSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} manage={manage} incidentClosed={incidentClosed} />
         </Suspense>
       </CardContent></Card>
     </div>
 
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card><CardHeader><CardTitle>à¸„à¸§à¸²à¸¡à¸„à¸´à¸”à¹€à¸«à¹‡à¸™</CardTitle></CardHeader><CardContent><IncidentCommentsPanel incidentId={incident.id} canAddComment={canAddComment} /></CardContent></Card>
-      <Card><CardHeader><CardTitle>à¸›à¸£à¸°à¸§à¸±à¸•à¸´à¸à¸²à¸£à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š</CardTitle></CardHeader><CardContent><IncidentAuditsPanel incidentId={incident.id} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>ความเห็น</CardTitle></CardHeader><CardContent><IncidentCommentsPanel incidentId={incident.id} canAddComment={canAddComment} /></CardContent></Card>
+      <Card><CardHeader><CardTitle>ประวัติการตรวจสอบ</CardTitle></CardHeader><CardContent><IncidentAuditsPanel incidentId={incident.id} /></CardContent></Card>
     </div>
   </div>;
 }
@@ -182,7 +184,7 @@ async function IncidentClassificationSection({
     return <div className="space-y-3"><TriageClassificationForm incident={incident} riskCodes={lookup.riskCodes} backHref={currentUser.role === "UnitManager" ? "/unit/triage" : "/rm/triage"} /></div>;
   }
   if (manage && !canTriage && !incidentClosed) {
-    return <div className="space-y-3"><h2 className="text-lg font-semibold">à¹à¸à¹‰à¹„à¸‚à¸à¸²à¸£à¸ˆà¸±à¸”à¸›à¸£à¸°à¹€à¸ à¸—à¹‚à¸”à¸¢ RM</h2><IncidentClassificationEditor incident={incident} riskCodes={lookup.riskCodes} /></div>;
+    return <div className="space-y-3"><h2 className="text-lg font-semibold">แก้ไขการจัดประเภทโดย RM</h2><IncidentClassificationEditor incident={incident} riskCodes={lookup.riskCodes} /></div>;
   }
   return null;
 }
@@ -233,12 +235,12 @@ async function IncidentActionSection({
   const users = canAddActionPlan || canEditActions ? await getActiveUsers() : [];
 
   return <>
-    {incident.actionPlans.length === 0 ? <p className="text-slate-500">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¹à¸œà¸™à¹à¸à¹‰à¹„à¸‚</p> : incident.actionPlans.map((action) => {
+    {incident.actionPlans.length === 0 ? <p className="text-slate-500">ยังไม่มีแผนแก้ไข</p> : incident.actionPlans.map((action) => {
       const canEditAction = !incidentClosed && (action.ownerId === currentUser.id || unitCanWork || manage || currentUser.role === "Admin") && action.status !== "Verified";
       return <div key={action.id} className="space-y-3 rounded-lg border p-3">
-        <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">à¸œà¸¹à¹‰à¸£à¸±à¸šà¸œà¸´à¸”à¸Šà¸­à¸š: {action.owner?.name ?? "à¸£à¸­à¸«à¸±à¸§à¸«à¸™à¹‰à¸²à¸«à¸™à¹ˆà¸§à¸¢à¸‡à¸²à¸™à¸¡à¸­à¸šà¸«à¸¡à¸²à¸¢à¹ƒà¸«à¸¡à¹ˆ"} Â· à¸à¸³à¸«à¸™à¸”à¸ªà¹ˆà¸‡ {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
+        <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอหัวหน้าหน่วยงานมอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
         <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
-        {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">à¸«à¸¥à¸±à¸à¸à¸²à¸™</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>à¸¥à¸´à¸‡à¸à¹Œà¸«à¸¥à¸±à¸à¸à¸²à¸™</a> : null}</div> : null}
+        {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">หลักฐาน</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์หลักฐาน</a> : null}</div> : null}
         {canEditAction ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
       </div>;
     })}
