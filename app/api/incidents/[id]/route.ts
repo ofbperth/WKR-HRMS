@@ -1,4 +1,5 @@
 import { apiError, requireUser } from "@/lib/auth";
+import { assertIncidentDetailNoIdentifiers, isIncidentDetailIdentifierError, toIncidentDetailIdentifierErrorPayload, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
 import { prisma } from "@/lib/prisma";
 import { updateIncidentClassificationSchema, reporterUpdateIncidentSchema } from "@/lib/validators";
 import { auditLog } from "@/lib/audit";
@@ -66,9 +67,11 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  let requestBody: Record<string, unknown> | null = null;
   try {
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);
     const body = await request.json();
+    requestBody = body;
     const existing = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: { select: { status: true } } } });
     if (!existing) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
 
@@ -76,6 +79,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       if (!canEditIncidentDetails(user, existing)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
       if (isRcaSubmittedOrBeyond(existing)) return Response.json({ error: "INCIDENT_LOCKED_AFTER_RCA_SUBMITTED" }, { status: 409 });
       const input = reporterUpdateIncidentSchema.parse({ ...normalizeIncidentDetailBody(body), id: params.id });
+      if (typeof input.description === "string") {
+        assertIncidentDetailNoIdentifiers(input.description);
+      }
       const targetType = input.clinicalOrGeneral ?? existing.clinicalOrGeneral;
       const targetRiskCodeId = input.riskCodeId ?? existing.riskCodeId;
       const targetSeverity = input.severity ?? existing.severity;
@@ -157,6 +163,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   } catch (error) {
+    if (isIncidentDetailIdentifierError(error)) {
+      return Response.json(toIncidentDetailIdentifierErrorPayload(error), { status: 400 });
+    }
+    if (requestBody && typeof requestBody.description === "string") {
+      const validation = validateIncidentDetailNoIdentifiers(requestBody.description);
+      if (!validation.valid) {
+        return Response.json({ error: "INCIDENT_DETAIL_IDENTIFIER_DETECTED", message: validation.message, categories: validation.categories }, { status: 400 });
+      }
+    }
     return apiError(error);
   }
 }

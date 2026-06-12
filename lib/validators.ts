@@ -9,7 +9,7 @@ import {
   ROLE_VALUES,
   SEVERITY_VALUES,
 } from "@/lib/types";
-import { containsLikelyPatientIdentifier } from "@/lib/pdpa-guard";
+import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
 
 export const roles = ROLE_VALUES;
 export const authProviderValues = AUTH_PROVIDER_VALUES;
@@ -24,21 +24,12 @@ export const medicationRightValues = ["Right patient", "Right drug", "Right dose
 
 export const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
-function addSensitiveNarrativeIssue(ctx: z.RefinementCtx, field: string) {
+function addIncidentDetailIdentifierIssue(ctx: z.RefinementCtx, field: string) {
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     path: [field],
-    message: "ไม่ให้ลงข้อมูลส่วนตัวผู้ป่วยลงในรายละเอียด",
+    message: INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE,
   });
-}
-
-function forbidSensitiveNarrative<T extends Record<string, unknown>>(value: T, ctx: z.RefinementCtx, fields: readonly (keyof T & string)[]) {
-  for (const field of fields) {
-    const text = value[field];
-    if (typeof text === "string" && text && containsLikelyPatientIdentifier(text)) {
-      addSensitiveNarrativeIssue(ctx, field);
-    }
-  }
 }
 
 const createIncidentBaseSchema = z.object({
@@ -61,7 +52,10 @@ const createIncidentBaseSchema = z.object({
 });
 
 export const createIncidentSchema = createIncidentBaseSchema.superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["title", "description", "immediateAction"]);
+  if (!validateIncidentDetailNoIdentifiers(value.description).valid) {
+    addIncidentDetailIdentifierIssue(ctx, "description");
+  }
+
   if (value.medicationRight && value.riskCodeId === "") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -89,11 +83,13 @@ export const triageClassificationSchema = z.object({
   requireRca: z.boolean(),
 });
 
-export const reporterUpdateIncidentSchema = createIncidentBaseSchema.partial().extend({ id: z.string().min(1) });
-
-export const commentSchema = z.object({ message: z.string().min(1, "กรุณาใส่ข้อความ") }).superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["message"]);
+export const reporterUpdateIncidentSchema = createIncidentBaseSchema.partial().extend({ id: z.string().min(1) }).superRefine((value, ctx) => {
+  if (typeof value.description === "string" && !validateIncidentDetailNoIdentifiers(value.description).valid) {
+    addIncidentDetailIdentifierIssue(ctx, "description");
+  }
 });
+
+export const commentSchema = z.object({ message: z.string().min(1, "กรุณาใส่ข้อความ") });
 
 export const rcaSchema = z.object({
   problemStatement: z.string().min(3),
@@ -110,8 +106,6 @@ export const rcaSchema = z.object({
   kpiOwnerId: z.string().optional().nullable(),
   needRmSupport: z.boolean().default(false),
   submit: z.boolean().default(false),
-}).superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["problemStatement", "timeline", "rootCause", "preventiveAction"]);
 });
 
 export const rcaApprovalSchema = z.object({
@@ -127,8 +121,6 @@ export const actionPlanSchema = z.object({
   dueDate: z.string().min(1),
   kpiName: z.string().optional().nullable(),
   kpiTarget: z.string().optional().nullable(),
-}).superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["description"]);
 });
 
 export const actionUpdateSchema = z.object({
@@ -138,15 +130,11 @@ export const actionUpdateSchema = z.object({
   evidenceUrl: z.string().optional().nullable(),
   kpiResult: z.string().optional().nullable(),
   effectivenessReview: z.string().optional().nullable(),
-}).superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["evidenceText", "kpiResult", "effectivenessReview"]);
 });
 
 export const actionVerifySchema = z.object({
   verified: z.boolean(),
   effectivenessReview: z.string().optional().nullable(),
-}).superRefine((value, ctx) => {
-  forbidSensitiveNarrative(value, ctx, ["effectivenessReview"]);
 });
 
 export const exportRequestSchema = z.object({
