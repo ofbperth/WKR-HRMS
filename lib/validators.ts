@@ -7,6 +7,12 @@ import {
   INCIDENT_STATUS_VALUES,
   RCA_STATUS_VALUES,
   ROLE_VALUES,
+  RISK_CONTROL_EFFECTIVENESS_VALUES,
+  RISK_REVIEW_FREQUENCY_VALUES,
+  RISK_SCOPE_VALUES,
+  RISK_STATUS_VALUES,
+  RISK_TREND_VALUES,
+  RISK_TYPE_VALUES,
   SEVERITY_VALUES,
 } from "@/lib/types";
 import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
@@ -19,6 +25,12 @@ export const clinicalOrGeneralValues = CLINICAL_OR_GENERAL_VALUES;
 export const incidentStatusValues = INCIDENT_STATUS_VALUES;
 export const rcaStatusValues = RCA_STATUS_VALUES;
 export const actionPlanStatusValues = ACTION_PLAN_STATUS_VALUES;
+export const riskScopeValues = RISK_SCOPE_VALUES;
+export const riskStatusValues = RISK_STATUS_VALUES;
+export const riskTypeValues = RISK_TYPE_VALUES;
+export const riskControlEffectivenessValues = RISK_CONTROL_EFFECTIVENESS_VALUES;
+export const riskTrendValues = RISK_TREND_VALUES;
+export const riskReviewFrequencyValues = RISK_REVIEW_FREQUENCY_VALUES;
 export const unitTypeValues = ["หน่วยงาน", "ทีม"] as const;
 export const medicationRightValues = ["Right patient", "Right drug", "Right dose", "Right route", "Right time", "Right documentation"] as const;
 
@@ -33,17 +45,17 @@ function addIncidentDetailIdentifierIssue(ctx: z.RefinementCtx, field: string) {
 }
 
 const createIncidentBaseSchema = z.object({
-  occurredDate: z.string().min(1, "กรุณาระบุวันที่เกิดเหตุ"),
+  occurredDate: z.string().min(1, "Please provide occurred date"),
   occurredTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Use 24-hour time as HH:mm"),
-  incidentUnitId: z.string().min(1, "กรุณาเลือกหน่วยงานที่เกิดเหตุ"),
+  incidentUnitId: z.string().min(1, "Please select incident unit"),
   location: z.string().optional().nullable(),
   affectedType: z.enum(affectedTypes),
-  title: z.string().min(3, "กรุณาระบุชื่อเหตุการณ์อย่างน้อย 3 ตัวอักษร"),
-  description: z.string().min(10, "กรุณาระบุรายละเอียดเหตุการณ์"),
+  title: z.string().min(3, "Please provide incident title"),
+  description: z.string().min(10, "Please provide incident details"),
   immediateAction: z.string().optional().nullable(),
   clinicalOrGeneral: z.enum(clinicalOrGeneralValues),
   simpleCategory: z.string().optional().nullable(),
-  riskCodeId: z.string().min(1, "กรุณาเลือก risk code"),
+  riskCodeId: z.string().min(1, "Please select risk code"),
   severity: z.enum(severityValues),
   needRmSupport: z.boolean().default(false),
   patientHn: z.string().optional().nullable(),
@@ -60,7 +72,7 @@ export const createIncidentSchema = createIncidentBaseSchema.superRefine((value,
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["riskCodeId"],
-      message: "กรุณาเลือก Medication Administration risk code ก่อนระบุ 6 Rights",
+      message: "Please select Medication Administration risk code before setting 6 Rights",
     });
   }
 });
@@ -83,13 +95,16 @@ export const triageClassificationSchema = z.object({
   requireRca: z.boolean(),
 });
 
-export const reporterUpdateIncidentSchema = createIncidentBaseSchema.partial().extend({ id: z.string().min(1) }).superRefine((value, ctx) => {
-  if (typeof value.description === "string" && !validateIncidentDetailNoIdentifiers(value.description).valid) {
-    addIncidentDetailIdentifierIssue(ctx, "description");
-  }
-});
+export const reporterUpdateIncidentSchema = createIncidentBaseSchema
+  .partial()
+  .extend({ id: z.string().min(1) })
+  .superRefine((value, ctx) => {
+    if (typeof value.description === "string" && !validateIncidentDetailNoIdentifiers(value.description).valid) {
+      addIncidentDetailIdentifierIssue(ctx, "description");
+    }
+  });
 
-export const commentSchema = z.object({ message: z.string().min(1, "กรุณาใส่ข้อความ") });
+export const commentSchema = z.object({ message: z.string().min(1, "Please provide comment message") });
 
 export const rcaSchema = z.object({
   problemStatement: z.string().min(3),
@@ -195,4 +210,64 @@ export const teamSchema = z.object({
   description: z.string().trim().optional().nullable(),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().int().min(0).default(0),
+});
+
+const riskScoreInput = z.coerce.number().int().min(1).max(5);
+const optionalTrimmedText = z.string().trim().optional().nullable();
+
+export const riskCreateSchema = z.object({
+  title: z.string().trim().min(3),
+  description: z.string().trim().min(10),
+  scope: z.enum(riskScopeValues).optional(),
+  status: z.enum(riskStatusValues).optional(),
+  riskType: z.enum(riskTypeValues),
+  riskDomain: optionalTrimmedText,
+  ownerUnitId: optionalTrimmedText,
+  ownerTeamId: optionalTrimmedText,
+  executiveSponsorId: optionalTrimmedText,
+  inherentLikelihood: riskScoreInput,
+  inherentImpact: riskScoreInput,
+  residualLikelihood: riskScoreInput,
+  residualImpact: riskScoreInput,
+  controlEffectiveness: z.enum(riskControlEffectivenessValues),
+  trend: z.enum(riskTrendValues),
+  reviewFrequency: z.enum(riskReviewFrequencyValues),
+  nextReviewAt: optionalTrimmedText,
+  decisionRequired: z.boolean().default(false),
+  decisionNote: optionalTrimmedText,
+  acceptedReason: optionalTrimmedText,
+});
+
+export const riskUpdateSchema = riskCreateSchema.partial().extend({
+  title: z.string().trim().min(3).optional(),
+  description: z.string().trim().min(10).optional(),
+});
+
+export const riskDecisionSchema = z.object({
+  note: optionalTrimmedText,
+});
+
+export const riskMergeSchema = z.object({
+  targetRiskId: z.string().min(1),
+  note: optionalTrimmedText,
+});
+
+export const riskLinkSchema = z.object({
+  incidentIds: z.array(z.string().min(1)).min(1).max(100),
+  note: optionalTrimmedText,
+});
+
+export const riskReviewSchema = z.object({
+  reviewDate: z.string().min(1),
+  residualLikelihood: riskScoreInput,
+  residualImpact: riskScoreInput,
+  controlEffectiveness: z.enum(riskControlEffectivenessValues),
+  trend: z.enum(riskTrendValues),
+  summary: z.string().trim().min(3),
+  nextReviewAt: optionalTrimmedText,
+});
+
+export const riskAcceptSchema = z.object({
+  acceptedReason: z.string().trim().min(3),
+  note: optionalTrimmedText,
 });

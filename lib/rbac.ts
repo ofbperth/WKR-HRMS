@@ -20,8 +20,27 @@ function hasRmTeamAuthority(role: string) {
   return role === "RMTeam" || role === "Admin";
 }
 
+export function canAccessRiskRegister(role: string) {
+  return ["UnitManager", "RMTeam", "Executive", "Admin"].includes(role);
+}
+
+export function canManageAllRisks(role: string) {
+  return hasRmTeamAuthority(role);
+}
+
+export function canCreateHospitalRisk(role: string) {
+  return hasRmTeamAuthority(role);
+}
+
+export function canCreateUnitRiskProposal(role: string) {
+  return role === "UnitManager" || hasRmTeamAuthority(role);
+}
+
 export function canAccessPath(role: string, pathname: string) {
   if (pathname === "/" || pathname === "/dashboard") return true;
+  if (pathname.startsWith("/unit/risks")) return role === "UnitManager" || role === "Admin";
+  if (pathname.startsWith("/rm/risks")) return hasRmTeamAuthority(role);
+  if (pathname.startsWith("/executive/risks")) return role === "Executive" || role === "Admin";
   if (pathname.startsWith("/rm/triage")) return ["RMTeam", "Admin", "UnitManager"].includes(role);
   if (pathname.startsWith("/rm/search")) return ["Executive", "RMTeam", "Admin"].includes(role);
   if (pathname.startsWith("/rm")) return hasRmTeamAuthority(role);
@@ -40,6 +59,7 @@ export function canAccessApiPath(role: string, pathname: string) {
   if (pathname.startsWith("/api/onboarding/unit")) return true;
   if (pathname.startsWith("/api/internal/export-jobs/process")) return false;
   if (pathname.startsWith("/api/cron/generated-file-cleanup")) return false;
+  if (pathname.startsWith("/api/risks")) return canAccessRiskRegister(role);
   if (pathname.startsWith("/api/admin")) return role === "Admin";
   if (pathname.startsWith("/api/dashboard/executive")) return ["Executive", "RMTeam", "Admin"].includes(role);
   if (pathname.startsWith("/api/dashboard/rm")) return ["RMTeam", "Admin"].includes(role);
