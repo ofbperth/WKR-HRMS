@@ -371,4 +371,22 @@ describe("risk register core logic", () => {
     expect(suggestions[0].priorityScore).toBeGreaterThan(0);
     expect(riskSuggestionRuleLabel(suggestions[0].matchedRules[0])).toBe("Sentinel incident present");
   });
+
+  it("fails closed when risk schema tables are not ready", async () => {
+    const { getRiskListForUser, getRelatedRisksForIncident, getRiskDashboardWidget } = await import("@/lib/risk-register");
+    findMany.mockRejectedValue({ code: "P2021", meta: { modelName: "RiskRegister", table: "public.RiskRegister" } });
+    findFirst.mockResolvedValue({ id: "incident-1", incidentUnitId: "unit-a" });
+
+    const riskList = await getRiskListForUser({ id: "admin-1", role: "Admin", unitId: null }, {});
+    const related = await getRelatedRisksForIncident("incident-1", { id: "admin-1", role: "Admin", unitId: null });
+    const widget = await getRiskDashboardWidget("unit-a");
+
+    expect(riskList).toEqual({
+      data: [],
+      cards: { extreme: 0, high: 0, overdueReview: 0, needDecision: 0 },
+      meta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+    });
+    expect(related).toEqual([]);
+    expect(widget).toEqual({ highOrExtreme: 0, dueSoon: 0, overdue: 0, openActions: 0 });
+  });
 });

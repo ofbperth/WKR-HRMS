@@ -161,6 +161,15 @@ export type RiskSuggestionCandidate = {
 
 type SelectedRisk = any;
 
+function isRiskSchemaNotReadyError(error: unknown) {
+  const candidate = error as { code?: string; meta?: { modelName?: string; table?: string } } | null;
+  return Boolean(
+    candidate &&
+    ["P2021", "P2011", "P2014"].includes(candidate.code ?? "") &&
+    ["RiskRegister", "RiskIncidentLink", "RiskReview"].some((modelName) => candidate.meta?.modelName === modelName || String(candidate.meta?.table ?? "").includes(modelName))
+  );
+}
+
 function activeIncidentAnd() {
   const activeFilter = activeIncidentFilter();
   return activeFilter ? [activeFilter] : [];
@@ -495,41 +504,58 @@ function redactRiskDetailForAggregateView(risk: SelectedRisk) {
 }
 
 export async function getRiskListForUser(user: RiskAccessUser, filters: RiskFilterParams = {}): Promise<RiskListResult> {
-  const where = buildRiskWhereForUser(user, filters);
-  const rows = await prisma.riskRegister.findMany({
-    where: where as any,
-    include: riskListBaseInclude(false) as any,
-    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-  });
-  const allData = rows.map((risk) => serializeRiskSummary(user, risk as any));
-  const requestedPage = filters.page ? Number(filters.page) : 1;
-  const total = allData.length;
-  const totalPages = Math.max(1, Math.ceil(total / RISK_PAGE_SIZE));
-  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(Math.floor(requestedPage), totalPages) : 1;
-  const start = (page - 1) * RISK_PAGE_SIZE;
-  const data = allData.slice(start, start + RISK_PAGE_SIZE);
-  return {
-    data,
-    cards: {
-      extreme: allData.filter((risk) => risk.residualLevel === "Extreme" && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
-      high: allData.filter((risk) => ["High", "Extreme"].includes(risk.residualLevel) && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
-      overdueReview: allData.filter((risk) => risk.nextReviewAt && new Date(risk.nextReviewAt) < new Date() && !["CLOSED", "REJECTED"].includes(risk.status)).length,
-      needDecision: allData.filter((risk) => risk.decisionRequired).length,
-    },
-    meta: {
-      page,
-      pageSize: RISK_PAGE_SIZE,
-      total,
-      totalPages,
-    },
-  };
+  try {
+    const where = buildRiskWhereForUser(user, filters);
+    const rows = await prisma.riskRegister.findMany({
+      where: where as any,
+      include: riskListBaseInclude(false) as any,
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+    const allData = rows.map((risk) => serializeRiskSummary(user, risk as any));
+    const requestedPage = filters.page ? Number(filters.page) : 1;
+    const total = allData.length;
+    const totalPages = Math.max(1, Math.ceil(total / RISK_PAGE_SIZE));
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(Math.floor(requestedPage), totalPages) : 1;
+    const start = (page - 1) * RISK_PAGE_SIZE;
+    const data = allData.slice(start, start + RISK_PAGE_SIZE);
+    return {
+      data,
+      cards: {
+        extreme: allData.filter((risk) => risk.residualLevel === "Extreme" && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
+        high: allData.filter((risk) => ["High", "Extreme"].includes(risk.residualLevel) && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
+        overdueReview: allData.filter((risk) => risk.nextReviewAt && new Date(risk.nextReviewAt) < new Date() && !["CLOSED", "REJECTED"].includes(risk.status)).length,
+        needDecision: allData.filter((risk) => risk.decisionRequired).length,
+      },
+      meta: {
+        page,
+        pageSize: RISK_PAGE_SIZE,
+        total,
+        totalPages,
+      },
+    };
+  } catch (error) {
+    if (isRiskSchemaNotReadyError(error)) {
+      return {
+        data: [],
+        cards: { extreme: 0, high: 0, overdueReview: 0, needDecision: 0 },
+        meta: { page: 1, pageSize: RISK_PAGE_SIZE, total: 0, totalPages: 1 },
+      };
+    }
+    throw error;
+  }
 }
 
 export async function getRiskDetailForUser(id: string, user: RiskAccessUser) {
-  const risk = await prisma.riskRegister.findUnique({
-    where: { id },
-    include: riskListBaseInclude(!isAggregateOnlyRiskView(user, { scope: "UNIT", ownerUnitId: user.unitId })) as any,
-  });
+  let risk;
+  try {
+    risk = await prisma.riskRegister.findUnique({
+      where: { id },
+      include: riskListBaseInclude(!isAggregateOnlyRiskView(user, { scope: "UNIT", ownerUnitId: user.unitId })) as any,
+    });
+  } catch (error) {
+    if (isRiskSchemaNotReadyError(error)) return null;
+    throw error;
+  }
   if (!risk || !canUserViewRisk(user, risk as any)) return null;
   const aggregateOnly = isAggregateOnlyRiskView(user, risk as any);
   const shaped = aggregateOnly ? redactRiskDetailForAggregateView(risk as any) : risk;
@@ -911,22 +937,28 @@ export async function getRelatedRisksForIncident(incidentId: string, user: RiskA
     select: { id: true, incidentUnitId: true },
   });
   if (!incident) return [];
-  const links = await prisma.riskIncidentLink.findMany({
-    where: {
-      incidentId,
-      risk: buildRiskWhereForUser(user, {}) as any,
-    },
-    include: {
-      risk: {
-        include: {
-          ownerUnit: { select: { id: true, name: true } },
-          ownerTeam: { select: { id: true, name: true, code: true } },
-          incidentLinks: { select: { incidentId: true } },
+  let links;
+  try {
+    links = await prisma.riskIncidentLink.findMany({
+      where: {
+        incidentId,
+        risk: buildRiskWhereForUser(user, {}) as any,
+      },
+      include: {
+        risk: {
+          include: {
+            ownerUnit: { select: { id: true, name: true } },
+            ownerTeam: { select: { id: true, name: true, code: true } },
+            incidentLinks: { select: { incidentId: true } },
+          },
         },
       },
-    },
-    orderBy: [{ linkedAt: "desc" }, { id: "desc" }],
-  });
+      orderBy: [{ linkedAt: "desc" }, { id: "desc" }],
+    });
+  } catch (error) {
+    if (isRiskSchemaNotReadyError(error)) return [];
+    throw error;
+  }
   return links
     .map((link) => {
       const risk = link.risk as any;
@@ -951,57 +983,62 @@ export async function getRiskSuggestionsForRm() {
   const now = new Date();
   const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() - 90);
-  const incidents = await prisma.incident.findMany({
-    where: {
-      occurredAt: { gte: cutoff },
-      status: { not: "Rejected" },
-      AND: activeIncidentAnd(),
-    } as any,
-    select: {
-      id: true,
-      incidentNo: true,
-      title: true,
-      occurredAt: true,
-      severity: true,
-      isSentinel: true,
-      simpleCategory: true,
-      incidentUnitId: true,
-      incidentUnit: { select: { id: true, name: true } },
-      riskCodeId: true,
-      riskCode: { select: { id: true, code: true, nameTh: true, simpleCategory: true } },
-      incidentTeams: { select: { teamId: true, team: { select: { id: true, name: true, code: true } } } },
-    },
-    orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-    take: 500,
-  });
-  const existingRisks = await prisma.riskRegister.findMany({
-    where: {
-      status: { in: ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED"] },
-    },
-    select: {
-      id: true,
-      riskNo: true,
-      title: true,
-      status: true,
-      scope: true,
-      ownerUnitId: true,
-      ownerTeamId: true,
-      ownerUnit: { select: { id: true, name: true } },
-      ownerTeam: { select: { id: true, name: true, code: true } },
-      incidentLinks: {
-        select: {
-          incidentId: true,
-          incident: {
-            select: {
-              riskCodeId: true,
+  try {
+    const incidents = await prisma.incident.findMany({
+      where: {
+        occurredAt: { gte: cutoff },
+        status: { not: "Rejected" },
+        AND: activeIncidentAnd(),
+      } as any,
+      select: {
+        id: true,
+        incidentNo: true,
+        title: true,
+        occurredAt: true,
+        severity: true,
+        isSentinel: true,
+        simpleCategory: true,
+        incidentUnitId: true,
+        incidentUnit: { select: { id: true, name: true } },
+        riskCodeId: true,
+        riskCode: { select: { id: true, code: true, nameTh: true, simpleCategory: true } },
+        incidentTeams: { select: { teamId: true, team: { select: { id: true, name: true, code: true } } } },
+      },
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+      take: 500,
+    });
+    const existingRisks = await prisma.riskRegister.findMany({
+      where: {
+        status: { in: ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED"] },
+      },
+      select: {
+        id: true,
+        riskNo: true,
+        title: true,
+        status: true,
+        scope: true,
+        ownerUnitId: true,
+        ownerTeamId: true,
+        ownerUnit: { select: { id: true, name: true } },
+        ownerTeam: { select: { id: true, name: true, code: true } },
+        incidentLinks: {
+          select: {
+            incidentId: true,
+            incident: {
+              select: {
+                riskCodeId: true,
+              },
             },
           },
         },
       },
-    },
-    take: 300,
-  });
-  return buildRiskSuggestionsForRm(incidents, existingRisks, now);
+      take: 300,
+    });
+    return buildRiskSuggestionsForRm(incidents, existingRisks, now);
+  } catch (error) {
+    if (isRiskSchemaNotReadyError(error)) return [];
+    throw error;
+  }
 }
 
 export function buildRiskSuggestionsForRm(incidents: Array<any>, existingRisks: Array<any>, now = new Date()): RiskSuggestionCandidate[] {
@@ -1088,26 +1125,34 @@ export async function getRiskDashboardWidget(unitId: string | null) {
   if (!unitId) {
     return { highOrExtreme: 0, dueSoon: 0, overdue: 0, openActions: 0 };
   }
-  const rows = await prisma.riskRegister.findMany({
-    where: {
-      scope: "UNIT",
-      ownerUnitId: unitId,
-      status: { in: ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED"] },
-    },
-    include: {
-      incidentLinks: {
-        select: {
-          incident: {
-            select: {
-              actionPlans: {
-                select: { status: true, dueDate: true },
+  let rows;
+  try {
+    rows = await prisma.riskRegister.findMany({
+      where: {
+        scope: "UNIT",
+        ownerUnitId: unitId,
+        status: { in: ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED"] },
+      },
+      include: {
+        incidentLinks: {
+          select: {
+            incident: {
+              select: {
+                actionPlans: {
+                  select: { status: true, dueDate: true },
+                },
               },
             },
           },
         },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (isRiskSchemaNotReadyError(error)) {
+      return { highOrExtreme: 0, dueSoon: 0, overdue: 0, openActions: 0 };
+    }
+    throw error;
+  }
   const now = new Date();
   const next30 = new Date(now);
   next30.setDate(next30.getDate() + 30);
