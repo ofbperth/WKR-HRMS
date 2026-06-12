@@ -1,15 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/stat-cards";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pagination } from "@/components/ui/pagination";
 import { RiskCreatePanel, RiskDetailActions, UnlinkRiskIncidentButton } from "@/components/risks/risk-client";
 import { getActiveTeams, getActiveUnits, getActiveUsers } from "@/lib/incident-query";
-import {
-  canCreateHospitalRisk,
-  canCreateUnitRiskProposal,
-  canManageAllRisks,
-} from "@/lib/rbac";
+import { canCreateHospitalRisk, canCreateUnitRiskProposal, canManageAllRisks } from "@/lib/rbac";
 import {
   getRiskDetailForUser,
   getRiskListForUser,
@@ -18,6 +14,7 @@ import {
   riskReviewFrequencyLabels,
   riskScopeLabels,
   riskStatusLabels,
+  riskSuggestionRuleLabel,
   riskTrendLabels,
   riskTypeLabels,
 } from "@/lib/risk-register";
@@ -126,19 +123,68 @@ export async function RiskBoard({
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {suggestions.map((suggestion) => (
-              <div key={suggestion.key} className="rounded border p-3">
-                <div className="font-semibold">
-                  {suggestion.riskCode?.code} {suggestion.riskCode?.nameTh}
+              <div key={suggestion.key} className="space-y-3 rounded border p-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">
+                      {suggestion.riskCode?.code} {suggestion.riskCode?.nameTh}
+                    </div>
+                    <div className="text-slate-600">
+                      {suggestion.unit?.name ?? "-"} · {suggestion.team?.name ?? "No team"} · {suggestion.incidentCount} incidents
+                    </div>
+                    <div className="text-slate-600">
+                      Priority {suggestion.priorityScore} · 30d activity {suggestion.recent30Count} · High severity {suggestion.highSeverityCount} · Sentinel {suggestion.sentinelCount}
+                    </div>
+                  </div>
+                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${suggestion.recommendation === "REVIEW_EXISTING" ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}>
+                    {suggestion.recommendation === "REVIEW_EXISTING" ? "Review existing risk" : "Create new risk"}
+                  </div>
                 </div>
-                <div className="text-slate-600">
-                  {suggestion.unit?.name ?? "-"} · {suggestion.team?.name ?? "No team"} · {suggestion.incidentCount} incidents · {suggestion.reason}
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {suggestion.matchedRules.map((rule) => (
+                    <span key={`${suggestion.key}-${rule}`} className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+                      {riskSuggestionRuleLabel(rule)}
+                    </span>
+                  ))}
                 </div>
-                <Link
-                  href={`${basePath}?title=${encodeURIComponent(`${suggestion.riskCode?.code ?? "RISK"} cluster in ${suggestion.unit?.name ?? "unit"}`)}&description=${encodeURIComponent(`Suggested from ${suggestion.incidentCount} incidents in 90 days`)}`}
-                  className="mt-2 inline-block text-blue-700 underline"
-                >
-                  Use as create draft
-                </Link>
+
+                {suggestion.existingMatches.length > 0 ? (
+                  <div className="rounded-md bg-amber-50 p-3 text-sm">
+                    <div className="font-medium text-amber-900">Existing matching risks</div>
+                    <div className="mt-2 space-y-2">
+                      {suggestion.existingMatches.map((match) => (
+                        <div key={match.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-white p-2">
+                          <div>
+                            <div className="font-medium">
+                              {match.riskNo} {match.title}
+                            </div>
+                            <div className="text-slate-600">
+                              {match.scope} · {match.status} · {match.ownerUnit?.name ?? "Hospital"} · linked incidents {match.linkedIncidentCount}
+                            </div>
+                          </div>
+                          <Link className="text-blue-700 underline" href={match.detailHref}>
+                            Review risk
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={`${basePath}?title=${encodeURIComponent(`${suggestion.riskCode?.code ?? "RISK"} cluster in ${suggestion.unit?.name ?? "unit"}`)}&description=${encodeURIComponent(`Suggested from ${suggestion.incidentCount} incidents in 90 days. Rules: ${suggestion.matchedRules.map(riskSuggestionRuleLabel).join(", ")}`)}&ownerUnitId=${encodeURIComponent(suggestion.unit?.id ?? "")}&ownerTeamId=${encodeURIComponent(suggestion.team?.id ?? "")}`}
+                    className="text-blue-700 underline"
+                  >
+                    Create draft from suggestion
+                  </Link>
+                  {suggestion.existingMatches[0] ? (
+                    <Link className="text-blue-700 underline" href={suggestion.existingMatches[0].detailHref}>
+                      Open top matching risk
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             ))}
           </CardContent>
@@ -234,7 +280,7 @@ export async function RiskDetailPage({ user, id }: { user: any; id: string }) {
             {riskScopeLabels[risk.scope] ?? risk.scope} · {riskStatusLabels[risk.status] ?? risk.status} · residual {risk.residualScore} ({risk.residualLevel})
           </p>
         </div>
-        <div className="text-sm text-right text-slate-600">
+        <div className="text-right text-sm text-slate-600">
           <div>Owner unit: {risk.ownerUnit?.name ?? "-"}</div>
           <div>Owner team: {risk.ownerTeam?.name ?? "-"}</div>
           <div>Trend: {riskTrendLabels[risk.trend] ?? risk.trend}</div>

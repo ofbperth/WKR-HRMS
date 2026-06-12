@@ -295,4 +295,80 @@ describe("risk register core logic", () => {
     expect(aggregate.nrlsBreakdown[0]).toEqual({ key: "CPM101", count: 2 });
     expect(aggregate.simpleBreakdown[0]).toEqual({ key: "M2", count: 2 });
   });
+
+  it("builds prioritized RM suggestions and prefers existing matching risks", async () => {
+    const { buildRiskSuggestionsForRm, riskSuggestionRuleLabel } = await import("@/lib/risk-register");
+    const now = new Date("2026-06-12T00:00:00.000Z");
+    const incidents = [
+      {
+        id: "inc-1",
+        incidentNo: "INC-1",
+        title: "Medication delay 1",
+        occurredAt: new Date("2026-06-10T00:00:00.000Z"),
+        severity: "I",
+        isSentinel: true,
+        simpleCategory: "M2",
+        incidentUnitId: "unit-a",
+        incidentUnit: { id: "unit-a", name: "ICU" },
+        riskCodeId: "rc-1",
+        riskCode: { id: "rc-1", code: "CPM101", nameTh: "Medication", simpleCategory: "M2" },
+        incidentTeams: [{ teamId: "team-a", team: { id: "team-a", name: "Ward Team", code: "WT" } }],
+      },
+      {
+        id: "inc-2",
+        incidentNo: "INC-2",
+        title: "Medication delay 2",
+        occurredAt: new Date("2026-06-08T00:00:00.000Z"),
+        severity: "H",
+        isSentinel: false,
+        simpleCategory: "M2",
+        incidentUnitId: "unit-a",
+        incidentUnit: { id: "unit-a", name: "ICU" },
+        riskCodeId: "rc-1",
+        riskCode: { id: "rc-1", code: "CPM101", nameTh: "Medication", simpleCategory: "M2" },
+        incidentTeams: [{ teamId: "team-a", team: { id: "team-a", name: "Ward Team", code: "WT" } }],
+      },
+      {
+        id: "inc-3",
+        incidentNo: "INC-3",
+        title: "Medication delay 3",
+        occurredAt: new Date("2026-05-25T00:00:00.000Z"),
+        severity: "F",
+        isSentinel: false,
+        simpleCategory: "M2",
+        incidentUnitId: "unit-a",
+        incidentUnit: { id: "unit-a", name: "ICU" },
+        riskCodeId: "rc-1",
+        riskCode: { id: "rc-1", code: "CPM101", nameTh: "Medication", simpleCategory: "M2" },
+        incidentTeams: [{ teamId: "team-a", team: { id: "team-a", name: "Ward Team", code: "WT" } }],
+      },
+    ];
+    const existingRisks = [
+      {
+        id: "risk-1",
+        riskNo: "RISK-2026-0007",
+        title: "Medication administration drift",
+        status: "ACTIVE",
+        scope: "UNIT",
+        ownerUnitId: "unit-a",
+        ownerTeamId: "team-a",
+        ownerUnit: { id: "unit-a", name: "ICU" },
+        ownerTeam: { id: "team-a", name: "Ward Team", code: "WT" },
+        incidentLinks: [{ incidentId: "inc-old", incident: { riskCodeId: "rc-1" } }],
+      },
+    ];
+
+    const suggestions = buildRiskSuggestionsForRm(incidents, existingRisks, now);
+
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].matchedRules).toEqual([
+      "SENTINEL_PRESENT",
+      "HIGH_SEVERITY_90D",
+      "REPEAT_RISK_CODE_UNIT_90D",
+    ]);
+    expect(suggestions[0].recommendation).toBe("REVIEW_EXISTING");
+    expect(suggestions[0].existingMatches[0]?.riskNo).toBe("RISK-2026-0007");
+    expect(suggestions[0].priorityScore).toBeGreaterThan(0);
+    expect(riskSuggestionRuleLabel(suggestions[0].matchedRules[0])).toBe("Sentinel incident present");
+  });
 });

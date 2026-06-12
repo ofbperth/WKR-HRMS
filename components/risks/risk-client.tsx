@@ -48,7 +48,7 @@ export function RiskCreatePanel({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(defaults?.title || defaults?.description));
   const [form, setForm] = useState({
     title: defaults?.title ?? "",
     description: defaults?.description ?? "",

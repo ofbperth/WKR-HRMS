@@ -7,6 +7,14 @@ export default async function RmRiskProposalsPage({ searchParams }: { searchPara
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const filters = Object.fromEntries(Object.entries(searchParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]));
+  const createDefaults = {
+    title: filters.title,
+    description: filters.description,
+    scope: "HOSPITAL",
+    status: "ACTIVE",
+    ownerUnitId: filters.ownerUnitId,
+    ownerTeamId: filters.ownerTeamId,
+  };
   return (
     <AppShell user={user}>
       <RiskBoard
@@ -16,6 +24,7 @@ export default async function RmRiskProposalsPage({ searchParams }: { searchPara
         basePath="/rm/risks/proposals"
         filters={{ ...filters, status: filters.status ?? "PROPOSED" }}
         showSuggestions
+        createDefaults={createDefaults}
       />
     </AppShell>
   );

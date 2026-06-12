@@ -122,6 +122,43 @@ export type RiskListResult = {
   };
 };
 
+export type RiskSuggestionRule =
+  | "INCIDENT_VOLUME_90D"
+  | "HIGH_SEVERITY_90D"
+  | "SENTINEL_PRESENT"
+  | "REPEAT_RISK_CODE_UNIT_90D";
+
+export type RiskSuggestionExistingMatch = {
+  id: string;
+  riskNo: string;
+  title: string;
+  status: string;
+  scope: string;
+  ownerUnit?: { id: string; name: string } | null;
+  ownerTeam?: { id: string; name: string; code: string | null } | null;
+  linkedIncidentCount: number;
+  detailHref: string;
+};
+
+export type RiskSuggestionCandidate = {
+  key: string;
+  riskCodeId: string | null;
+  riskCode?: { id: string; code: string; nameTh: string | null; simpleCategory: string | null } | null;
+  simpleCategory: string | null;
+  unit?: { id: string; name: string } | null;
+  team?: { id: string; name: string; code: string | null } | null;
+  incidents: Array<any>;
+  incidentCount: number;
+  highSeverityCount: number;
+  sentinelCount: number;
+  recent30Count: number;
+  matchedRules: RiskSuggestionRule[];
+  priorityScore: number;
+  recommendation: "CREATE_NEW" | "REVIEW_EXISTING";
+  existingMatches: RiskSuggestionExistingMatch[];
+  summaryReason: string;
+};
+
 type SelectedRisk = any;
 
 function activeIncidentAnd() {
@@ -225,6 +262,21 @@ export function hasOpenRca(incident: any) {
 
 export function openActionCountForIncident(incident: any) {
   return (incident.actionPlans ?? []).filter((action: any) => action.status !== "Verified").length;
+}
+
+export function riskSuggestionRuleLabel(rule: RiskSuggestionRule) {
+  switch (rule) {
+    case "SENTINEL_PRESENT":
+      return "Sentinel incident present";
+    case "HIGH_SEVERITY_90D":
+      return "2 or more high severity incidents in 90 days";
+    case "INCIDENT_VOLUME_90D":
+      return "5 or more incidents in 90 days";
+    case "REPEAT_RISK_CODE_UNIT_90D":
+      return "Repeat same risk code in same unit";
+    default:
+      return rule;
+  }
 }
 
 export function overdueActionCountForIncident(incident: any, now = new Date()) {
@@ -922,9 +974,42 @@ export async function getRiskSuggestionsForRm() {
     orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
     take: 500,
   });
+  const existingRisks = await prisma.riskRegister.findMany({
+    where: {
+      status: { in: ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED"] },
+    },
+    select: {
+      id: true,
+      riskNo: true,
+      title: true,
+      status: true,
+      scope: true,
+      ownerUnitId: true,
+      ownerTeamId: true,
+      ownerUnit: { select: { id: true, name: true } },
+      ownerTeam: { select: { id: true, name: true, code: true } },
+      incidentLinks: {
+        select: {
+          incidentId: true,
+          incident: {
+            select: {
+              riskCodeId: true,
+            },
+          },
+        },
+      },
+    },
+    take: 300,
+  });
+  return buildRiskSuggestionsForRm(incidents, existingRisks, now);
+}
+
+export function buildRiskSuggestionsForRm(incidents: Array<any>, existingRisks: Array<any>, now = new Date()): RiskSuggestionCandidate[] {
+  const cutoff30 = new Date(now);
+  cutoff30.setDate(cutoff30.getDate() - 30);
   const map = new Map<string, any>();
   for (const incident of incidents) {
-    const teamKeys = incident.incidentTeams.length ? incident.incidentTeams.map((item) => item.teamId) : ["no-team"];
+    const teamKeys = incident.incidentTeams.length ? incident.incidentTeams.map((item: any) => item.teamId) : ["no-team"];
     for (const teamKey of teamKeys) {
       const key = `${incident.riskCodeId}::${incident.incidentUnitId}::${teamKey}`;
       const current = map.get(key) ?? {
@@ -933,7 +1018,7 @@ export async function getRiskSuggestionsForRm() {
         riskCode: incident.riskCode,
         simpleCategory: incident.simpleCategory,
         unit: incident.incidentUnit,
-        team: incident.incidentTeams.find((item) => item.teamId === teamKey)?.team ?? null,
+        team: incident.incidentTeams.find((item: any) => item.teamId === teamKey)?.team ?? null,
         incidents: [],
       };
       current.incidents.push(incident);
@@ -944,30 +1029,58 @@ export async function getRiskSuggestionsForRm() {
     .map((cluster) => {
       const highSeverityCount = cluster.incidents.filter((incident: any) => isHighSeverityIncident(incident.severity)).length;
       const sentinelCount = cluster.incidents.filter((incident: any) => incident.isSentinel).length;
-      const sameRiskCodeCount = cluster.incidents.length;
-      const qualifies =
-        sameRiskCodeCount >= 5 ||
-        highSeverityCount >= 2 ||
-        sentinelCount >= 1 ||
-        sameRiskCodeCount >= 3;
+      const incidentCount = cluster.incidents.length;
+      const recent30Count = cluster.incidents.filter((incident: any) => new Date(incident.occurredAt) >= cutoff30).length;
+      const matchedRules: RiskSuggestionRule[] = [];
+      if (sentinelCount >= 1) matchedRules.push("SENTINEL_PRESENT");
+      if (highSeverityCount >= 2) matchedRules.push("HIGH_SEVERITY_90D");
+      if (incidentCount >= 5) matchedRules.push("INCIDENT_VOLUME_90D");
+      if (cluster.riskCodeId && cluster.unit?.id && incidentCount >= 3) matchedRules.push("REPEAT_RISK_CODE_UNIT_90D");
+      const existingMatches = existingRisks
+        .filter((risk) => {
+          const riskCodeIds = new Set((risk.incidentLinks ?? []).map((link: any) => link.incident?.riskCodeId).filter(Boolean));
+          if (!cluster.riskCodeId || !riskCodeIds.has(cluster.riskCodeId)) return false;
+          if (risk.scope === "UNIT" && risk.ownerUnitId !== cluster.unit?.id) return false;
+          if (cluster.team?.id && risk.ownerTeamId && risk.ownerTeamId !== cluster.team.id) return false;
+          return true;
+        })
+        .map((risk) => ({
+          id: risk.id,
+          riskNo: risk.riskNo,
+          title: risk.title,
+          status: risk.status,
+          scope: risk.scope,
+          ownerUnit: risk.ownerUnit ?? null,
+          ownerTeam: risk.ownerTeam ?? null,
+          linkedIncidentCount: risk.incidentLinks.length,
+          detailHref: `/rm/risks/${risk.id}`,
+        }))
+        .sort((a, b) => {
+          if (a.scope !== b.scope) return a.scope === "UNIT" ? -1 : 1;
+          return b.linkedIncidentCount - a.linkedIncidentCount;
+        })
+        .slice(0, 3);
+      const priorityScore =
+        sentinelCount * 100 +
+        highSeverityCount * 20 +
+        incidentCount * 5 +
+        recent30Count * 3 +
+        matchedRules.length * 10;
       return {
         ...cluster,
-        qualifies,
-        incidentCount: sameRiskCodeCount,
+        incidentCount,
         highSeverityCount,
         sentinelCount,
-        reason:
-          sentinelCount >= 1
-            ? "sentinel present"
-            : highSeverityCount >= 2
-              ? "2 or more high severity incidents in 90 days"
-              : sameRiskCodeCount >= 5
-                ? "5 or more incidents in 90 days"
-                : "repeat same risk code in same unit",
+        recent30Count,
+        matchedRules,
+        priorityScore,
+        recommendation: existingMatches.length > 0 ? "REVIEW_EXISTING" : "CREATE_NEW",
+        existingMatches,
+        summaryReason: matchedRules.map(riskSuggestionRuleLabel).join(" | "),
       };
     })
-    .filter((cluster) => cluster.qualifies)
-    .sort((a, b) => b.sentinelCount - a.sentinelCount || b.highSeverityCount - a.highSeverityCount || b.incidentCount - a.incidentCount)
+    .filter((cluster) => cluster.matchedRules.length > 0)
+    .sort((a, b) => b.priorityScore - a.priorityScore || b.incidentCount - a.incidentCount || b.highSeverityCount - a.highSeverityCount)
     .slice(0, 20);
 }
 
