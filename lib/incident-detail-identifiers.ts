@@ -23,29 +23,40 @@ export type PatientIdentifierDetection = {
 type PatientIdentifierRule = {
   category: PatientIdentifierCategory;
   pattern: RegExp;
+  valueGroup?: number;
   allowMatch?: (value: string) => boolean;
 };
 
-const thaiCitizenIdPattern = /(^|[^\d])(\d(?:[\s-]?\d){12})(?=$|[^\d])/g;
-const thaiPhonePattern = /(^|[^\d])((?:\+66|0)(?:[\s-]?\d){8,9})(?=$|[^\d])/g;
+const thaiLetter = String.raw`\p{Script=Thai}\p{M}`;
+const latinLetter = "A-Za-z";
+const nameCharacter = `${thaiLetter}${latinLetter}`;
+const namePart = `[${nameCharacter}][${nameCharacter}.'-]{1,}`;
+const multiPartName = `${namePart}(?:\\s+${namePart}){1,2}`;
+
+const thaiCitizenIdPattern = /(^|[^\d])(\d(?:[\s-]?\d){12})(?=$|[^\d])/gu;
+const thaiPhonePattern = /(^|[^\d])((?:\+66|0)(?:[\s-]?\d){8,9})(?=$|[^\d])/gu;
 
 const patientIdentifierRules: readonly PatientIdentifierRule[] = [
   {
     category: "HN",
-    pattern: /\bHN\s*[:#-]?\s*[A-Za-z0-9-]{3,}\b/gi,
+    pattern: /\b(HN(?:\s*[:#-]\s*|\s+)\d{3,})\b/giu,
+    valueGroup: 1,
   },
   {
     category: "AN",
-    pattern: /\bAN\s*[:#-]?\s*[A-Za-z0-9-]{3,}\b/gi,
+    pattern: /\b(AN(?:\s*[:#-]\s*|\s+)\d{3,})\b/giu,
+    valueGroup: 1,
   },
   {
     category: "เลขบัตรประชาชน",
     pattern: thaiCitizenIdPattern,
+    valueGroup: 2,
     allowMatch: (value) => normalizeDigits(value).length === 13,
   },
   {
     category: "เบอร์โทรศัพท์",
     pattern: thaiPhonePattern,
+    valueGroup: 2,
     allowMatch: (value) => {
       const digits = normalizeDigits(value);
       return digits.length >= 9 && digits.length <= 11;
@@ -53,19 +64,23 @@ const patientIdentifierRules: readonly PatientIdentifierRule[] = [
   },
   {
     category: "อีเมล",
-    pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+    pattern: /\b([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/giu,
+    valueGroup: 1,
   },
   {
     category: "Passport",
-    pattern: /(?:passport|เลข\s*passport)\s*[:#-]?\s*[A-Z0-9-]{5,}\b/gi,
+    pattern: /\b((?:passport|เลข\s*passport)\s*[:#-]?\s*[A-Z0-9-]{5,})\b/giu,
+    valueGroup: 1,
   },
   {
     category: "ชื่อผู้ป่วย",
-    pattern: /(ผู้ป่วยชื่อ|คนไข้ชื่อ|ชื่อผู้ป่วย|ชื่อ-สกุล)\s*[:#-]?\s*[A-Za-zก-๙][A-Za-zก-๙\s.'-]{1,}/gi,
+    pattern: new RegExp(`((?:ผู้ป่วยชื่อ|คนไข้ชื่อ|ชื่อผู้ป่วย|ชื่อ-สกุล)\\s*[:#-]?\\s*${multiPartName})`, "gu"),
+    valueGroup: 1,
   },
   {
     category: "ชื่อผู้ป่วย",
-    pattern: /(นาย|นาง|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*[A-Za-zก-๙][A-Za-zก-๙.'-]{1,}(?:\s+[A-Za-zก-๙][A-Za-zก-๙.'-]{1,}){0,2}/gi,
+    pattern: new RegExp(`((?:นาย|นาง|นางสาว)\\s+${multiPartName}|(?:น\\.ส\\.|ด\\.ช\\.|ด\\.ญ\\.)\\s*${multiPartName})`, "gu"),
+    valueGroup: 1,
   },
 ];
 
@@ -79,7 +94,7 @@ function pushDetections(text: string, detections: PatientIdentifierDetection[], 
 
   while ((match = pattern.exec(text)) !== null) {
     const matchedValue = match[0];
-    const capturedValue = match[2] ?? matchedValue;
+    const capturedValue = rule.valueGroup ? match[rule.valueGroup] ?? matchedValue : matchedValue;
 
     if (rule.allowMatch && !rule.allowMatch(capturedValue)) {
       continue;

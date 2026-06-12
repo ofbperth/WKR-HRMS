@@ -52,8 +52,8 @@ describe("incident and RCA validation", () => {
   });
 
   it("blocks incident detail when patient name markers or Thai title plus name are detected", () => {
-    expect(createIncidentSchema.safeParse({ ...validIncident, description: "ผู้ป่วยชื่อ สมชาย มีอาการเวียนศีรษะหลังได้รับยา" }).success).toBe(false);
-    expect(createIncidentSchema.safeParse({ ...validIncident, description: "นางสาวสุดา ได้รับเอกสารสลับแฟ้มก่อนเข้าห้องตรวจ" }).success).toBe(false);
+    expect(createIncidentSchema.safeParse({ ...validIncident, description: "ผู้ป่วยชื่อ สมชาย ใจดี มีอาการเวียนศีรษะหลังได้รับยา" }).success).toBe(false);
+    expect(createIncidentSchema.safeParse({ ...validIncident, description: "นางสาว สุดา ใจดี ได้รับเอกสารสลับแฟ้มก่อนเข้าห้องตรวจ" }).success).toBe(false);
   });
 
   it("keeps the rule scoped to incident detail only", () => {
@@ -86,7 +86,7 @@ describe("incident and RCA validation", () => {
   it("server-side validation blocks update payloads through the reporter update schema", () => {
     const result = reporterUpdateIncidentSchema.safeParse({
       id: "incident-1",
-      description: "ชื่อผู้ป่วย: Jane Doe ถูกใส่มาใน incident detail",
+      description: "ชื่อผู้ป่วย: Jane Doe Smith ถูกใส่มาใน incident detail",
     });
 
     expect(result.success).toBe(false);

@@ -30,7 +30,7 @@ describe("incident detail identifier detection", () => {
   });
 
   it("detects patient name markers", () => {
-    const result = validateIncidentDetailNoIdentifiers("ผู้ป่วยชื่อ สมใจ แจ้งว่าได้รับยาไม่ตรงเวลา");
+    const result = validateIncidentDetailNoIdentifiers("ผู้ป่วยชื่อ สมใจ ใจดี แจ้งว่าได้รับยาไม่ตรงเวลา");
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
@@ -39,12 +39,27 @@ describe("incident detail identifier detection", () => {
   });
 
   it("detects Thai title plus name patterns", () => {
-    const result = validateIncidentDetailNoIdentifiers("น.ส.กานดา มารับเอกสารผิดแฟ้มในช่วงเช้า");
+    const result = validateIncidentDetailNoIdentifiers("น.ส. กานดา ใจดี มารับเอกสารผิดแฟ้มในช่วงเช้า");
 
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.categories).toContain("ชื่อผู้ป่วย");
     }
+  });
+
+  it("does not flag ordinary English words that begin with an", () => {
+    expect(validateIncidentDetailNoIdentifiers("analysis delayed due to workflow issue")).toEqual({
+      valid: true,
+      message: null,
+      categories: [],
+      detections: [],
+    });
+    expect(validateIncidentDetailNoIdentifiers("anaphylaxis after medication administration")).toEqual({
+      valid: true,
+      message: null,
+      categories: [],
+      detections: [],
+    });
   });
 
   it("allows normal incident detail without identifiers", () => {
