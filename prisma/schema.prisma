@@ -46,6 +46,12 @@ model User {
   exportJobs       ExportJob[]
   invitesSent       UserInvite[] @relation("InvitedBy")
   assignedIncidentTeams IncidentTeam[] @relation("IncidentTeamAssignedBy")
+  createdRisks      RiskRegister[] @relation("RiskCreatedBy")
+  approvedRisks     RiskRegister[] @relation("RiskApprovedBy")
+  closedRisks       RiskRegister[] @relation("RiskClosedBy")
+  sponsoredRisks    RiskRegister[] @relation("RiskExecutiveSponsor")
+  linkedRiskIncidents RiskIncidentLink[] @relation("RiskLinkedBy")
+  riskReviews       RiskReview[] @relation("RiskReviewedBy")
 }
 
 model Unit {
@@ -60,6 +66,7 @@ model Unit {
   userInvites       UserInvite[]
   reportedIncidents Incident[] @relation("ReporterUnit")
   incidentIncidents Incident[] @relation("IncidentUnit")
+  ownedRisks        RiskRegister[] @relation("RiskOwnerUnit")
 }
 
 model Team {
@@ -73,6 +80,7 @@ model Team {
   updatedAt   DateTime @updatedAt
 
   incidentTeams IncidentTeam[]
+  ownedRisks    RiskRegister[] @relation("RiskOwnerTeam")
 }
 
 model RiskCode {
@@ -140,6 +148,7 @@ model Incident {
   comments    Comment[]
   attachments Attachment[]
   incidentTeams IncidentTeam[]
+  riskLinks   RiskIncidentLink[]
 
   @@index([incidentNo])
   @@index([createdAt])
@@ -301,6 +310,90 @@ model AuditLog {
   @@index([action])
   @@index([entityType])
   @@index([entityType, entityId, createdAt])
+}
+
+model RiskRegister {
+  id                  String   @id @default(cuid())
+  riskNo              String   @unique
+  title               String
+  description         String
+  scope               String
+  status              String
+  riskType            String
+  riskDomain          String?
+  ownerUnitId         String?
+  ownerTeamId         String?
+  executiveSponsorId  String?
+  createdById         String
+  approvedById        String?
+  approvedAt          DateTime?
+  closedById          String?
+  closedAt            DateTime?
+  inherentLikelihood  Int
+  inherentImpact      Int
+  residualLikelihood  Int
+  residualImpact      Int
+  controlEffectiveness String
+  trend               String
+  reviewFrequency     String
+  nextReviewAt        DateTime?
+  decisionRequired    Boolean  @default(false)
+  decisionNote        String?
+  acceptedReason      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  ownerUnit         Unit?   @relation("RiskOwnerUnit", fields: [ownerUnitId], references: [id], onDelete: SetNull)
+  ownerTeam         Team?   @relation("RiskOwnerTeam", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  executiveSponsor  User?   @relation("RiskExecutiveSponsor", fields: [executiveSponsorId], references: [id], onDelete: SetNull)
+  createdBy         User    @relation("RiskCreatedBy", fields: [createdById], references: [id])
+  approvedBy        User?   @relation("RiskApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  closedBy          User?   @relation("RiskClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  incidentLinks     RiskIncidentLink[]
+  reviews           RiskReview[]
+
+  @@index([riskNo])
+  @@index([scope, status])
+  @@index([ownerUnitId])
+  @@index([ownerTeamId])
+  @@index([nextReviewAt])
+  @@index([decisionRequired])
+}
+
+model RiskIncidentLink {
+  id         String   @id @default(cuid())
+  riskId     String
+  incidentId String
+  linkedById String?
+  linkedAt   DateTime @default(now())
+  note       String?
+
+  risk     RiskRegister @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  incident Incident     @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  linkedBy User?        @relation("RiskLinkedBy", fields: [linkedById], references: [id], onDelete: SetNull)
+
+  @@unique([riskId, incidentId])
+  @@index([riskId])
+  @@index([incidentId])
+}
+
+model RiskReview {
+  id                   String   @id @default(cuid())
+  riskId               String
+  reviewedById         String?
+  reviewDate           DateTime
+  residualLikelihood   Int
+  residualImpact       Int
+  controlEffectiveness String
+  trend                String
+  summary              String
+  nextReviewAt         DateTime?
+  createdAt            DateTime @default(now())
+
+  risk       RiskRegister @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  reviewedBy User?        @relation("RiskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([riskId, reviewDate])
 }
 
 model MonthlyReport {

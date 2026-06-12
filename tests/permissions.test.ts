@@ -40,6 +40,11 @@ describe("role based access control", () => {
     expect(canAccessPath("Admin", "/executive/dashboard")).toBe(true);
     expect(canAccessApiPath("Executive", "/api/dashboard/executive")).toBe(true);
     expect(canAccessApiPath("Executive", "/api/incidents")).toBe(false);
+    expect(canAccessPath("Executive", "/executive/risks")).toBe(true);
+    expect(canAccessPath("Executive", "/rm/risks")).toBe(false);
+    expect(canAccessApiPath("Executive", "/api/risks")).toBe(true);
+    expect(canAccessPath("Reporter", "/unit/risks")).toBe(false);
+    expect(canAccessApiPath("Reporter", "/api/risks")).toBe(false);
   });
 
   it("restricts direct sensitive identifier API access to RM/Admin only", () => {

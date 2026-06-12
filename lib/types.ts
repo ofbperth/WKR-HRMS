@@ -30,6 +30,24 @@ export type ExportKind = typeof EXPORT_KIND_VALUES[number];
 export const EXPORT_JOB_STATUS_VALUES = ["Queued", "Running", "Succeeded", "Failed", "Expired"] as const;
 export type ExportJobStatus = typeof EXPORT_JOB_STATUS_VALUES[number];
 
+export const RISK_SCOPE_VALUES = ["UNIT", "HOSPITAL"] as const;
+export type RiskScope = typeof RISK_SCOPE_VALUES[number];
+
+export const RISK_STATUS_VALUES = ["PROPOSED", "ACTIVE", "MONITORING", "ACCEPTED", "CLOSED", "REJECTED"] as const;
+export type RiskStatus = typeof RISK_STATUS_VALUES[number];
+
+export const RISK_TYPE_VALUES = ["CLINICAL", "OPERATIONAL", "STRATEGIC", "COMPLIANCE", "FINANCIAL", "IT"] as const;
+export type RiskType = typeof RISK_TYPE_VALUES[number];
+
+export const RISK_CONTROL_EFFECTIVENESS_VALUES = ["GOOD", "PARTIAL", "WEAK", "NOT_TESTED"] as const;
+export type RiskControlEffectiveness = typeof RISK_CONTROL_EFFECTIVENESS_VALUES[number];
+
+export const RISK_TREND_VALUES = ["WORSE", "STABLE", "BETTER", "UNKNOWN"] as const;
+export type RiskTrend = typeof RISK_TREND_VALUES[number];
+
+export const RISK_REVIEW_FREQUENCY_VALUES = ["MONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"] as const;
+export type RiskReviewFrequency = typeof RISK_REVIEW_FREQUENCY_VALUES[number];
+
 export function isRole(value: string): value is Role {
   return (ROLE_VALUES as readonly string[]).includes(value);
 }
@@ -122,4 +140,36 @@ export type DbAuditLog = {
   oldValue: string | null;
   newValue: string | null;
   createdAt: Date;
+};
+
+export type DbRiskRegister = {
+  id: string;
+  riskNo: string;
+  title: string;
+  description: string;
+  scope: RiskScope | string;
+  status: RiskStatus | string;
+  riskType: RiskType | string;
+  riskDomain?: string | null;
+  ownerUnitId?: string | null;
+  ownerTeamId?: string | null;
+  executiveSponsorId?: string | null;
+  createdById: string;
+  approvedById?: string | null;
+  approvedAt?: Date | null;
+  closedById?: string | null;
+  closedAt?: Date | null;
+  inherentLikelihood: number;
+  inherentImpact: number;
+  residualLikelihood: number;
+  residualImpact: number;
+  controlEffectiveness: RiskControlEffectiveness | string;
+  trend: RiskTrend | string;
+  reviewFrequency: RiskReviewFrequency | string;
+  nextReviewAt?: Date | null;
+  decisionRequired: boolean;
+  decisionNote?: string | null;
+  acceptedReason?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };

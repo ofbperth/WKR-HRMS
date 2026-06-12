@@ -18,6 +18,10 @@ const sensitiveKeys = new Set([
   "evidenceText",
   "message",
   "reason",
+  "decisionNote",
+  "acceptedReason",
+  "summary",
+  "note",
 ]);
 
 function redactSensitive(value: unknown): unknown {
