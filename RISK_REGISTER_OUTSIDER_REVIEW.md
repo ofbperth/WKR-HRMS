@@ -58,23 +58,21 @@
 
 - Existing incident/RCA/action/export/dashboard routes still build successfully.
 - Existing unit tests still pass after introducing risk models and routes.
-- `npm run build` succeeds with the new routes and pages registered.
+- `next build` succeeds with the new routes and pages registered. `npm run build` can still hit a stale `.next\export` cleanup blocker on this Windows workspace, which is environmental rather than a TypeScript or route regression.
 - Existing incident detail flows still render, with risk integration added outside the original component to avoid rewriting sensitive incident logic.
 
 ## 6. Known Limitations
 
-- Risk board filtering is functional but basic. It does not yet offer richer dropdown UX or pagination.
 - RM suggestion clustering is intentionally rule-based and limited to recent incident clustering, not deeper trend analytics.
-- The unlink action is exposed through API and service layer, but the current detail page focuses more on linking than inline unlink UX.
+- Risk list pagination is application-layer pagination over the serialized result set. It is acceptable for current scale but should move deeper into the data query if risk volume grows materially.
+- Executive trend view is still a lightweight snapshot card layout, not a full charting or time-series analytics surface.
 - Some labels in existing legacy files remain mixed-language because the repo already contains older localized strings.
 
 ## 7. Recommended Next Improvements
 
-- Add a dedicated unlink button in risk detail linked-incident cards.
-- Add pagination and richer filter components for larger risk volumes.
-- Add more granular incident snippets for UnitManager own-unit detail while preserving aggregate-only behavior for hospital risks.
-- Add dedicated executive trend visualizations for top hospital risks.
 - Add end-to-end browser QA around approval, merge, and incident-link workflows.
+- Move risk pagination and aggregate card counting closer to the database query path when the dataset becomes large.
+- Expand executive trend visualization from snapshot cards into charted trend lines or committee-ready heatmaps.
 
 ## 8. Manual QA Checklist
 

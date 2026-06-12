@@ -36,7 +36,10 @@ export type RiskFilterParams = {
   trend?: string;
   decisionRequired?: string;
   dueReview?: string;
+  page?: string;
 };
+
+export const RISK_PAGE_SIZE = 10;
 
 export const riskScopeLabels: Record<string, string> = {
   UNIT: "Unit",
@@ -101,6 +104,22 @@ export type RiskSummary = DbRiskRegister & {
   canReview: boolean;
   detailHref: string | null;
   aggregateOnly: boolean;
+};
+
+export type RiskListResult = {
+  data: RiskSummary[];
+  cards: {
+    extreme: number;
+    high: number;
+    overdueReview: number;
+    needDecision: number;
+  };
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 type SelectedRisk = any;
@@ -423,21 +442,33 @@ function redactRiskDetailForAggregateView(risk: SelectedRisk) {
   };
 }
 
-export async function getRiskListForUser(user: RiskAccessUser, filters: RiskFilterParams = {}) {
+export async function getRiskListForUser(user: RiskAccessUser, filters: RiskFilterParams = {}): Promise<RiskListResult> {
   const where = buildRiskWhereForUser(user, filters);
   const rows = await prisma.riskRegister.findMany({
     where: where as any,
     include: riskListBaseInclude(false) as any,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   });
-  const data = rows.map((risk) => serializeRiskSummary(user, risk as any));
+  const allData = rows.map((risk) => serializeRiskSummary(user, risk as any));
+  const requestedPage = filters.page ? Number(filters.page) : 1;
+  const total = allData.length;
+  const totalPages = Math.max(1, Math.ceil(total / RISK_PAGE_SIZE));
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(Math.floor(requestedPage), totalPages) : 1;
+  const start = (page - 1) * RISK_PAGE_SIZE;
+  const data = allData.slice(start, start + RISK_PAGE_SIZE);
   return {
     data,
     cards: {
-      extreme: data.filter((risk) => risk.residualLevel === "Extreme" && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
-      high: data.filter((risk) => ["High", "Extreme"].includes(risk.residualLevel) && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
-      overdueReview: data.filter((risk) => risk.nextReviewAt && new Date(risk.nextReviewAt) < new Date() && !["CLOSED", "REJECTED"].includes(risk.status)).length,
-      needDecision: data.filter((risk) => risk.decisionRequired).length,
+      extreme: allData.filter((risk) => risk.residualLevel === "Extreme" && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
+      high: allData.filter((risk) => ["High", "Extreme"].includes(risk.residualLevel) && risk.status !== "CLOSED" && risk.status !== "REJECTED").length,
+      overdueReview: allData.filter((risk) => risk.nextReviewAt && new Date(risk.nextReviewAt) < new Date() && !["CLOSED", "REJECTED"].includes(risk.status)).length,
+      needDecision: allData.filter((risk) => risk.decisionRequired).length,
+    },
+    meta: {
+      page,
+      pageSize: RISK_PAGE_SIZE,
+      total,
+      totalPages,
     },
   };
 }

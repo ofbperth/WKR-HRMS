@@ -15,6 +15,7 @@ export default async function ExecutiveRisksPage({ searchParams }: { searchParam
         description="Aggregate-only executive view. No incident narrative, reporter identity, or RCA text is exposed here."
         basePath="/executive/risks"
         filters={{ ...filters, scope: "HOSPITAL" }}
+        showExecutiveTrend
       />
     </AppShell>
   );

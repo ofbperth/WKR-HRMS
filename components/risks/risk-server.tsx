@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/stat-cards";
-import { RiskCreatePanel, RiskDetailActions } from "@/components/risks/risk-client";
+import { Pagination } from "@/components/ui/pagination";
+import { RiskCreatePanel, RiskDetailActions, UnlinkRiskIncidentButton } from "@/components/risks/risk-client";
 import { getActiveTeams, getActiveUnits, getActiveUsers } from "@/lib/incident-query";
 import {
   canCreateHospitalRisk,
@@ -29,6 +30,7 @@ export async function RiskBoard({
   filters,
   showSuggestions = false,
   createDefaults,
+  showExecutiveTrend = false,
 }: {
   user: any;
   title: string;
@@ -37,6 +39,7 @@ export async function RiskBoard({
   filters: Record<string, string | undefined>;
   showSuggestions?: boolean;
   createDefaults?: Record<string, unknown>;
+  showExecutiveTrend?: boolean;
 }) {
   const [riskData, units, teams, users, suggestions] = await Promise.all([
     getRiskListForUser(user, filters),
@@ -47,33 +50,63 @@ export async function RiskBoard({
   ]);
   const lockedScope = user.role === "UnitManager" ? "UNIT" : undefined;
   const lockedStatus = user.role === "UnitManager" ? "PROPOSED" : undefined;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="text-sm text-slate-600">{description}</p>
       </div>
+
       <form className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-4">
         <FilterInput label="Search" name="q" defaultValue={filters.q} />
-        <FilterInput label="Scope" name="scope" defaultValue={filters.scope} />
-        <FilterInput label="Status" name="status" defaultValue={filters.status} />
-        <FilterInput label="Risk Type" name="riskType" defaultValue={filters.riskType} />
-        <FilterInput label="Owner Unit" name="ownerUnitId" defaultValue={filters.ownerUnitId} />
-        <FilterInput label="Owner Team" name="ownerTeamId" defaultValue={filters.ownerTeamId} />
-        <FilterInput label="Trend" name="trend" defaultValue={filters.trend} />
-        <FilterInput label="Due Review" name="dueReview" defaultValue={filters.dueReview} />
-        <div className="md:col-span-4">
+        <FilterSelect label="Scope" name="scope" defaultValue={filters.scope} options={[{ value: "", label: "All" }, { value: "UNIT", label: "Unit" }, { value: "HOSPITAL", label: "Hospital" }]} />
+        <FilterSelect label="Status" name="status" defaultValue={filters.status} options={[{ value: "", label: "All" }, ...Object.entries(riskStatusLabels).map(([value, label]) => ({ value, label }))]} />
+        <FilterSelect label="Risk Type" name="riskType" defaultValue={filters.riskType} options={[{ value: "", label: "All" }, ...Object.entries(riskTypeLabels).map(([value, label]) => ({ value, label }))]} />
+        <FilterSelect label="Owner Unit" name="ownerUnitId" defaultValue={filters.ownerUnitId} options={[{ value: "", label: "All" }, ...units.map((unit) => ({ value: unit.id, label: unit.name }))]} />
+        <FilterSelect label="Owner Team" name="ownerTeamId" defaultValue={filters.ownerTeamId} options={[{ value: "", label: "All" }, ...teams.map((team) => ({ value: team.id, label: team.code ? `${team.code} ${team.name}` : team.name }))]} />
+        <FilterSelect label="Trend" name="trend" defaultValue={filters.trend} options={[{ value: "", label: "All" }, ...Object.entries(riskTrendLabels).map(([value, label]) => ({ value, label }))]} />
+        <FilterSelect label="Due Review" name="dueReview" defaultValue={filters.dueReview} options={[{ value: "", label: "All" }, { value: "30d", label: "Within 30 days" }, { value: "overdue", label: "Overdue" }]} />
+        <FilterSelect label="Decision" name="decisionRequired" defaultValue={filters.decisionRequired} options={[{ value: "", label: "All" }, { value: "true", label: "Need decision" }, { value: "false", label: "No decision" }]} />
+        <div className="flex items-end gap-2 md:col-span-4">
           <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
             Apply Filters
           </button>
+          <Link className="rounded-md border px-4 py-2 text-sm font-medium text-slate-700" href={basePath}>
+            Reset
+          </Link>
         </div>
       </form>
+
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard title="Extreme" value={riskData.cards.extreme} />
         <StatCard title="High" value={riskData.cards.high} />
         <StatCard title="Overdue Review" value={riskData.cards.overdueReview} />
         <StatCard title="Need Decision" value={riskData.cards.needDecision} />
       </div>
+
+      {showExecutiveTrend ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Hospital Risk Trend Snapshot</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-3">
+            {riskData.data.slice(0, 6).map((risk) => (
+              <div key={risk.id} className="rounded border p-3 text-sm">
+                <div className="font-semibold">{risk.riskNo}</div>
+                <div className="line-clamp-2">{risk.title}</div>
+                <div className="mt-2 text-slate-600">
+                  Residual {risk.residualScore} ({risk.residualLevel})
+                </div>
+                <div className="text-slate-600">30d incidents: {risk.aggregate.trend30d}</div>
+                <div className="text-slate-600">90d incidents: {risk.aggregate.trend90d}</div>
+                <div className="text-slate-600">Decision required: {risk.decisionRequired ? "Yes" : "No"}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {(canCreateHospitalRisk(user.role) || canCreateUnitRiskProposal(user.role)) ? (
         <RiskCreatePanel
           units={units}
@@ -85,6 +118,7 @@ export async function RiskBoard({
           label={user.role === "UnitManager" ? "Create Risk Proposal" : "Create Risk"}
         />
       ) : null}
+
       {showSuggestions && suggestions.length > 0 ? (
         <Card>
           <CardHeader>
@@ -110,6 +144,7 @@ export async function RiskBoard({
           </CardContent>
         </Card>
       ) : null}
+
       <div className="space-y-3">
         {riskData.data.length === 0 ? (
           <Card>
@@ -138,6 +173,7 @@ export async function RiskBoard({
                     <div>Linked incidents: {risk.aggregate.linkedIncidentCount}</div>
                     <div>Open RCA: {risk.aggregate.openRcaCount}</div>
                     <div>Open actions: {risk.aggregate.openActionCount}</div>
+                    <div>30d / 90d: {risk.aggregate.trend30d} / {risk.aggregate.trend90d}</div>
                     <div>Next review: {risk.nextReviewAt ? new Date(risk.nextReviewAt).toLocaleDateString("en-CA") : "-"}</div>
                   </div>
                 </div>
@@ -153,6 +189,8 @@ export async function RiskBoard({
           ))
         )}
       </div>
+
+      <Pagination basePath={basePath} searchParams={filters} page={riskData.meta.page} total={riskData.meta.total} pageSize={riskData.meta.pageSize} />
     </div>
   );
 }
@@ -247,36 +285,33 @@ export async function RiskDetailPage({ user, id }: { user: any; id: string }) {
             {risk.aggregateOnly ? (
               <p className="text-slate-500">Aggregate-only view for this role. Incident narratives are hidden.</p>
             ) : risk.incidentLinks?.length ? (
-              risk.incidentLinks.map((link: any) => (
-                <div key={link.id} className="rounded border p-3">
-                  <div className="font-semibold">
-                    {link.incident.incidentNo} {link.incident.title}
-                  </div>
-                  <div className="text-slate-600">
-                    {link.incident.incidentUnit?.name ?? "-"} · severity {link.incident.severity} · {link.incident.status}
-                  </div>
-                  <div className="text-slate-600">NRLS: {link.incident.riskCode?.code ?? "-"}</div>
-                  {!risk.aggregateOnly ? (
+              risk.incidentLinks.map((link: any) => {
+                const incident = link.incident;
+                const openActions = (incident.actionPlans ?? []).filter((action: any) => action.status !== "Verified").length;
+                return (
+                  <div key={link.id} className="rounded border p-3">
+                    <div className="font-semibold">
+                      {incident.incidentNo} {incident.title}
+                    </div>
+                    <div className="text-slate-600">
+                      {incident.incidentUnit?.name ?? "-"} · severity {incident.severity} · {incident.status}
+                    </div>
+                    <div className="text-slate-600">
+                      NRLS: {incident.riskCode?.code ?? "-"} · SIMPLE: {incident.simpleCategory ?? "-"}
+                    </div>
+                    <div className="text-slate-600">
+                      RCA: {incident.rca?.status ?? "No RCA"} · Open actions: {openActions}
+                    </div>
+                    <div className="text-slate-600">Occurred: {new Date(incident.occurredAt).toLocaleDateString("en-CA")}</div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <a
-                        className="text-blue-700 underline"
-                        href={user.role === "UnitManager" ? `/unit/incidents/${link.incident.id}` : `/rm/search/${link.incident.id}`}
-                      >
+                      <a className="text-blue-700 underline" href={user.role === "UnitManager" ? `/unit/incidents/${incident.id}` : `/rm/search/${incident.id}`}>
                         Open incident
                       </a>
-                      {risk.canLink ? (
-                        <button
-                          className="text-sm text-red-700 underline"
-                          formAction={`/api/risks/${risk.id}/links/${link.incident.id}`}
-                          formMethod="post"
-                        >
-                          Use delete endpoint below
-                        </button>
-                      ) : null}
+                      {risk.canLink ? <UnlinkRiskIncidentButton riskId={risk.id} incidentId={incident.id} /> : null}
                     </div>
-                  ) : null}
-                </div>
-              ))
+                  </div>
+                );
+              })
             ) : (
               <p className="text-slate-500">No linked incidents.</p>
             )}
@@ -347,14 +382,7 @@ export async function RiskDetailPage({ user, id }: { user: any; id: string }) {
       </div>
 
       {!risk.aggregateOnly ? (
-        <RiskDetailActions
-          risk={risk}
-          units={units}
-          teams={teams}
-          users={users}
-          mergeTargets={mergeTargets}
-          linkableIncidents={linkableIncidents}
-        />
+        <RiskDetailActions risk={risk} units={units} teams={teams} users={users} mergeTargets={mergeTargets} linkableIncidents={linkableIncidents} />
       ) : null}
     </div>
   );
@@ -365,6 +393,31 @@ function FilterInput({ label, name, defaultValue }: { label: string; name: strin
     <label className="space-y-1 text-sm">
       <span className="font-medium">{label}</span>
       <input className="h-10 w-full rounded-md border px-3" name={name} defaultValue={defaultValue ?? ""} />
+    </label>
+  );
+}
+
+function FilterSelect({
+  label,
+  name,
+  defaultValue,
+  options,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <label className="space-y-1 text-sm">
+      <span className="font-medium">{label}</span>
+      <select className="h-10 w-full rounded-md border bg-white px-3" name={name} defaultValue={defaultValue ?? ""}>
+        {options.map((option) => (
+          <option key={`${name}-${option.value || "all"}`} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

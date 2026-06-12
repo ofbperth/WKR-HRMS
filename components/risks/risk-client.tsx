@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   riskControlEffectivenessValues,
@@ -98,80 +98,24 @@ export function RiskCreatePanel({
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           <Input label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
-          <Select
-            label="Risk Type"
-            value={form.riskType}
-            onChange={(value) => setForm({ ...form, riskType: value })}
-            options={riskTypeValues.map((value) => ({ value, label: value }))}
-          />
-          <TextArea
-            label="Description"
-            value={form.description}
-            onChange={(value) => setForm({ ...form, description: value })}
-            className="md:col-span-2"
-          />
-          <Select
-            label="Scope"
-            value={form.scope}
-            disabled={Boolean(lockedScope)}
-            onChange={(value) => setForm({ ...form, scope: value })}
-            options={riskScopeValues.map((value) => ({ value, label: value }))}
-          />
-          <Select
-            label="Status"
-            value={form.status}
-            disabled={Boolean(lockedStatus)}
-            onChange={(value) => setForm({ ...form, status: value })}
-            options={riskStatusValues.map((value) => ({ value, label: value }))}
-          />
+          <Select label="Risk Type" value={form.riskType} onChange={(value) => setForm({ ...form, riskType: value })} options={riskTypeValues.map((value) => ({ value, label: value }))} />
+          <TextArea label="Description" value={form.description} onChange={(value) => setForm({ ...form, description: value })} className="md:col-span-2" />
+          <Select label="Scope" value={form.scope} disabled={Boolean(lockedScope)} onChange={(value) => setForm({ ...form, scope: value })} options={riskScopeValues.map((value) => ({ value, label: value }))} />
+          <Select label="Status" value={form.status} disabled={Boolean(lockedStatus)} onChange={(value) => setForm({ ...form, status: value })} options={riskStatusValues.map((value) => ({ value, label: value }))} />
           <Input label="Risk Domain" value={form.riskDomain} onChange={(value) => setForm({ ...form, riskDomain: value })} />
-          <Select
-            label="Owner Unit"
-            value={form.ownerUnitId}
-            onChange={(value) => setForm({ ...form, ownerUnitId: value })}
-            options={[{ value: "", label: "-" }, ...units.map((unit) => ({ value: unit.id, label: unit.name }))]}
-          />
-          <Select
-            label="Owner Team"
-            value={form.ownerTeamId}
-            onChange={(value) => setForm({ ...form, ownerTeamId: value })}
-            options={[{ value: "", label: "-" }, ...teams.map((team) => ({ value: team.id, label: team.code ? `${team.code} ${team.name}` : team.name }))]}
-          />
-          <Select
-            label="Executive Sponsor"
-            value={form.executiveSponsorId}
-            onChange={(value) => setForm({ ...form, executiveSponsorId: value })}
-            options={[{ value: "", label: "-" }, ...users.map((user) => ({ value: user.id, label: `${user.name}${user.role ? ` (${user.role})` : ""}` }))]}
-          />
+          <Select label="Owner Unit" value={form.ownerUnitId} onChange={(value) => setForm({ ...form, ownerUnitId: value })} options={[{ value: "", label: "-" }, ...units.map((unit) => ({ value: unit.id, label: unit.name }))]} />
+          <Select label="Owner Team" value={form.ownerTeamId} onChange={(value) => setForm({ ...form, ownerTeamId: value })} options={[{ value: "", label: "-" }, ...teams.map((team) => ({ value: team.id, label: team.code ? `${team.code} ${team.name}` : team.name }))]} />
+          <Select label="Executive Sponsor" value={form.executiveSponsorId} onChange={(value) => setForm({ ...form, executiveSponsorId: value })} options={[{ value: "", label: "-" }, ...users.map((user) => ({ value: user.id, label: `${user.name}${user.role ? ` (${user.role})` : ""}` }))]} />
           <NumberInput label="Inherent Likelihood" value={form.inherentLikelihood} onChange={(value) => setForm({ ...form, inherentLikelihood: value })} />
           <NumberInput label="Inherent Impact" value={form.inherentImpact} onChange={(value) => setForm({ ...form, inherentImpact: value })} />
           <NumberInput label="Residual Likelihood" value={form.residualLikelihood} onChange={(value) => setForm({ ...form, residualLikelihood: value })} />
           <NumberInput label="Residual Impact" value={form.residualImpact} onChange={(value) => setForm({ ...form, residualImpact: value })} />
-          <Select
-            label="Control Effectiveness"
-            value={form.controlEffectiveness}
-            onChange={(value) => setForm({ ...form, controlEffectiveness: value })}
-            options={riskControlEffectivenessValues.map((value) => ({ value, label: value }))}
-          />
-          <Select
-            label="Trend"
-            value={form.trend}
-            onChange={(value) => setForm({ ...form, trend: value })}
-            options={riskTrendValues.map((value) => ({ value, label: value }))}
-          />
-          <Select
-            label="Review Frequency"
-            value={form.reviewFrequency}
-            onChange={(value) => setForm({ ...form, reviewFrequency: value })}
-            options={riskReviewFrequencyValues.map((value) => ({ value, label: value }))}
-          />
+          <Select label="Control Effectiveness" value={form.controlEffectiveness} onChange={(value) => setForm({ ...form, controlEffectiveness: value })} options={riskControlEffectivenessValues.map((value) => ({ value, label: value }))} />
+          <Select label="Trend" value={form.trend} onChange={(value) => setForm({ ...form, trend: value })} options={riskTrendValues.map((value) => ({ value, label: value }))} />
+          <Select label="Review Frequency" value={form.reviewFrequency} onChange={(value) => setForm({ ...form, reviewFrequency: value })} options={riskReviewFrequencyValues.map((value) => ({ value, label: value }))} />
           <Input label="Next Review" type="date" value={form.nextReviewAt} onChange={(value) => setForm({ ...form, nextReviewAt: value })} />
           <label className="flex items-center gap-2 text-sm md:col-span-2">
-            <input
-              type="checkbox"
-              checked={form.decisionRequired}
-              onChange={(event) => setForm({ ...form, decisionRequired: event.target.checked })}
-            />
+            <input type="checkbox" checked={form.decisionRequired} onChange={(event) => setForm({ ...form, decisionRequired: event.target.checked })} />
             Decision required
           </label>
           <TextArea label="Decision Note" value={form.decisionNote} onChange={(value) => setForm({ ...form, decisionNote: value })} className="md:col-span-2" />
@@ -329,11 +273,7 @@ export function RiskDetailActions({
             ))}
           </div>
           <div className="mt-3">
-            <Button
-              type="button"
-              onClick={() => postAction(`/api/risks/${risk.id}/links`, { incidentIds: selectedIncidentIds })}
-              disabled={saving || selectedIncidentIds.length === 0}
-            >
+            <Button type="button" onClick={() => postAction(`/api/risks/${risk.id}/links`, { incidentIds: selectedIncidentIds })} disabled={saving || selectedIncidentIds.length === 0}>
               Link Selected Incidents
             </Button>
           </div>
@@ -360,12 +300,7 @@ export function RiskDetailActions({
       {risk.scope === "UNIT" && mergeTargets.length > 0 ? (
         <div className="rounded-lg border bg-white p-4">
           <h3 className="mb-3 text-sm font-semibold">Merge Proposal</h3>
-          <Select
-            label="Target Risk"
-            value={mergeTargetId}
-            onChange={setMergeTargetId}
-            options={mergeTargets.map((target) => ({ value: target.id, label: `${target.riskNo} ${target.title}` }))}
-          />
+          <Select label="Target Risk" value={mergeTargetId} onChange={setMergeTargetId} options={mergeTargets.map((target) => ({ value: target.id, label: `${target.riskNo} ${target.title}` }))} />
           <div className="mt-3">
             <Button type="button" className="bg-slate-700" onClick={() => postAction(`/api/risks/${risk.id}/merge`, { targetRiskId: mergeTargetId })} disabled={saving || !mergeTargetId}>
               Merge Into Target
@@ -400,6 +335,31 @@ export function RiskDetailActions({
   );
 }
 
+export function UnlinkRiskIncidentButton({ riskId, incidentId }: { riskId: string; incidentId: string }) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  async function unlinkIncident() {
+    const ok = window.confirm("Unlink this incident from the risk?");
+    if (!ok) return;
+    setSaving(true);
+    const res = await fetch(`/api/risks/${riskId}/links/${incidentId}`, { method: "DELETE" });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Unlink risk failed");
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Button type="button" className="bg-slate-700" onClick={unlinkIncident} disabled={saving}>
+      {saving ? "Unlinking..." : "Unlink"}
+    </Button>
+  );
+}
+
 export function IncidentRiskPanel({
   incidentId,
   incidentTitle,
@@ -425,8 +385,18 @@ export function IncidentRiskPanel({
 }) {
   const router = useRouter();
   const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>([]);
-  const filteredOptions = useMemo(() => riskOptions.slice(0, 30), [riskOptions]);
+  const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const filteredOptions = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return riskOptions
+      .filter((risk) => {
+        if (!normalized) return true;
+        const haystack = `${risk.riskNo} ${risk.title} ${risk.scope} ${risk.status} ${risk.ownerUnit?.name ?? ""}`.toLowerCase();
+        return haystack.includes(normalized);
+      })
+      .slice(0, 30);
+  }, [query, riskOptions]);
 
   async function linkSelected() {
     for (const riskId of selectedRiskIds) {
@@ -516,10 +486,11 @@ export function IncidentRiskPanel({
         )}
       </div>
 
-      {filteredOptions.length > 0 ? (
+      {riskOptions.length > 0 ? (
         <div className="rounded-lg border bg-white p-4">
           <h3 className="mb-3 text-sm font-semibold">Link Existing Risk</h3>
-          <div className="grid gap-2">
+          <Input label="Search Risk" value={query} onChange={setQuery} />
+          <div className="mt-3 grid gap-2">
             {filteredOptions.map((risk) => (
               <label key={risk.id} className="flex items-start gap-2 rounded border p-2 text-sm">
                 <input
@@ -563,7 +534,9 @@ export function IncidentRiskPanel({
         </div>
       ) : null}
 
-      {(canCreateHospital || canCreateProposal) ? <RiskCreatePanel label="Manual Risk Draft" units={units} teams={teams} users={users} defaults={{ title: `Risk from ${incidentTitle}`, ownerUnitId: incidentUnitId }} /> : null}
+      {(canCreateHospital || canCreateProposal) ? (
+        <RiskCreatePanel label="Manual Risk Draft" units={units} teams={teams} users={users} defaults={{ title: `Risk from ${incidentTitle}`, ownerUnitId: incidentUnitId }} />
+      ) : null}
     </div>
   );
 }
@@ -599,14 +572,7 @@ function NumberInput({
   return (
     <label className="space-y-1 text-sm">
       <span className="font-medium">{label}</span>
-      <input
-        className="h-10 w-full rounded-md border px-3"
-        type="number"
-        min={1}
-        max={5}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
+      <input className="h-10 w-full rounded-md border px-3" type="number" min={1} max={5} value={value} onChange={(event) => onChange(Number(event.target.value))} />
     </label>
   );
 }
@@ -648,7 +614,7 @@ function Select({
       <span className="font-medium">{label}</span>
       <select className="h-10 w-full rounded-md border bg-white px-3" value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={`${label}-${option.value || "blank"}`} value={option.value}>
             {option.label}
           </option>
         ))}
