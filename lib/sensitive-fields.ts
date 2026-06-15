@@ -1,4 +1,5 @@
 import { decrypt, encryptToStorage } from "@/lib/encryption";
+import type { RCAContributoryFactors } from "@/lib/rca-contributory-factors";
 
 // Data minimization: collect patient identifiers and RCA narrative only when
 // needed for risk review, store encrypted copies, and expose plaintext only via
@@ -28,7 +29,7 @@ export function decryptLegacyIncidentIdentifier(
   return decrypt(encryptedValue) ?? plaintextFallback ?? null;
 }
 
-export type SensitiveRcaNarrativeInput = {
+export type SensitiveRcaNarrativeInput = RCAContributoryFactors & {
   problemStatement?: string | null;
   timeline?: string | null;
   rootCause?: string | null;
@@ -41,6 +42,11 @@ export function buildSensitiveRcaNarrative(input: SensitiveRcaNarrativeInput) {
     timeline: input.timeline?.trim() || null,
     rootCause: input.rootCause?.trim() || null,
     preventiveAction: input.preventiveAction?.trim() || null,
+    patientFactors: input.patientFactors?.trim() || null,
+    individualStaffFactors: input.individualStaffFactors?.trim() || null,
+    taskProcessTechnologyFactors: input.taskProcessTechnologyFactors?.trim() || null,
+    teamCommunicationFactors: input.teamCommunicationFactors?.trim() || null,
+    workEnvironmentOrganizationalFactors: input.workEnvironmentOrganizationalFactors?.trim() || null,
   };
 }
 
@@ -59,6 +65,11 @@ export function decryptRcaNarrative(encryptedValue: string | null | undefined) {
       timeline: string | null;
       rootCause: string | null;
       preventiveAction: string | null;
+      patientFactors: string | null;
+      individualStaffFactors: string | null;
+      taskProcessTechnologyFactors: string | null;
+      teamCommunicationFactors: string | null;
+      workEnvironmentOrganizationalFactors: string | null;
     };
   } catch {
     return null;

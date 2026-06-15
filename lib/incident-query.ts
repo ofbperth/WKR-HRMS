@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 import { bangkokDateRangeFilter } from "@/lib/reporting-date";
 import { cache as reactCache } from "react";
+import { mapLegacyRcaToFiveTier } from "@/lib/rca-contributory-factors";
 
 type IncidentWhereInput = Record<string, unknown>;
 const cache = typeof reactCache === "function" ? reactCache : <T extends (...args: any[]) => any>(fn: T) => fn;
@@ -256,6 +257,21 @@ export async function getIncidentCoreForUser(id: string, user: IncidentAccessUse
   if (!incident) return null;
   const { decryptIncidentIdentifier, decryptLegacyIncidentIdentifier, decryptRcaNarrative } = await import("@/lib/sensitive-fields");
   const sensitiveRca = incident.rca ? decryptRcaNarrative((incident.rca as any).rcaEncrypted) : null;
+  const fiveTierFactors = incident.rca
+    ? mapLegacyRcaToFiveTier({
+        patientFactors: sensitiveRca?.patientFactors,
+        individualStaffFactors: sensitiveRca?.individualStaffFactors,
+        taskProcessTechnologyFactors: sensitiveRca?.taskProcessTechnologyFactors,
+        teamCommunicationFactors: sensitiveRca?.teamCommunicationFactors,
+        workEnvironmentOrganizationalFactors: sensitiveRca?.workEnvironmentOrganizationalFactors,
+        contributingHuman: incident.rca.contributingHuman,
+        contributingProcess: incident.rca.contributingProcess,
+        contributingEquipment: incident.rca.contributingEquipment,
+        contributingEnvironment: incident.rca.contributingEnvironment,
+        contributingCommunication: incident.rca.contributingCommunication,
+        contributingIT: incident.rca.contributingIT,
+      })
+    : null;
   return {
     ...incident,
     rca: incident.rca
@@ -265,6 +281,7 @@ export async function getIncidentCoreForUser(id: string, user: IncidentAccessUse
           timeline: sensitiveRca?.timeline ?? incident.rca.timeline,
           rootCause: sensitiveRca?.rootCause ?? incident.rca.rootCause,
           preventiveAction: sensitiveRca?.preventiveAction ?? incident.rca.preventiveAction,
+          ...(fiveTierFactors ?? {}),
         }
       : incident.rca,
     reporterDisplayName: incident.reportedBy?.name ?? decryptLegacyIncidentIdentifier((incident as any).reporterNameEncrypted, null) ?? "Deleted user",

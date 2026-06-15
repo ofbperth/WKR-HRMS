@@ -25,6 +25,11 @@ type DetailIncident = DbIncident & {
     id: string;
     problemStatement: string | null;
     timeline: string | null;
+    patientFactors: string | null;
+    individualStaffFactors: string | null;
+    taskProcessTechnologyFactors: string | null;
+    teamCommunicationFactors: string | null;
+    workEnvironmentOrganizationalFactors: string | null;
     contributingHuman: string | null;
     contributingProcess: string | null;
     contributingEquipment: string | null;
@@ -35,6 +40,7 @@ type DetailIncident = DbIncident & {
     preventiveAction: string | null;
     kpi: string | null;
     kpiOwnerId: string | null;
+    kpiOwner?: Pick<DbUser, "id" | "name" | "email" | "role" | "unitId"> | null;
     needRmSupport: boolean;
     status: string;
     submittedAt: Date | null;
@@ -134,6 +140,22 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
           <Info label="ปัญหา" value={incident.rca.problemStatement || "-"} />
           <Info label="สาเหตุราก" value={incident.rca.rootCause || "-"} />
           <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
+          <details className="mt-3 rounded-lg border bg-white">
+            <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium text-blue-700 hover:underline">ดูรายละเอียด RCA</summary>
+            <div className="grid gap-3 border-t px-3 py-3">
+              <Info label="ปัญหาที่พบ" value={incident.rca.problemStatement || "-"} />
+              <Info label="ลำดับเหตุการณ์" value={incident.rca.timeline || "-"} />
+              <Info label="ปัจจัยด้านผู้ป่วย" value={incident.rca.patientFactors || "-"} />
+              <Info label="ปัจจัยด้านบุคลากรรายบุคคล" value={incident.rca.individualStaffFactors || "-"} />
+              <Info label="ปัจจัยด้านงาน กระบวนการ และเทคโนโลยี" value={incident.rca.taskProcessTechnologyFactors || "-"} />
+              <Info label="ปัจจัยด้านทีมและการสื่อสาร" value={incident.rca.teamCommunicationFactors || "-"} />
+              <Info label="ปัจจัยด้านสภาพแวดล้อมและองค์กร" value={incident.rca.workEnvironmentOrganizationalFactors || "-"} />
+              <Info label="สาเหตุราก" value={incident.rca.rootCause || "-"} />
+              <Info label="แนวทางป้องกันซ้ำ" value={incident.rca.preventiveAction || "-"} />
+              <Info label="KPI" value={incident.rca.kpi || "-"} />
+              <Info label="ผู้รับผิดชอบ KPI" value={incident.rca.kpiOwner?.name || "-"} />
+            </div>
+          </details>
         </div> : <p className="text-slate-500">ยังไม่มี RCA</p>}
         {(!incidentClosed && ((unitCanWork || currentUser.role === "Admin") && rcaAllowed)) || (manage && incident.rca?.status === "Submitted") ? <Suspense fallback={<InlineSectionSkeleton label="กำลังโหลดฟอร์ม RCA..." />}>
           <IncidentRcaSection incident={incident} currentUser={currentUser} unitCanWork={unitCanWork} rcaAllowed={rcaAllowed} manage={manage} incidentClosed={incidentClosed} />
@@ -238,6 +260,10 @@ async function IncidentActionSection({
       return <div key={action.id} className="space-y-3 rounded-lg border p-3">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="font-semibold">{action.title}</div><div className="text-xs text-slate-500">ผู้รับผิดชอบ: {action.owner?.name ?? "รอหัวหน้าหน่วยงานมอบหมายใหม่"} · กำหนดส่ง {formatDateTime(action.dueDate)}</div></div><span className="rounded-full border px-2 py-1 text-xs">{actionPlanStatusDisplay(action.status)}</span></div>
         <p className="whitespace-pre-wrap text-slate-600">{action.description || "-"}</p>
+        {action.kpiName || action.kpiTarget ? <div className="grid gap-2 rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+          {action.kpiName ? <Info label="KPI" value={action.kpiName} /> : null}
+          {action.kpiTarget ? <Info label="Goal" value={action.kpiTarget} /> : null}
+        </div> : null}
         {action.evidenceText || action.evidenceUrl ? <div className="rounded-md bg-slate-50 p-2 text-xs"><div className="font-semibold">หลักฐาน</div><div>{action.evidenceText || "-"}</div>{action.evidenceUrl ? <a className="text-blue-700 underline" href={action.evidenceUrl}>ลิงก์หลักฐาน</a> : null}</div> : null}
         {canEditAction ? <ActionUpdateForm action={action} canVerify={manage} users={users} canReassignOwner={unitCanWork || manage || currentUser.role === "Admin"} /> : null}
       </div>;

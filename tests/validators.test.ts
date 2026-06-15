@@ -100,9 +100,30 @@ describe("incident and RCA validation", () => {
       problemStatement: "High severity fall",
       rootCause: "No handoff checkpoint",
       preventiveAction: "Add shift handoff checklist",
+      patientFactors: "",
+      individualStaffFactors: "Nurse was unfamiliar with the escalation path",
+      taskProcessTechnologyFactors: null,
+      teamCommunicationFactors: "",
+      workEnvironmentOrganizationalFactors: undefined,
       kpi: "Checklist completion 95%",
       kpiOwnerId: "user-1",
       needRmSupport: true,
+      submit: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("does not require any of the 5 contributory factor tiers", () => {
+    const result = rcaSchema.safeParse({
+      problemStatement: "High severity fall",
+      rootCause: "No handoff checkpoint",
+      preventiveAction: "Add shift handoff checklist",
+      patientFactors: "",
+      individualStaffFactors: "",
+      taskProcessTechnologyFactors: "",
+      teamCommunicationFactors: "",
+      workEnvironmentOrganizationalFactors: "",
+      needRmSupport: false,
       submit: true,
     });
     expect(result.success).toBe(true);

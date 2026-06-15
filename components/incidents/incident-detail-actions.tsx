@@ -10,6 +10,7 @@ import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { actionPlanStatusDisplay, affectedTypeDisplay, roleDisplay } from "@/lib/i18n/th";
 import { formatBangkokDateInput, formatBangkokTimeInput, statusLabel } from "@/lib/format";
+import type { RCAContributoryFactors } from "@/lib/rca-contributory-factors";
 
 type UserOption = Pick<DbUser, "id" | "name" | "email" | "role" | "unitId">;
 
@@ -228,15 +229,53 @@ export function AddCommentForm({ incidentId, onSaved }: { incidentId: string; on
   return <div className="space-y-2 rounded-lg border bg-white p-4"><textarea className="min-h-24 w-full rounded-md border px-3 py-2 text-sm" value={message} onChange={e => setMessage(e.target.value)} placeholder="เพิ่ม RM comment / note" /><Button type="button" onClick={submit} disabled={saving}>{saving ? "กำลังบันทึก..." : "เพิ่ม comment"}</Button></div>;
 }
 
-type RcaValue = {
+const RCA_CONTRIBUTORY_FIELDS = [
+  {
+    key: "patientFactors",
+    label: "ปัจจัยด้านผู้ป่วย",
+    placeholder: "เช่น ความรุนแรงของโรค ภาวะฉุกเฉิน ความซับซ้อนของอาการ ความร่วมมือของผู้ป่วย ข้อจำกัดด้านภาษา การรับรู้ หรือญาติ",
+    className: "md:col-span-2",
+  },
+  {
+    key: "individualStaffFactors",
+    label: "ปัจจัยด้านบุคลากรรายบุคคล",
+    placeholder: "เช่น ความรู้ ทักษะ ประสบการณ์ ความเหนื่อยล้า workload การตัดสินใจ ณ จุดปฏิบัติงาน หรือการรับรู้ความเสี่ยง",
+    className: undefined,
+  },
+  {
+    key: "taskProcessTechnologyFactors",
+    label: "ปัจจัยด้านงาน กระบวนการ และเทคโนโลยี",
+    placeholder: "เช่น ขั้นตอนงานไม่ชัดเจน policy ไม่ครอบคลุม checklist ไม่มีหรือไม่ได้ใช้ ระบบ IT, CPOE, alert, เครื่องมือแพทย์, แบบฟอร์ม หรือ medication process",
+    className: undefined,
+  },
+  {
+    key: "teamCommunicationFactors",
+    label: "ปัจจัยด้านทีมและการสื่อสาร",
+    placeholder: "เช่น handover ไม่ครบถ้วน ไม่ได้ใช้ SBAR, escalation delay, closed-loop communication ไม่ชัดเจน หรือบทบาทในทีมไม่ชัดเจน",
+    className: undefined,
+  },
+  {
+    key: "workEnvironmentOrganizationalFactors",
+    label: "ปัจจัยด้านสภาพแวดล้อมและองค์กร",
+    placeholder: "เช่น staffing ไม่เพียงพอ workload สูง bed management ทรัพยากรจำกัด layout หน่วยงาน supervision, training, culture, leadership หรือ governance",
+    className: undefined,
+  },
+] as const satisfies ReadonlyArray<{
+  key: keyof RCAContributoryFactors;
+  label: string;
+  placeholder: string;
+  className?: string;
+}>;
+
+type RcaValue = RCAContributoryFactors & {
   problemStatement: string | null;
   timeline: string | null;
-  contributingHuman: string | null;
-  contributingProcess: string | null;
-  contributingEquipment: string | null;
-  contributingEnvironment: string | null;
-  contributingCommunication: string | null;
-  contributingIT: string | null;
+  contributingHuman?: string | null;
+  contributingProcess?: string | null;
+  contributingEquipment?: string | null;
+  contributingEnvironment?: string | null;
+  contributingCommunication?: string | null;
+  contributingIT?: string | null;
   rootCause: string | null;
   preventiveAction: string | null;
   kpi: string | null;
@@ -252,18 +291,18 @@ export function RcaForm({ incidentId, rca, users }: { incidentId: string; rca: R
   const [form, setForm] = useState({
     problemStatement: rca?.problemStatement ?? "",
     timeline: rca?.timeline ?? "",
-    contributingHuman: rca?.contributingHuman ?? "",
-    contributingProcess: rca?.contributingProcess ?? "",
-    contributingEquipment: rca?.contributingEquipment ?? "",
-    contributingEnvironment: rca?.contributingEnvironment ?? "",
-    contributingCommunication: rca?.contributingCommunication ?? "",
-    contributingIT: rca?.contributingIT ?? "",
+    patientFactors: rca?.patientFactors ?? "",
+    individualStaffFactors: rca?.individualStaffFactors ?? "",
+    taskProcessTechnologyFactors: rca?.taskProcessTechnologyFactors ?? "",
+    teamCommunicationFactors: rca?.teamCommunicationFactors ?? "",
+    workEnvironmentOrganizationalFactors: rca?.workEnvironmentOrganizationalFactors ?? "",
     rootCause: rca?.rootCause ?? "",
     preventiveAction: rca?.preventiveAction ?? "",
     kpi: rca?.kpi ?? "",
     kpiOwnerId: rca?.kpiOwnerId ?? "",
     needRmSupport: rca?.needRmSupport ?? false,
   });
+  const hasAnyContributoryFactor = RCA_CONTRIBUTORY_FIELDS.some(({ key }) => form[key]?.trim());
   async function save(submit: boolean) {
     setSaving(true);
     const res = await fetch(`/api/incidents/${incidentId}/rca`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, submit }) });
@@ -277,12 +316,23 @@ export function RcaForm({ incidentId, rca, users }: { incidentId: string; rca: R
     <TextArea label="สาเหตุราก" value={form.rootCause} onChange={value => setForm({ ...form, rootCause: value })} />
     <TextArea label="แนวทางป้องกันซ้ำ" value={form.preventiveAction} onChange={value => setForm({ ...form, preventiveAction: value })} />
     <div className="grid gap-3 md:grid-cols-2">
-      <TextArea label="บุคลากร" value={form.contributingHuman} onChange={value => setForm({ ...form, contributingHuman: value })} compact />
-      <TextArea label="กระบวนการ" value={form.contributingProcess} onChange={value => setForm({ ...form, contributingProcess: value })} compact />
-      <TextArea label="เครื่องมือ/อุปกรณ์" value={form.contributingEquipment} onChange={value => setForm({ ...form, contributingEquipment: value })} compact />
-      <TextArea label="สภาพแวดล้อม" value={form.contributingEnvironment} onChange={value => setForm({ ...form, contributingEnvironment: value })} compact />
-      <TextArea label="การสื่อสาร" value={form.contributingCommunication} onChange={value => setForm({ ...form, contributingCommunication: value })} compact />
-      <TextArea label="IT" value={form.contributingIT} onChange={value => setForm({ ...form, contributingIT: value })} compact />
+      <div className="space-y-1 md:col-span-2">
+        <div className="font-medium text-slate-900">ปัจจัยสนับสนุนตาม 5-tier RCA Framework</div>
+        <p className="text-sm text-slate-600">เลือกกรอกเฉพาะปัจจัยที่เกี่ยวข้องกับเหตุการณ์ ไม่จำเป็นต้องกรอกครบทุกด้าน</p>
+      </div>
+      {RCA_CONTRIBUTORY_FIELDS.map((field) => (
+        <TextArea
+          key={field.key}
+          label={field.label}
+          value={form[field.key] ?? ""}
+          onChange={value => setForm({ ...form, [field.key]: value })}
+          placeholder={field.placeholder}
+          compact
+          className={field.className}
+        />
+      ))}
+      {!hasAnyContributoryFactor ? <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 md:col-span-2">ควรระบุปัจจัยสนับสนุนอย่างน้อย 1 ด้าน หากมีข้อมูล</div> : null}
+      <p className="text-xs leading-5 text-slate-500 md:col-span-2">หมายเหตุ: ช่องเหล่านี้ใช้เพื่อช่วยวิเคราะห์ระบบ ไม่ใช่เพื่อระบุความผิดของบุคคลใดบุคคลหนึ่ง</p>
     </div>
     <label className="space-y-1 text-sm"><span className="font-medium">KPI</span><input className="h-10 w-full rounded-md border px-3" value={form.kpi} onChange={e => setForm({ ...form, kpi: e.target.value })} /></label>
     <label className="space-y-1 text-sm"><span className="font-medium">ผู้รับผิดชอบ KPI</span><select className="h-10 w-full rounded-md border px-3" value={form.kpiOwnerId} onChange={e => setForm({ ...form, kpiOwnerId: e.target.value })}><option value="">-</option>{users.map(u => <option key={u.id} value={u.id}>{u.name} ({roleDisplay(u.role)})</option>)}</select></label>
@@ -371,6 +421,20 @@ export function ActionUpdateForm({ action, canVerify, users = [], canReassignOwn
   </div>;
 }
 
-function TextArea({ label, value, onChange, compact = false }: { label: string; value: string; onChange: (value: string) => void; compact?: boolean }) {
-  return <label className={`space-y-1 ${compact ? "text-xs" : "text-sm"}`}><span className="font-medium">{label}</span><textarea className={`${compact ? "min-h-16" : "min-h-24"} w-full rounded-md border px-3 py-2 text-sm`} value={value} onChange={e => onChange(e.target.value)} /></label>;
+function TextArea({
+  label,
+  value,
+  onChange,
+  compact = false,
+  placeholder,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  compact?: boolean;
+  placeholder?: string;
+  className?: string;
+}) {
+  return <label className={`${className ?? ""} space-y-1 ${compact ? "text-xs" : "text-sm"}`.trim()}><span className="font-medium">{label}</span><textarea className={`${compact ? "min-h-16" : "min-h-24"} w-full rounded-md border px-3 py-2 text-sm`} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} /></label>;
 }

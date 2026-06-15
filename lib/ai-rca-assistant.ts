@@ -6,6 +6,11 @@ export const MANUAL_DEIDENTIFY_NOTICE = "Please manually de-identify before past
 
 type PromptRca = {
   status?: string | null;
+  patientFactors?: string | null;
+  individualStaffFactors?: string | null;
+  taskProcessTechnologyFactors?: string | null;
+  teamCommunicationFactors?: string | null;
+  workEnvironmentOrganizationalFactors?: string | null;
   contributingHuman?: string | null;
   contributingProcess?: string | null;
   contributingEquipment?: string | null;
@@ -80,12 +85,11 @@ function buildWorkflowStatus(incident: AiRcaPromptIncident) {
 function buildKnownContributingFactors(rca?: PromptRca | null) {
   if (!rca) return "-";
   const labels = [
-    ["Personnel", rca.contributingHuman],
-    ["Process", rca.contributingProcess],
-    ["Equipment", rca.contributingEquipment],
-    ["Environment", rca.contributingEnvironment],
-    ["Communication", rca.contributingCommunication],
-    ["IT", rca.contributingIT],
+    ["Patient Factors", rca.patientFactors],
+    ["Individual Staff Factors", rca.individualStaffFactors ?? rca.contributingHuman],
+    ["Task / Process / Technology Factors", rca.taskProcessTechnologyFactors ?? rca.contributingProcess],
+    ["Team / Communication Factors", rca.teamCommunicationFactors ?? rca.contributingCommunication],
+    ["Work Environment / Organizational Factors", rca.workEnvironmentOrganizationalFactors ?? rca.contributingEnvironment],
   ] as const;
   const available = labels.filter(([, value]) => Boolean(value?.trim()));
   if (available.length === 0) return "-";
