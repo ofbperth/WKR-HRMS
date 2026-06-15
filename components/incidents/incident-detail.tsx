@@ -25,6 +25,11 @@ type DetailIncident = DbIncident & {
     id: string;
     problemStatement: string | null;
     timeline: string | null;
+    patientFactors: string | null;
+    individualStaffFactors: string | null;
+    taskProcessTechnologyFactors: string | null;
+    teamCommunicationFactors: string | null;
+    workEnvironmentOrganizationalFactors: string | null;
     contributingHuman: string | null;
     contributingProcess: string | null;
     contributingEquipment: string | null;

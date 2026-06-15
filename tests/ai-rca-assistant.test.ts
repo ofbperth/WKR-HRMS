@@ -9,7 +9,7 @@ describe("AI RCA Assistant", () => {
     expect(shouldShowAiRcaAssistant("Reporter")).toBe(false);
   });
 
-  it("builds a de-identified prompt with a real summary and without the removed checklist block", () => {
+  it("builds a de-identified prompt with the 5-tier contributory factors", () => {
     const prompt = buildGeminiRcaPrompt({
       id: "incident-internal-123",
       occurredAt: new Date("2026-06-10T08:15:00.000Z"),
@@ -23,12 +23,11 @@ describe("AI RCA Assistant", () => {
       immediateAction: "โทรหา นางสาวพยาบาลเอ และอ้าง AN 998877 เพื่อหยุดยา",
       rca: {
         status: "Draft",
-        contributingHuman: "เจ้าหน้าที่ชื่อแดง handoff ไม่ครบ",
-        contributingProcess: "กระบวนการ handoff ไม่ชัด",
-        contributingEquipment: "",
-        contributingEnvironment: null,
-        contributingCommunication: "ติดต่อคุณสมหญิงไม่ทัน",
-        contributingIT: "",
+        patientFactors: "ผู้ป่วยอาการเปลี่ยนเร็ว",
+        individualStaffFactors: "เจ้าหน้าที่ชื่อแดง handoff ไม่ครบ",
+        taskProcessTechnologyFactors: "กระบวนการ handoff ไม่ชัด",
+        teamCommunicationFactors: "ติดต่อคุณสมหญิงไม่ทัน",
+        workEnvironmentOrganizationalFactors: "staffing จำกัดช่วงเวรดึก",
       },
     });
 
@@ -38,7 +37,9 @@ describe("AI RCA Assistant", () => {
     expect(prompt).toContain("ผู้ป่วยได้รับยาผิดช่วงเวลา");
     expect(prompt).toContain("Immediate action:");
     expect(prompt).toContain("AN [REDACTED]");
-    expect(prompt).toContain("Known contributing factors: Personnel:");
+    expect(prompt).toContain("Known contributing factors: Patient Factors:");
+    expect(prompt).toContain("Individual Staff Factors:");
+    expect(prompt).toContain("Work Environment / Organizational Factors:");
     expect(prompt).not.toContain("กรุณาวิเคราะห์ให้ครบหัวข้อดังนี้");
     expect(prompt).not.toContain("1. Timeline analysis");
     expect(prompt).not.toContain("12. Risk of recurrence");

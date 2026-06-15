@@ -8,6 +8,7 @@ import { canManageIncident, canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import { rcaRepository } from "@/lib/rca-repository";
+import { mapFiveTierToLegacyProjection } from "@/lib/rca-contributory-factors";
 
 export const preferredRegion = "sin1";
 
@@ -24,17 +25,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const submittedAt = input.submit ? new Date() : incident.rca?.submittedAt ?? null;
     const status = input.submit ? "Submitted" : incident.rca?.status ?? "Draft";
     const rcaEncrypted = encryptedRcaNarrative(input);
+    const legacyFactors = mapFiveTierToLegacyProjection(input);
     const rca = await prisma.rCA.upsert({
       where: { incidentId: params.id },
       update: {
         problemStatement: null,
         timeline: null,
-        contributingHuman: input.contributingHuman?.trim() || null,
-        contributingProcess: input.contributingProcess?.trim() || null,
-        contributingEquipment: input.contributingEquipment?.trim() || null,
-        contributingEnvironment: input.contributingEnvironment?.trim() || null,
-        contributingCommunication: input.contributingCommunication?.trim() || null,
-        contributingIT: input.contributingIT?.trim() || null,
+        contributingHuman: legacyFactors.contributingHuman,
+        contributingProcess: legacyFactors.contributingProcess,
+        contributingEquipment: legacyFactors.contributingEquipment,
+        contributingEnvironment: legacyFactors.contributingEnvironment,
+        contributingCommunication: legacyFactors.contributingCommunication,
+        contributingIT: legacyFactors.contributingIT,
         rootCause: null,
         rcaEncrypted,
         preventiveAction: null,
@@ -48,12 +50,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         incidentId: params.id,
         problemStatement: null,
         timeline: null,
-        contributingHuman: input.contributingHuman?.trim() || null,
-        contributingProcess: input.contributingProcess?.trim() || null,
-        contributingEquipment: input.contributingEquipment?.trim() || null,
-        contributingEnvironment: input.contributingEnvironment?.trim() || null,
-        contributingCommunication: input.contributingCommunication?.trim() || null,
-        contributingIT: input.contributingIT?.trim() || null,
+        contributingHuman: legacyFactors.contributingHuman,
+        contributingProcess: legacyFactors.contributingProcess,
+        contributingEquipment: legacyFactors.contributingEquipment,
+        contributingEnvironment: legacyFactors.contributingEnvironment,
+        contributingCommunication: legacyFactors.contributingCommunication,
+        contributingIT: legacyFactors.contributingIT,
         rootCause: null,
         rcaEncrypted,
         preventiveAction: null,
