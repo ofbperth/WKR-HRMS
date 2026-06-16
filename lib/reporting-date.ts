@@ -4,6 +4,7 @@ const BANGKOK_UTC_OFFSET_HOURS = 7;
 const DAY_MS = 86_400_000;
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 const monthOnlyPattern = /^(\d{4})-(\d{2})$/;
+const timeOnlyPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 type DateParts = { year: number; month: number; day: number };
 
@@ -26,6 +27,15 @@ function parseDateOnly(value?: string): DateParts | null {
 
 function bangkokDateTimeToUtc(parts: DateParts, hour: number, minute: number, second: number, millisecond: number) {
   return new Date(Date.UTC(parts.year, parts.month - 1, parts.day, hour - BANGKOK_UTC_OFFSET_HOURS, minute, second, millisecond));
+}
+
+export function bangkokDateTimeInputToUtc(dateValue?: string, timeValue?: string) {
+  const dateParts = parseDateOnly(dateValue);
+  const timeMatch = timeValue ? timeOnlyPattern.exec(timeValue) : null;
+  if (!dateParts || !timeMatch) return null;
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  return bangkokDateTimeToUtc(dateParts, hour, minute, 0, 0);
 }
 
 export function bangkokStartOfDay(value?: string) {

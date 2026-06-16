@@ -15,6 +15,7 @@ import { calculateRcaDueAt } from "@/lib/rca-due-date";
 import { isIncidentClosed } from "@/lib/incident-close";
 import { deleteIncidentWithLifecycle } from "@/lib/incident-lifecycle";
 import { isIncidentDetailUpdate } from "@/lib/incident-update-routing";
+import { bangkokDateTimeInputToUtc } from "@/lib/reporting-date";
 
 function canEditIncidentDetails(user: { id: string; role: Role; unitId: string | null }, incident: { reportedById: string | null; incidentUnitId: string }) {
   return canManageIncident(user.role) || user.id === incident.reportedById || canUnitManageIncident(user, incident);
@@ -88,7 +89,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       const riskCode = await prisma.riskCode.findUnique({ where: { id: targetRiskCodeId } });
       if (!riskCode || riskCode.clinicalOrGeneral !== targetType) return Response.json({ error: "INVALID_RISK_CODE_FOR_INCIDENT_TYPE" }, { status: 400 });
       if (!(severityOptionsFor(targetType) as readonly string[]).includes(targetSeverity)) return Response.json({ error: "INVALID_SEVERITY_FOR_INCIDENT_TYPE" }, { status: 400 });
-      const occurredAt = input.occurredDate && input.occurredTime ? new Date(`${input.occurredDate}T${input.occurredTime}:00`) : existing.occurredAt;
+      const occurredAt = input.occurredDate && input.occurredTime ? bangkokDateTimeInputToUtc(input.occurredDate, input.occurredTime) : existing.occurredAt;
+      if (!occurredAt || Number.isNaN(occurredAt.getTime())) return Response.json({ error: "INVALID_OCCURRED_AT" }, { status: 400 });
       const currentPatientHn = decryptLegacyIncidentIdentifier((existing as any).hnEncrypted, existing.patientHn);
       const currentPatientAn = decryptLegacyIncidentIdentifier((existing as any).anEncrypted, (existing as any).patientAn);
       const updateData: any = {

@@ -10,6 +10,7 @@ import { invalidateSmartCache } from "@/lib/smart-cache";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
 import { generateIncidentNo } from "@/lib/incident-number";
 import { assertIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
+import { bangkokDateTimeInputToUtc } from "@/lib/reporting-date";
 export { generateIncidentNo } from "@/lib/incident-number";
 
 function resolveAutomation(severity: Severity, clinicalOrGeneral: string) {
@@ -40,8 +41,8 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
   if (!riskCode || !riskCode.isActive) throw new Error("INVALID_RISK_CODE");
   if (riskCode.clinicalOrGeneral !== input.clinicalOrGeneral) throw new Error("RISK_CODE_TYPE_MISMATCH");
   if (!(severityOptionsFor(input.clinicalOrGeneral) as readonly string[]).includes(input.severity)) throw new Error("INVALID_SEVERITY_FOR_TYPE");
-  const occurredAt = new Date(`${input.occurredDate}T${input.occurredTime}:00`);
-  if (Number.isNaN(occurredAt.getTime())) throw new Error("INVALID_OCCURRED_AT");
+  const occurredAt = bangkokDateTimeInputToUtc(input.occurredDate, input.occurredTime);
+  if (!occurredAt || Number.isNaN(occurredAt.getTime())) throw new Error("INVALID_OCCURRED_AT");
   const auto = resolveAutomation(input.severity, input.clinicalOrGeneral);
   const reportedAt = new Date();
   const rcaDueAt = calculateRcaDueAt(input.severity, reportedAt);
