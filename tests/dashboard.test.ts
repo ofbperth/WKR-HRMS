@@ -4,7 +4,7 @@ import { dashboardSearchParamsFromUrl, normalizeDashboardSearchParams } from "@/
 import { buildIncidentWhere as buildIncidentListWhere } from "@/lib/incident-query";
 import { buildTriageIncidentWhere } from "@/lib/triage-query";
 import { formatDateInputDisplay, formatDateTime, formatMonthBucket, formatRcaDueCountdown, formatTimeOnly, parseDateInputDisplay } from "@/lib/format";
-import { bangkokDateRangeFilter, bangkokEndOfDay, bangkokMonthKey, bangkokMonthRange, bangkokStartOfDay } from "@/lib/reporting-date";
+import { bangkokDateRangeFilter, bangkokDateTimeInputToUtc, bangkokEndOfDay, bangkokMonthKey, bangkokMonthRange, bangkokStartOfDay } from "@/lib/reporting-date";
 import { nrlsRiskCodes } from "@/lib/nrls-risk-codes";
 import { activeIncidentFilter } from "@/lib/prisma-fields";
 
@@ -238,6 +238,12 @@ describe("Bangkok date/time display formatting", () => {
 
   it("renders time-only values as HH:mm in Bangkok time", () => {
     expect(formatTimeOnly("2026-05-29T01:07:00.000Z")).toBe("08:07");
+  });
+
+  it("parses incident input time as Bangkok local time before storing UTC", () => {
+    const occurredAt = bangkokDateTimeInputToUtc("2026-06-16", "13:20");
+    expect(occurredAt?.toISOString()).toBe("2026-06-16T06:20:00.000Z");
+    expect(formatDateTime(occurredAt!)).toBe("16/06/2026 13:20");
   });
 
   it("keeps empty date/time values as dash", () => {
