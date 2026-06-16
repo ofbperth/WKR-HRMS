@@ -71,5 +71,5 @@ export function canApproveRca(role: string) {
 }
 
 export function canSeeSensitive(role: string) {
-  return hasRmTeamAuthority(role);
+  return role === "UnitManager" || hasRmTeamAuthority(role);
 }

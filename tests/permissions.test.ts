@@ -17,9 +17,10 @@ describe("role based access control", () => {
     expect(canUnitManageIncident({ role: "UnitManager", unitId: "unit-a" }, { incidentUnitId: "unit-b" })).toBe(false);
   });
 
-  it("allows RM/Admin to manage review and sensitive incident details", () => {
+  it("allows RM/Admin to manage review and UnitManager/RM/Admin to reveal sensitive incident details", () => {
     expect(canManageIncident("RMTeam")).toBe(true);
     expect(canManageIncident("Admin")).toBe(true);
+    expect(canSeeSensitive("UnitManager")).toBe(true);
     expect(canSeeSensitive("RMTeam")).toBe(true);
     expect(canSeeSensitive("Reporter")).toBe(false);
   });
@@ -42,9 +43,9 @@ describe("role based access control", () => {
     expect(canAccessApiPath("Executive", "/api/incidents")).toBe(false);
   });
 
-  it("restricts direct sensitive identifier API access to RM/Admin only", () => {
+  it("allows direct sensitive identifier API access for UnitManager within scoped incidents", () => {
     expect(canAccessApiPath("Reporter", "/api/incidents/incident-1/sensitive")).toBe(false);
-    expect(canAccessApiPath("UnitManager", "/api/incidents/incident-1/sensitive")).toBe(false);
+    expect(canAccessApiPath("UnitManager", "/api/incidents/incident-1/sensitive")).toBe(true);
     expect(canAccessApiPath("RMTeam", "/api/incidents/incident-1/sensitive")).toBe(true);
     expect(canAccessApiPath("Admin", "/api/incidents/incident-1/sensitive")).toBe(true);
   });
