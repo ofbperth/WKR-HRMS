@@ -243,7 +243,7 @@ async function getScopedIncidentCore(id: string, user: IncidentAccessUser): Prom
   return incident;
 }
 
-async function hasScopedIncidentAccess(id: string, user: IncidentAccessUser) {
+export async function hasScopedIncidentAccess(id: string, user: IncidentAccessUser) {
   const activeFilter = activeIncidentFilter();
   const incident = await prisma.incident.findFirst({
     where: { id, AND: [scopeWhereForUser(user), { status: { not: "Rejected" } }, ...(activeFilter ? [activeFilter] : [])] } as any,

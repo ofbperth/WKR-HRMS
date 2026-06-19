@@ -88,7 +88,7 @@ export function IncidentDetail({ incident, currentUser }: { incident: DetailInci
   const canTriage = (manage || unitCanWork) && !incident.reviewedAt && !["Closed", "Rejected"].includes(incident.status);
   const rcaAllowed = ["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status);
   const canWorkRca = !incidentClosed && rcaAllowed && (manage || unitCanWork || canSubmitRca(currentUser.role) && currentUser.role !== "UnitManager");
-  const canAddComment = manage;
+  const canAddComment = manage || unitCanWork;
   const canClose = manage && canCloseIncident(incident);
 
   const aiRcaAssistant = canWorkRca ? <AiRcaAssistantCard incident={incident} role={currentUser.role} /> : null;
