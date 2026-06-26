@@ -73,6 +73,46 @@ Start with:
 
 The project is functionally ready for continued development and staging validation. Production deployment still requires environment verification, secret rotation, production database migration checks, OAuth callback verification, backup/restore confirmation, and hospital PDPA policy review.
 
+## Safe Reset Of Test Incident Data
+
+Use the guarded reset script only when preparing a staging/production-like database for real hospital go-live and only after confirming the target database contains no incident workflow data that must be preserved.
+
+Safety workflow:
+
+1. Back up the target database first.
+2. Verify the target `DIRECT_URL` or `DATABASE_URL` host before running.
+3. Run the dry-run command and review counts carefully.
+4. Run the confirm command only after validating the dry-run output.
+
+Preferred backup options for this repo:
+
+- Supabase Dashboard export.
+- Supabase CLI with an explicit DB URL because this repo is not linked to a local `supabase/` project:
+
+```powershell
+supabase db dump --data-only --db-url "<percent-encoded-direct-url>" --use-copy -f .\backups\pre-reset.sql
+```
+
+Commands:
+
+```powershell
+npm run db:reset-test-data:dry
+npm run db:reset-test-data:confirm
+```
+
+What the reset clears:
+
+- `Incident`, `IncidentTeam`, `RCA`, `ActionPlan`, `Comment`, `Attachment`
+- incident-linked `Notification`
+- incident-derived `MonthlyReport`, `CacheEntry`, `ExportAccessGrant`, `ExportJob`
+- targeted `AuditLog` and `StorageObject` rows that are tied to the deleted incident/export/report data
+
+What the reset preserves:
+
+- `User`, `AuthSettings`, `UserInvite`
+- `Unit`, `Team`, `RiskCode`
+- `AutomationRun`, `ScheduledEmailLog`, `RetentionRun`
+
 ## Safety Note
 
 This system may contain sensitive hospital incident data. Do not commit real patient identifiers, production secrets, service-role keys, database credentials, or real RCA narratives.
