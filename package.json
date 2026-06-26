@@ -26,6 +26,8 @@
     "security:scan-audit-sensitive": "tsx scripts/scan-audit-sensitive-data.ts",
     "security:verify-identifier-recovery": "tsx scripts/verify-sensitive-identifier-recovery.ts",
     "retention:run": "tsx scripts/run-retention-cleanup.ts",
+    "db:reset-test-data:dry": "tsx scripts/reset-test-data.ts --dry-run",
+    "db:reset-test-data:confirm": "tsx scripts/reset-test-data.ts --confirm-reset-test-data",
     "db:reset": "prisma migrate reset"
   },
   "prisma": {
