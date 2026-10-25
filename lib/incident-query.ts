@@ -21,7 +21,7 @@ export type IncidentFilterParams = {
   rcaDue?: string;
   sentinel?: string;
   needRmSupport?: string;
-  q?: string;
+  q?: string | string[];
   page?: string | string[];
   cursor?: string | string[];
 };
@@ -115,17 +115,18 @@ export function buildIncidentWhere(user: IncidentAccessUser, params: IncidentFil
   if (params.sentinel === "false") and.push({ isSentinel: false });
   if (params.needRmSupport === "true") and.push({ needRmSupport: true });
   if (params.needRmSupport === "false") and.push({ needRmSupport: false });
-  if (params.q) {
-    const q = params.q.trim();
+  const queries = (Array.isArray(params.q) ? params.q : [params.q ?? ""])
+    .map((q) => q.trim()).filter(Boolean);
+  if (queries.length) {
     and.push({
-      OR: [
+      OR: queries.flatMap((q) => [
         { incidentNo: { contains: q } },
         { title: { contains: q } },
         { description: { contains: q } },
         { location: { contains: q } },
         { riskCode: { code: { contains: q } } },
         { riskCode: { nameTh: { contains: q } } },
-      ],
+      ]),
     });
   }
   return where;

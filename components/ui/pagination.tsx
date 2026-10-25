@@ -47,6 +47,7 @@ function buildHref(basePath: string, searchParams: SearchParams, page: number) {
   Object.entries(searchParams).forEach(([key, value]) => {
     if (key === "page") return;
     if (typeof value === "string" && value) query.set(key, value);
+    if (Array.isArray(value)) value.filter(Boolean).forEach((item) => query.append(key, item));
   });
   if (page > 1) query.set("page", String(page));
   const qs = query.toString();
