@@ -89,7 +89,7 @@ export function IncidentList({ incidents, meta, lookup, basePath, searchParams, 
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="status" defaultValue={asString(searchParams.status)}><option value="">ทุกสถานะ</option>{incidentStatusValues.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="sentinel" defaultValue={asString(searchParams.sentinel)}><option value="">ทั้งหมด</option><option value="true">Sentinel</option><option value="false">ไม่ใช่ Sentinel</option></select>
       <select className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm" name="needRmSupport" defaultValue={asString(searchParams.needRmSupport)}><option value="">RM support ทั้งหมด</option><option value="true">ต้องการ RM support</option><option value="false">ไม่ต้องการ</option></select>
-      <input className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" placeholder="ค้นหาเลขที่รายงาน / ชื่อเหตุการณ์ / NRLS code" defaultValue={asString(searchParams.q)} />
+      {(Array.isArray(searchParams.q) ? searchParams.q : [asString(searchParams.q)]).map((q, index) => <input key={index} className="h-10 w-full min-w-0 rounded-md border px-3 py-2 text-sm sm:col-span-2" name="q" aria-label={`คำค้นหา ${index + 1}`} placeholder="ค้นหาเลขที่รายงาน / ชื่อเหตุการณ์ / NRLS code" defaultValue={q} />)}
       <div className="flex min-w-0 flex-wrap gap-2 sm:col-span-2">
         <Button type="submit">ค้นหา</Button>
         <Link className="inline-flex h-10 items-center rounded-md border px-4 text-sm" href={basePath}>ล้างค่า</Link>
