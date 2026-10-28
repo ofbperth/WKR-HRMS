@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   actionFind: vi.fn(), actionUpdate: vi.fn(), actionCreate: vi.fn(), actionCount: vi.fn(),
   rcaWrite: vi.fn(), rcaUpdate: vi.fn(),
   invalidate: vi.fn(), audit: vi.fn(),
-  createIncident: vi.fn(),
+  createIncident: vi.fn(), riskFind: vi.fn(),
+  transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({
@@ -17,10 +18,10 @@ vi.mock("@/lib/prisma", () => ({ prisma: {
   incident: { findUnique: mocks.incidentFind, update: mocks.incidentUpdate },
   actionPlan: { findUnique: mocks.actionFind, update: mocks.actionUpdate, create: mocks.actionCreate, count: mocks.actionCount },
   rCA: { upsert: mocks.rcaWrite, update: mocks.rcaUpdate },
-  riskCode: { findUnique: vi.fn(async () => ({ id: "risk", clinicalOrGeneral: "Clinical", simpleCategory: "S", isActive: true })) },
+  riskCode: { findUnique: mocks.riskFind },
   user: { findMany: vi.fn(async () => []) },
   notification: { create: vi.fn(), createMany: vi.fn() },
-  $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
+  $transaction: mocks.transaction,
 } }));
 vi.mock("@/lib/audit", () => ({ auditLog: mocks.audit }));
 vi.mock("@/lib/smart-cache", () => ({ invalidateSmartCache: mocks.invalidate }));
@@ -45,6 +46,7 @@ const classification = { severity: "E", riskCodeId: "risk", status: "Closed", is
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireUser.mockResolvedValue({ id: "reporter", role: "RMTeam", unitId: "unit", name: "Synthetic" });
+  mocks.riskFind.mockResolvedValue({ id: "risk", clinicalOrGeneral: "Clinical", simpleCategory: "S", isActive: true });
   mocks.incidentFind.mockResolvedValue(incident());
   mocks.incidentUpdate.mockImplementation(async ({ data }) => ({ ...incident(), ...data }));
   mocks.actionFind.mockResolvedValue({ id: "action", ownerId: "reporter", incidentId: "incident", status: "Ongoing", incident: incident({ status: "ActionOngoing" }) });
@@ -157,12 +159,14 @@ describe("workflow cache refresh", () => {
     expect(mocks.invalidate).toHaveBeenCalledOnce();
   });
 
-  it("invalidates a saved RCA even if updating the submitted incident fails", async () => {
+  it("does not invalidate RCA cache when its transaction fails", async () => {
     mocks.incidentUpdate.mockRejectedValueOnce(new Error("incident update failed"));
     const { PUT } = await import("@/app/api/incidents/[id]/rca/route");
     expect((await PUT(request({ ...rcaInput, submit: true }, "PUT"), context)).status).toBe(500);
     expect(mocks.rcaWrite).toHaveBeenCalled();
-    expect(mocks.invalidate).toHaveBeenCalledOnce();
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+    expect(mocks.transaction.mock.calls[0][0]).toHaveLength(2);
+    expect(mocks.invalidate).not.toHaveBeenCalled();
   });
 
   it("invalidates after triage", async () => {
@@ -195,5 +199,40 @@ describe("workflow cache refresh", () => {
     expect((await POST(request({ verified }), context)).status).toBe(200);
     expect(mocks.invalidate).toHaveBeenCalledOnce();
     if (verified) expect(mocks.actionUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "Verified", verifiedById: "reporter", verifiedAt: expect.any(Date) }) }));
+  });
+});
+
+describe("second audit lifecycle and RCA regressions", () => {
+  it.each([{ status: "Rejected" }, { status: "Closed" }, { deletedAt: new Date() }, { lifecycleStatus: "ARCHIVED" }])("blocks action writes for terminal lifecycle %j", async (override) => {
+    const state = incident({ status: "ActionOngoing", rca: { status: "Approved" }, ...override });
+    mocks.requireUser.mockResolvedValue({ id: "admin", role: "Admin", unitId: "unit" });
+    mocks.incidentFind.mockResolvedValue(state);
+    mocks.actionFind.mockResolvedValue({ id: "action", status: "Done", incidentId: "incident", incident: state });
+    const update = await import("@/app/api/actions/[id]/route");
+    const verify = await import("@/app/api/actions/[id]/verify/route");
+    const create = await import("@/app/api/incidents/[id]/actions/route");
+    expect((await update.PUT(request({ status: "Done" }, "PUT"), context)).status).toBe(409);
+    expect((await verify.POST(request({ verified: true }), context)).status).toBe(409);
+    expect((await create.POST(request({ title: "Follow up", ownerId: "reporter", dueDate: "2026-11-01" }), context)).status).toBe(409);
+    expect(mocks.incidentUpdate).not.toHaveBeenCalled();
+    expect(mocks.actionUpdate).not.toHaveBeenCalled();
+    expect(mocks.actionCreate).not.toHaveBeenCalled();
+  });
+  it.each(["3", "4", "5"])("keeps General severity %s in RCA workflow despite a false checkbox", async (severity) => {
+    mocks.incidentFind.mockResolvedValue(incident({ clinicalOrGeneral: "General" }));
+    mocks.riskFind.mockResolvedValue({ id: "risk", clinicalOrGeneral: "General", simpleCategory: "S" });
+    const { POST } = await import("@/app/api/incidents/[id]/triage/route");
+    expect((await POST(request({ ...classification, severity, requireRca: false }), context)).status).toBe(200);
+    expect(mocks.incidentUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "RCARequired" }) }));
+  });
+  it("does not write plaintext RCA factors alongside the ciphertext", async () => {
+    const { PUT } = await import("@/app/api/incidents/[id]/rca/route");
+    expect((await PUT(request({ ...rcaInput, individualStaffFactors: "Synthetic private narrative", submit: true }, "PUT"), context)).status).toBe(200);
+    const call = mocks.rcaWrite.mock.calls[0][0];
+    for (const data of [call.create, call.update]) {
+      expect(data.rcaEncrypted).toBe("synthetic-ciphertext");
+      for (const key of ["contributingHuman", "contributingProcess", "contributingEquipment", "contributingEnvironment", "contributingCommunication", "contributingIT"]) expect(data[key]).toBeNull();
+    }
+    expect(mocks.incidentUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "RCASubmitted" } }));
   });
 });

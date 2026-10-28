@@ -1,8 +1,9 @@
+import { prepareRcaStorageMigration, legacyRcaNarrativeKeys } from "@/lib/rca-storage-migration";
 import { readFileSync } from "fs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 import { auditRecordHasSensitiveContent } from "@/lib/audit";
-import { encryptedIncidentIdentifiers, encryptedRcaNarrative } from "@/lib/sensitive-fields";
+import { encryptedIncidentIdentifiers } from "@/lib/sensitive-fields";
 import {
   classifyIncidentIdentifierCoverage,
   normalizeIdentifierValue,
@@ -92,23 +93,10 @@ async function main() {
   let rcaCount = 0;
   for (const rcaRaw of rcas) {
     const rca = rcaRaw as typeof rcaRaw & { rcaEncrypted?: string | null };
-    const nextEncrypted = encryptedRcaNarrative({
-      problemStatement: rca.problemStatement,
-      timeline: rca.timeline,
-      rootCause: rca.rootCause,
-      preventiveAction: rca.preventiveAction,
-    });
-    if (!rca.rcaEncrypted || rca.problemStatement || rca.timeline || rca.rootCause || rca.preventiveAction) {
-      await prisma.rCA.update({
-        where: { id: rca.id },
-        data: {
-          rcaEncrypted: nextEncrypted,
-          problemStatement: null,
-          timeline: null,
-          rootCause: null,
-          preventiveAction: null,
-        } as any,
-      });
+    const data = prepareRcaStorageMigration(rca);
+    if (data) {
+      const result = await prisma.rCA.updateMany({ where: { id: rca.id, updatedAt: rca.updatedAt, rcaEncrypted: rca.rcaEncrypted, ...Object.fromEntries(legacyRcaNarrativeKeys.map(key => [key, rca[key]])) }, data });
+      if (result.count !== 1) throw new Error("RCA_CHANGED_RETRY_BACKFILL");
       rcaCount += 1;
     }
   }

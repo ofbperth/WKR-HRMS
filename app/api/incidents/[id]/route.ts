@@ -12,7 +12,7 @@ import { decryptLegacyIncidentIdentifier, encryptedIncidentIdentifiers } from "@
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
-import { canCloseIncident, classificationStatusOptions, isIncidentClosed } from "@/lib/incident-close";
+import { canCloseIncident, classificationStatusOptions, isIncidentReadOnly } from "@/lib/incident-close";
 import { deleteIncidentWithLifecycle } from "@/lib/incident-lifecycle";
 import { isIncidentDetailUpdate } from "@/lib/incident-update-routing";
 import { bangkokDateTimeInputToUtc } from "@/lib/reporting-date";
@@ -76,6 +76,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const existing = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: { select: { status: true } }, actionPlans: { select: { status: true } } } });
     if (!existing) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
 
+    if (isIncidentReadOnly(existing)) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
+
     if (isIncidentDetailUpdate(body)) {
       if (!canEditIncidentDetails(user, existing)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
       if (isRcaSubmittedOrBeyond(existing)) return Response.json({ error: "INCIDENT_LOCKED_AFTER_RCA_SUBMITTED" }, { status: 409 });
@@ -125,7 +127,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     if (canManageIncident(user.role)) {
-      if (isIncidentClosed(existing)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
+      if (isIncidentReadOnly(existing)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
       const input = updateIncidentClassificationSchema.parse(body);
       if (!classificationStatusOptions(existing.status).includes(input.status)) return Response.json({ error: "USE_INCIDENT_WORKFLOW" }, { status: 409 });
       const riskCode = await prisma.riskCode.findUnique({ where: { id: input.riskCodeId } });

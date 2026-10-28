@@ -2,6 +2,8 @@ import { INCIDENT_STATUS_VALUES } from "@/lib/types";
 
 type CloseCheckIncident = {
   status: string;
+  deletedAt?: Date | null;
+  lifecycleStatus?: string;
   rca?: { status: string } | null;
   actionPlans?: Array<{ status: string }>;
 };
@@ -16,8 +18,12 @@ export function isIncidentClosed(incident: { status: string }) {
   return incident.status === "Closed";
 }
 
+export function isIncidentReadOnly(incident: { status: string; deletedAt?: Date | null; lifecycleStatus?: string }) {
+  return ["Closed", "Rejected"].includes(incident.status) || !!incident.deletedAt || ["SOFT_DELETED", "ARCHIVED"].includes(incident.lifecycleStatus ?? "");
+}
+
 export function canCloseIncident(incident: CloseCheckIncident) {
-  if (["Closed", "Rejected"].includes(incident.status)) return false;
+  if (isIncidentReadOnly(incident)) return false;
 
   const actionPlans = incident.actionPlans ?? [];
   const hasOpenActions = actionPlans.some((action) => action.status !== "Verified");

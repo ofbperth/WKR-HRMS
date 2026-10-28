@@ -1,3 +1,4 @@
+import { isIncidentReadOnly } from "@/lib/incident-close";
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
@@ -14,7 +15,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const input = rcaApprovalSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident?.rca) return Response.json({ error: "RCA_NOT_FOUND" }, { status: 404 });
-    if (["Closed", "Rejected"].includes(incident.status) || incident.deletedAt) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
+    if (isIncidentReadOnly(incident)) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
     if (incident.rca.status !== "Submitted" && input.approved) return Response.json({ error: "RCA_MUST_BE_SUBMITTED" }, { status: 409 });
     if (!input.approved && !["Submitted", "Approved"].includes(incident.rca.status)) return Response.json({ error: "RCA_NOT_READY_FOR_REVISION" }, { status: 409 });
 

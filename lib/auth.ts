@@ -15,6 +15,8 @@ export const getCurrentUser = cache(async function getCurrentUser() {
   if (!session) return null;
   const user = await prisma.user.findUnique({ where: { id: session.id }, include: { unit: true } });
   if (!user || !user.isActive || !isRole(user.role)) return null;
+  // Reauthenticate after authorization changes; middleware claims must match the database.
+  if (user.role !== session.role || user.unitId !== session.unitId) return null;
   return user as typeof user & { role: Role };
 });
 

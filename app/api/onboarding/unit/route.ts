@@ -7,14 +7,16 @@ import { refreshSessionUnit } from "@/lib/session";
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
+    if (user.unitId) return Response.json({ error: "UNIT_ALREADY_ASSIGNED" }, { status: 409 });
     const { unitId } = await request.json().catch(() => ({}));
     if (!unitId || typeof unitId !== "string") return Response.json({ error: "UNIT_REQUIRED" }, { status: 400 });
     const unit = await prisma.unit.findFirst({ where: { id: unitId, isActive: true, NOT: { type: "ทีม" } } });
     if (!unit) return Response.json({ error: "UNIT_NOT_FOUND" }, { status: 404 });
-    const updated = await prisma.user.update({ where: { id: user.id }, data: { unitId } });
+    const updated = await prisma.user.updateMany({ where: { id: user.id, unitId: null }, data: { unitId } });
+    if (updated.count !== 1) return Response.json({ error: "UNIT_ALREADY_ASSIGNED" }, { status: 409 });
     await auditLog({ userId: user.id, action: "USER_UNIT_SELECTED", entityType: "User", entityId: user.id, newValue: { unitId, unitName: unit.name } });
     const oldToken = cookies().get(SESSION_COOKIE)?.value;
-    const token = await refreshSessionUnit(oldToken, updated.unitId);
+    const token = await refreshSessionUnit(oldToken, unitId);
     const res = Response.json({ ok: true, unitId });
     if (token) {
       res.headers.append("Set-Cookie", `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 8}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);

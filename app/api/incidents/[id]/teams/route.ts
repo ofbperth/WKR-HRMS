@@ -1,3 +1,4 @@
+import { isIncidentReadOnly } from "@/lib/incident-close";
 import { apiError, requireUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
@@ -16,11 +17,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       where: { id: params.id },
       select: {
         id: true,
+        status: true,
+        deletedAt: true,
+        lifecycleStatus: true,
         incidentUnitId: true,
         incidentTeams: { include: { team: true } },
       },
     });
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isIncidentReadOnly(incident)) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
     if (!canManageIncidentTeams(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
 
     const requestedTeamIds = [...new Set(input.teamIds)];

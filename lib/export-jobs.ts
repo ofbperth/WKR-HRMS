@@ -189,6 +189,10 @@ export async function claimExportJob(jobId?: string) {
   return (prisma as any).exportJob.findUnique({ where: { id: candidate.id } });
 }
 
+function assertJobAuthorization(job: { userId: string; role: string; unitId: string | null }, user: ExportUser) {
+  if (job.userId !== user.id || job.role !== user.role || (user.role === "UnitManager" && (!user.unitId || job.unitId !== user.unitId))) throw new Error("FORBIDDEN");
+}
+
 async function markJobFailed(job: any, error: unknown) {
   const message = error instanceof Error ? error.message : "EXPORT_JOB_FAILED";
   const updated = await (prisma as any).exportJob.update({
@@ -253,6 +257,9 @@ export async function processQueuedExportJob(jobId?: string) {
   if (!job) return null;
 
   try {
+    const user = await prisma.user.findUnique({ where: { id: job.userId } });
+    if (!user?.isActive) throw new Error("FORBIDDEN");
+    assertJobAuthorization(job, user);
     const filters = parseFilters(job.filtersJson);
     const artifact = await buildExport(job.kind as ExportKind, { id: job.userId, role: job.role, unitId: job.unitId }, filters);
     const updated = await attachArtifactMetadata(job, artifact);
@@ -339,7 +346,7 @@ export function serializeExportJob(job: any) {
 export async function retryExportJob(input: { user: ExportUser; jobId: string }) {
   const job = await (prisma as any).exportJob.findUnique({ where: { id: input.jobId } });
   if (!job) throw new Error("NOT_FOUND");
-  if (job.userId !== input.user.id) throw new Error("FORBIDDEN");
+  assertJobAuthorization(job, input.user);
   const status = resolveExportJobStatus(job);
   if (!["Failed", "Expired"].includes(status)) throw new Error("EXPORT_JOB_RETRY_NOT_ALLOWED");
 
@@ -349,7 +356,7 @@ export async function retryExportJob(input: { user: ExportUser; jobId: string })
       try {
         await deletePrivateObject({ bucket: storageObject.bucket, objectKey: storageObject.objectKey });
       } catch {
-        // Best-effort cleanup before requeue.
+        throw new Error("EXPORT_STORAGE_DELETE_FAILED");
       }
       await (prisma as any).storageObject.update({
         where: { id: storageObject.id },
@@ -386,8 +393,7 @@ export async function retryExportJob(input: { user: ExportUser; jobId: string })
 export async function issueExportArtifactDownload(input: { user: ExportUser; jobId: string }) {
   const job = await (prisma as any).exportJob.findUnique({ where: { id: input.jobId } });
   if (!job) throw new Error("NOT_FOUND");
-  if (job.userId !== input.user.id) throw new Error("FORBIDDEN");
-  if (job.role !== input.user.role) throw new Error("FORBIDDEN");
+  assertJobAuthorization(job, input.user);
   if (resolveExportJobStatus(job) !== "Succeeded" || !job.storageObjectId) throw new Error("EXPORT_JOB_NOT_DOWNLOADABLE");
 
   const storageObject = await (prisma as any).storageObject.findUnique({ where: { id: job.storageObjectId } });
@@ -430,8 +436,14 @@ export async function cleanupExpiredGeneratedFiles() {
   });
 
   let deleted = 0;
+  let failed = 0;
   for (const item of expired) {
-    await deletePrivateObject({ bucket: item.bucket, objectKey: item.objectKey }).catch(() => undefined);
+    try {
+      await deletePrivateObject({ bucket: item.bucket, objectKey: item.objectKey });
+    } catch {
+      failed += 1;
+      continue;
+    }
     await (prisma as any).storageObject.update({
       where: { id: item.id },
       data: { deletedAt: now },
@@ -450,7 +462,7 @@ export async function cleanupExpiredGeneratedFiles() {
     }
     deleted += 1;
   }
-  return { deleted, checkedAt: now.toISOString() };
+  return { deleted, failed, checkedAt: now.toISOString() };
 }
 
 export async function authorizeWorkerRequest(request: Request) {

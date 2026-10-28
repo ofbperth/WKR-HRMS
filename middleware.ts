@@ -30,7 +30,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (publicPaths.includes(pathname)) {
-    if (session) return NextResponse.redirect(new URL(roleHome[session.role], request.url));
     return NextResponse.next();
   }
 
