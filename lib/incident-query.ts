@@ -363,7 +363,13 @@ export function removeSensitiveIncidentStorage<T extends Record<string, any>>(in
 
 export function removeSensitiveIncidentIdentifiers<T extends Record<string, any>>(incident: T) {
   const reportedBy = incident.reportedBy
-    ? { ...incident.reportedBy, name: "[RESTRICTED]" }
+    ? {
+        id: incident.reportedBy.id,
+        name: "[RESTRICTED]",
+        email: incident.reportedBy.email,
+        role: incident.reportedBy.role,
+        unitId: incident.reportedBy.unitId,
+      }
     : incident.reportedBy;
   return {
     ...removeSensitiveIncidentStorage(incident),

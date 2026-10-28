@@ -1,8 +1,16 @@
+import { INCIDENT_STATUS_VALUES } from "@/lib/types";
+
 type CloseCheckIncident = {
   status: string;
   rca?: { status: string } | null;
   actionPlans?: Array<{ status: string }>;
 };
+
+// RCA/action transitions belong to their dedicated workflow endpoints. Allowing
+// arbitrary classification status changes would bypass the close prerequisites.
+export function classificationStatusOptions(currentStatus: string) {
+  return INCIDENT_STATUS_VALUES.filter(status => [currentStatus, "Closed", "Rejected"].includes(status));
+}
 
 export function isIncidentClosed(incident: { status: string }) {
   return incident.status === "Closed";

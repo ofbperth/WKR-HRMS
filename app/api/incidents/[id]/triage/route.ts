@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { severityOptionsFor } from "@/lib/severity";
 import { triageClassificationSchema } from "@/lib/validators";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 const rcaRequiredSeverity = ["E", "F", "G", "H", "I"];
 const sentinelSeverity = ["G", "H", "I"];
@@ -41,6 +42,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         reviewedAt: new Date(),
       },
     });
+    await invalidateSmartCache();
     await auditLog({
       userId: user.id,
       action: "SUBMIT_TRIAGE_CLASSIFICATION",

@@ -12,7 +12,7 @@ import { decryptLegacyIncidentIdentifier, encryptedIncidentIdentifiers } from "@
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import type { Role } from "@/lib/types";
 import { calculateRcaDueAt } from "@/lib/rca-due-date";
-import { isIncidentClosed } from "@/lib/incident-close";
+import { canCloseIncident, classificationStatusOptions, isIncidentClosed } from "@/lib/incident-close";
 import { deleteIncidentWithLifecycle } from "@/lib/incident-lifecycle";
 import { isIncidentDetailUpdate } from "@/lib/incident-update-routing";
 import { bangkokDateTimeInputToUtc } from "@/lib/reporting-date";
@@ -73,7 +73,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const user = await requireUser(["Reporter", "UnitManager", "RMTeam", "Admin"]);
     const body = await request.json();
     requestBody = body;
-    const existing = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: { select: { status: true } } } });
+    const existing = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: { select: { status: true } }, actionPlans: { select: { status: true } } } });
     if (!existing) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
 
     if (isIncidentDetailUpdate(body)) {
@@ -119,20 +119,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         needRmSupport: input.needRmSupport ?? existing.needRmSupport,
       };
       const updated = await prisma.incident.update({ where: { id: params.id }, data: updateData });
-      await auditLog({ userId: user.id, role: user.role, action: "update incident details", entityType: "Incident", entityId: params.id, oldValue: existing, newValue: updated });
       await invalidateSmartCache();
+      await auditLog({ userId: user.id, role: user.role, action: "update incident details", entityType: "Incident", entityId: params.id, oldValue: existing, newValue: updated });
       return Response.json(removeSensitiveIncidentIdentifiers(updated));
     }
 
     if (canManageIncident(user.role)) {
       if (isIncidentClosed(existing)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
       const input = updateIncidentClassificationSchema.parse(body);
+      if (!classificationStatusOptions(existing.status).includes(input.status)) return Response.json({ error: "USE_INCIDENT_WORKFLOW" }, { status: 409 });
       const riskCode = await prisma.riskCode.findUnique({ where: { id: input.riskCodeId } });
       if (!riskCode || riskCode.clinicalOrGeneral !== existing.clinicalOrGeneral) return Response.json({ error: "INVALID_RISK_CODE_FOR_INCIDENT_TYPE" }, { status: 400 });
       if (!(severityOptionsFor(existing.clinicalOrGeneral) as readonly string[]).includes(input.severity)) return Response.json({ error: "INVALID_SEVERITY_FOR_INCIDENT_TYPE" }, { status: 400 });
       if (input.status === "Closed") {
-        const openActions = await prisma.actionPlan.count({ where: { incidentId: params.id, status: { not: "Verified" } } });
-        if (openActions > 0) return Response.json({ error: "VERIFY_ALL_ACTIONS_BEFORE_CLOSE" }, { status: 409 });
+        if (!canCloseIncident(existing)) return Response.json({ error: "INCIDENT_NOT_READY_TO_CLOSE" }, { status: 409 });
       }
       const updated = await prisma.incident.update({
         where: { id: params.id },
@@ -150,6 +150,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           closedAt: input.status === "Closed" ? new Date() : existing.closedAt,
         },
       });
+      await invalidateSmartCache();
       const changes: Record<string, unknown> = {};
       for (const key of ["severity", "riskCodeId", "simpleCategory", "status", "isSentinel", "needRmSupport"] as const) {
         if (String(existing[key]) !== String(input[key])) changes[key] = { from: existing[key], to: input[key] };
@@ -159,7 +160,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       if (existing.riskCodeId !== input.riskCodeId) await auditLog({ userId: user.id, role: user.role, action: "change risk code", entityType: "Incident", entityId: params.id, oldValue: existing.riskCodeId, newValue: input.riskCodeId });
       if (existing.status !== input.status) await auditLog({ userId: user.id, role: user.role, action: "change status", entityType: "Incident", entityId: params.id, oldValue: existing.status, newValue: input.status });
       if (existing.isSentinel !== input.isSentinel) await auditLog({ userId: user.id, role: user.role, action: "mark sentinel", entityType: "Incident", entityId: params.id, oldValue: existing.isSentinel, newValue: input.isSentinel });
-      await invalidateSmartCache();
       return Response.json(removeSensitiveIncidentIdentifiers(updated));
     }
 

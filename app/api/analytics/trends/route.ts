@@ -6,8 +6,12 @@ export const preferredRegion = "sin1";
 
 export async function GET(request: Request) {
   try {
-    await requireUser(["Executive", "RMTeam", "Admin", "UnitManager"]);
+    const user = await requireUser(["Executive", "RMTeam", "Admin", "UnitManager"]);
     const params = normalizeDashboardSearchParams(dashboardSearchParamsFromUrl(request.url));
+    if (user.role === "UnitManager") {
+      if (!user.unitId) return Response.json({ error: "USER_UNIT_REQUIRED" }, { status: 428 });
+      params.scopeUnitId = user.unitId;
+    }
     const data = await getDashboardAnalytics(params);
     return Response.json(data.charts.trend);
   } catch (error) {

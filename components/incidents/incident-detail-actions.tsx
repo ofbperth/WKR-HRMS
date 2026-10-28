@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TimeInput } from "@/components/ui/time-input";
 import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
-import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, incidentStatusValues, medicationRightValues } from "@/lib/validators";
+import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, medicationRightValues } from "@/lib/validators";
+import { classificationStatusOptions } from "@/lib/incident-close";
 import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { actionPlanStatusDisplay, affectedTypeDisplay, roleDisplay } from "@/lib/i18n/th";
@@ -159,7 +160,7 @@ export function IncidentClassificationEditor({ incident, riskCodes }: { incident
   </div>;
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
     <label className="space-y-1 text-sm"><span className="font-medium">ระดับความรุนแรง</span><select className="h-10 w-full rounded-md border px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{severityOptions.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">สถานะ</span><select className="h-10 w-full rounded-md border px-3" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{incidentStatusValues.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">สถานะ</span><select className="h-10 w-full rounded-md border px-3" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{classificationStatusOptions(incident.status).map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">NRLS code</span><select className="h-10 w-full rounded-md border px-3" value={form.riskCodeId} onChange={e => { const risk = availableRiskCodes.find(r => r.id === e.target.value); setForm({ ...form, riskCodeId: e.target.value, simpleCategory: risk?.simpleCategory ?? form.simpleCategory }); }}>{availableRiskCodes.map(r => <option key={r.id} value={r.id}>{r.code} - {r.nameTh}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">หมวด SIMPLE จาก NRLS code</span><input className="h-10 w-full rounded-md border bg-slate-50 px-3 text-slate-700" value={selected?.simpleCategory ?? form.simpleCategory} readOnly /></label>
     <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label></div>

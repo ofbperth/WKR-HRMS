@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { rcaApprovalSchema } from "@/lib/validators";
 import { canApproveRca } from "@/lib/rbac";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 export const preferredRegion = "sin1";
 
@@ -13,7 +14,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const input = rcaApprovalSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident?.rca) return Response.json({ error: "RCA_NOT_FOUND" }, { status: 404 });
+    if (["Closed", "Rejected"].includes(incident.status) || incident.deletedAt) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
     if (incident.rca.status !== "Submitted" && input.approved) return Response.json({ error: "RCA_MUST_BE_SUBMITTED" }, { status: 409 });
+    if (!input.approved && !["Submitted", "Approved"].includes(incident.rca.status)) return Response.json({ error: "RCA_NOT_READY_FOR_REVISION" }, { status: 409 });
 
     const [rca] = await prisma.$transaction([
       prisma.rCA.update({
@@ -29,6 +32,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         data: { status: input.approved ? "ActionOngoing" : "RCARequired", reviewedById: user.id, reviewedAt: new Date() },
       }),
     ]);
+    await invalidateSmartCache();
     await auditLog({ userId: user.id, action: input.approved ? "approve rca" : "request rca revision", entityType: "RCA", entityId: rca.id, newValue: { incidentId: params.id, comment: input.comment ?? null } });
     const unitUsers = await prisma.user.findMany({ where: { isActive: true, OR: [{ role: "Admin" }, { role: "UnitManager", unitId: incident.incidentUnitId }] }, select: { id: true } });
     if (unitUsers.length > 0) {

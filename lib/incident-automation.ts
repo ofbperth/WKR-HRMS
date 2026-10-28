@@ -82,7 +82,7 @@ export async function createIncidentWithAutomation(raw: unknown, currentUser: { 
             needRmSupport: input.needRmSupport,
             status: auto.status,
           },
-          include: { riskCode: true, incidentUnit: true, reportedBy: true },
+          include: { riskCode: true, incidentUnit: true, reportedBy: { select: { id: true, name: true, email: true, role: true, unitId: true } } },
         } as any);
         await writeAuditLog(tx as any, {
           userId: currentUser.id,

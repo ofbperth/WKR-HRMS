@@ -27,8 +27,9 @@ describe("dashboard query filters", () => {
     });
   });
 
-  it("keeps closed incidents countable by default while excluding rejected incidents", () => {
-    expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { not: "Rejected" } }));
+  it("excludes closed incidents when the include-closed checkbox is unchecked", () => {
+    expect(buildIncidentWhere()).toEqual(withActiveFilter({ status: { notIn: ["Rejected", "Closed"] } }));
+    expect(buildIncidentWhere({ includeClosed: "false" })).toEqual(buildIncidentWhere());
   });
 
   it("allows closed incidents when explicitly requested", () => {
@@ -37,14 +38,20 @@ describe("dashboard query filters", () => {
 
   it("uses unit-manager scope over a supplied unit filter", () => {
     expect(buildIncidentWhere({ scopeUnitId: "own-unit", unitId: "other-unit" })).toEqual(
-      withActiveFilter({ status: { not: "Rejected" } }, { incidentUnitId: "own-unit" }),
+      withActiveFilter({ status: { notIn: ["Rejected", "Closed"] } }, { incidentUnitId: "own-unit" }),
+    );
+  });
+
+  it("fails closed when a server-rendered unit summary has no assigned unit", () => {
+    expect(buildIncidentWhere({ scopeUnitId: null, unitId: "other-unit" })).toEqual(
+      withActiveFilter({ status: { notIn: ["Rejected", "Closed"] } }, { incidentUnitId: "__NO_UNIT__" }),
     );
   });
 
   it("keeps executive/RM dashboard filters aggregate and non-identifying", () => {
     expect(buildIncidentWhere({ clinicalOrGeneral: "Clinical", simpleCategory: "M2" })).toEqual(
       withActiveFilter(
-        { status: { not: "Rejected" } },
+        { status: { notIn: ["Rejected", "Closed"] } },
         { clinicalOrGeneral: "Clinical" },
         { simpleCategory: "M2" },
       ),
@@ -191,7 +198,7 @@ describe("Bangkok reporting date boundaries", () => {
   it("uses identical Bangkok boundaries for dashboard filters", () => {
     expect(buildIncidentWhere({ startDate: "2026-12-31", endDate: "2026-12-31" })).toEqual(
       withActiveFilter(
-        { status: { not: "Rejected" } },
+        { status: { notIn: ["Rejected", "Closed"] } },
         {
           occurredAt: {
             gte: new Date("2026-12-30T17:00:00.000Z"),

@@ -25,6 +25,7 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
         closedAt: new Date(),
       },
     });
+    await invalidateSmartCache();
     await auditLog({
       userId: user.id,
       role: user.role,
@@ -34,7 +35,6 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
       oldValue: existing.status,
       newValue: "Closed",
     });
-    await invalidateSmartCache();
     return Response.json(updated);
   } catch (error) {
     return apiError(error);

@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { actionVerifySchema } from "@/lib/validators";
 import { isIncidentClosed } from "@/lib/incident-close";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  let workflowChanged = false;
   try {
     const user = await requireUser(["RMTeam", "Admin"]);
     const input = actionVerifySchema.parse(await request.json());
@@ -22,12 +24,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
         verifiedAt: input.verified ? new Date() : null,
       },
     });
+    workflowChanged = true;
     const remaining = await prisma.actionPlan.count({ where: { incidentId: existing.incidentId, status: { not: "Verified" } } });
     await prisma.incident.update({ where: { id: existing.incidentId }, data: { status: input.verified && remaining === 0 ? "WaitingVerification" : "ActionOngoing" } });
     await auditLog({ userId: user.id, action: input.verified ? "verify action" : "reject action verification", entityType: "ActionPlan", entityId: params.id, oldValue: existing, newValue: updated });
     return Response.json(updated);
   } catch (error) {
     return apiError(error);
+  } finally {
+    if (workflowChanged) await invalidateSmartCache();
   }
 }
 

@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     const rawParams = dashboardSearchParamsFromUrl(request.url);
     const params = normalizeDashboardSearchParams(rawParams);
     const scopeUnitId = user.role === "Admin" ? params.unitId : user.unitId;
+    if (user.role === "UnitManager" && !scopeUnitId) return Response.json({ error: "USER_UNIT_REQUIRED" }, { status: 428 });
     const filters = { ...params, scopeUnitId };
     const data = await getOrSetCachedValue({
       cacheType: "dashboard",
