@@ -4,15 +4,17 @@ import { auditLog } from "@/lib/audit";
 import { validateActionOwnerAssignment } from "@/lib/action-policy";
 import { actionPlanSchema } from "@/lib/validators";
 import { canUnitManageIncident } from "@/lib/workflow-permissions";
-import { isIncidentClosed } from "@/lib/incident-close";
+import { isIncidentReadOnly } from "@/lib/incident-close";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  let workflowChanged = false;
   try {
     const user = await requireUser(["UnitManager", "Admin"]);
     const input = actionPlanSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
-    if (isIncidentClosed(incident)) return Response.json({ error: "INCIDENT_CLOSED_READ_ONLY" }, { status: 409 });
+    if (isIncidentReadOnly(incident)) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
     if (user.role !== "Admin" && !canUnitManageIncident(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (!incident.rca || incident.rca.status !== "Approved") return Response.json({ error: "RCA_APPROVAL_REQUIRED" }, { status: 409 });
     const dueDate = new Date(`${input.dueDate}T00:00:00`);
@@ -36,6 +38,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         kpiTarget: input.kpiTarget?.trim() || null,
       },
     });
+    workflowChanged = true;
     await prisma.incident.update({ where: { id: params.id }, data: { status: "ActionOngoing" } });
     await auditLog({ userId: user.id, role: user.role, action: "create action", entityType: "ActionPlan", entityId: action.id, newValue: { incidentId: params.id, ownerId: input.ownerId } });
     await prisma.notification.create({ data: { userId: input.ownerId, type: "action-assigned", title: "Action assigned", message: `${incident.incidentNo}: ${action.title}`, relatedIncidentId: params.id } });
@@ -44,6 +47,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (error instanceof Error && error.message === "ACTION_OWNER_MUST_BE_ACTIVE") return Response.json({ error: "ACTION_OWNER_MUST_BE_ACTIVE" }, { status: 400 });
     if (error instanceof Error && error.message === "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN") return Response.json({ error: "CROSS_UNIT_ACTION_ASSIGNMENT_FORBIDDEN" }, { status: 403 });
     return apiError(error);
+  } finally {
+    if (workflowChanged) await invalidateSmartCache();
   }
 }
 

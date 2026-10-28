@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 const dayMs = 1000 * 60 * 60 * 24;
 const protectedStatuses = new Set(["New", "UnderReview", "RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"]);
@@ -81,6 +82,7 @@ export async function restoreIncidentLifecycle(incidentId: string, user: { id: s
       retentionReviewRequired: false,
     } as any,
   });
+  await invalidateSmartCache();
   await auditLog({
     userId: user.id,
     role: user.role,
@@ -217,5 +219,7 @@ export async function runRetentionCleanup(user?: RetentionUser) {
     await auditLog({ userId: user?.id, role: user?.role, action: "RETENTION_FAILED", entityType: "RetentionRun", entityId: run.id, newValue: result });
     await finishRetentionRun(run.id, "Failed", result);
     throw error;
+  } finally {
+    if (!isDryRun() && result.softDeleted > 0) await invalidateSmartCache();
   }
 }

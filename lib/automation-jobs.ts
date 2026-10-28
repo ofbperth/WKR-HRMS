@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { runRetentionCleanup } from "@/lib/retention";
+import { invalidateSmartCache } from "@/lib/smart-cache";
 
 type AutomationUser = { id: string; role: string; name?: string };
 
@@ -44,13 +45,13 @@ async function createNotificationOnce(input: { userId: string; type: string; tit
 
 export async function runOverdueActionCheck(user?: AutomationUser) {
   const run = await createRun("overdue-action-check", user);
+  let delayed = 0;
   try {
     const now = new Date();
     const actions = await prisma.actionPlan.findMany({
       where: { dueDate: { lt: now }, status: { in: ["NotStarted", "Ongoing"] } },
       include: { incident: true, owner: true },
     });
-    let delayed = 0;
     let notifications = 0;
     for (const action of actions) {
       await prisma.actionPlan.update({ where: { id: action.id }, data: { status: "Delayed" } });
@@ -69,6 +70,8 @@ export async function runOverdueActionCheck(user?: AutomationUser) {
     return finishRun(run.id, "Success", { message: `Updated ${delayed} overdue actions`, result: { delayed, notifications } });
   } catch (error) {
     return finishRun(run.id, "Failed", { message: "Overdue action check failed", error });
+  } finally {
+    if (delayed > 0) await invalidateSmartCache();
   }
 }
 

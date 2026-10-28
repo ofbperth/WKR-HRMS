@@ -1,3 +1,4 @@
+import { isIncidentReadOnly } from "@/lib/incident-close";
 import { apiError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
@@ -8,35 +9,36 @@ import { canManageIncident, canSubmitRca } from "@/lib/rbac";
 import { encryptedRcaNarrative } from "@/lib/sensitive-fields";
 import { invalidateSmartCache } from "@/lib/smart-cache";
 import { rcaRepository } from "@/lib/rca-repository";
-import { mapFiveTierToLegacyProjection } from "@/lib/rca-contributory-factors";
 
 export const preferredRegion = "sin1";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  let workflowChanged = false;
   try {
     const user = await requireUser(["UnitManager", "RMTeam", "Admin"]);
     if (!canSubmitRca(user.role)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     const input = rcaSchema.parse(await request.json());
     const incident = await prisma.incident.findUnique({ where: { id: params.id }, include: { rca: true } });
     if (!incident) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isIncidentReadOnly(incident)) return Response.json({ error: "INCIDENT_READ_ONLY" }, { status: 409 });
     if (!canManageIncident(user.role) && !canUnitManageIncident(user, incident)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
     if (!["RCARequired", "RCASubmitted", "ActionOngoing", "WaitingVerification"].includes(incident.status)) return Response.json({ error: "RCA_NOT_ALLOWED_FOR_STATUS" }, { status: 409 });
+    if (["Submitted", "Approved"].includes(incident.rca?.status ?? "")) return Response.json({ error: "RCA_LOCKED_REQUEST_REVISION" }, { status: 409 });
 
     const submittedAt = input.submit ? new Date() : incident.rca?.submittedAt ?? null;
     const status = input.submit ? "Submitted" : incident.rca?.status ?? "Draft";
     const rcaEncrypted = encryptedRcaNarrative(input);
-    const legacyFactors = mapFiveTierToLegacyProjection(input);
-    const rca = await prisma.rCA.upsert({
+    const [rca] = await prisma.$transaction([prisma.rCA.upsert({
       where: { incidentId: params.id },
       update: {
         problemStatement: null,
         timeline: null,
-        contributingHuman: legacyFactors.contributingHuman,
-        contributingProcess: legacyFactors.contributingProcess,
-        contributingEquipment: legacyFactors.contributingEquipment,
-        contributingEnvironment: legacyFactors.contributingEnvironment,
-        contributingCommunication: legacyFactors.contributingCommunication,
-        contributingIT: legacyFactors.contributingIT,
+        contributingHuman: null,
+        contributingProcess: null,
+        contributingEquipment: null,
+        contributingEnvironment: null,
+        contributingCommunication: null,
+        contributingIT: null,
         rootCause: null,
         rcaEncrypted,
         preventiveAction: null,
@@ -50,12 +52,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         incidentId: params.id,
         problemStatement: null,
         timeline: null,
-        contributingHuman: legacyFactors.contributingHuman,
-        contributingProcess: legacyFactors.contributingProcess,
-        contributingEquipment: legacyFactors.contributingEquipment,
-        contributingEnvironment: legacyFactors.contributingEnvironment,
-        contributingCommunication: legacyFactors.contributingCommunication,
-        contributingIT: legacyFactors.contributingIT,
+        contributingHuman: null,
+        contributingProcess: null,
+        contributingEquipment: null,
+        contributingEnvironment: null,
+        contributingCommunication: null,
+        contributingIT: null,
         rootCause: null,
         rcaEncrypted,
         preventiveAction: null,
@@ -65,15 +67,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         status,
         submittedAt,
       } as any,
-    });
+    }), ...(input.submit ? [prisma.incident.update({ where: { id: params.id }, data: { status: "RCASubmitted" } })] : [])]);
+    workflowChanged = true;
     await auditLog({ userId: user.id, role: user.role, action: input.submit ? "submit rca" : "save rca", entityType: "RCA", entityId: rca.id, newValue: { incidentId: params.id, status } });
     if (input.submit) {
-      await prisma.incident.update({ where: { id: params.id }, data: { status: "RCASubmitted" } });
       await notifyRmTeam({ type: "rca-submitted", title: "RCA submitted", message: `${incident.incidentNo} is ready for RM approval`, relatedIncidentId: params.id });
     }
-    await invalidateSmartCache();
     return Response.json(await rcaRepository.getForUser(params.id, user));
   } catch (error) {
     return apiError(error);
+  } finally {
+    if (workflowChanged) await invalidateSmartCache();
   }
 }

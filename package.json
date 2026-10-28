@@ -28,7 +28,8 @@
     "retention:run": "tsx scripts/run-retention-cleanup.ts",
     "db:reset-test-data:dry": "tsx scripts/reset-test-data.ts --dry-run",
     "db:reset-test-data:confirm": "tsx scripts/reset-test-data.ts --confirm-reset-test-data",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "security:backfill-rca": "tsx scripts/encrypt-rca-backfill.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

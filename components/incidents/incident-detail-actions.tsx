@@ -5,8 +5,9 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TimeInput } from "@/components/ui/time-input";
 import { INCIDENT_DETAIL_IDENTIFIER_ERROR_MESSAGE, validateIncidentDetailNoIdentifiers } from "@/lib/incident-detail-identifiers";
-import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, incidentStatusValues, medicationRightValues } from "@/lib/validators";
-import { clinicalHighSeverity, severityOptionsFor } from "@/lib/severity";
+import { actionPlanStatusValues, affectedTypes, clinicalOrGeneralValues, medicationRightValues } from "@/lib/validators";
+import { classificationStatusOptions } from "@/lib/incident-close";
+import { isHighSeverityForType, severityOptionsFor } from "@/lib/severity";
 import type { DbIncident, DbRiskCode, DbUnit, DbUser } from "@/lib/types";
 import { actionPlanStatusDisplay, affectedTypeDisplay, roleDisplay } from "@/lib/i18n/th";
 import { formatBangkokDateInput, formatBangkokTimeInput, statusLabel } from "@/lib/format";
@@ -159,7 +160,7 @@ export function IncidentClassificationEditor({ incident, riskCodes }: { incident
   </div>;
   return <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2">
     <label className="space-y-1 text-sm"><span className="font-medium">ระดับความรุนแรง</span><select className="h-10 w-full rounded-md border px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{severityOptions.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">สถานะ</span><select className="h-10 w-full rounded-md border px-3" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{incidentStatusValues.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">สถานะ</span><select className="h-10 w-full rounded-md border px-3" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{classificationStatusOptions(incident.status).map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">NRLS code</span><select className="h-10 w-full rounded-md border px-3" value={form.riskCodeId} onChange={e => { const risk = availableRiskCodes.find(r => r.id === e.target.value); setForm({ ...form, riskCodeId: e.target.value, simpleCategory: risk?.simpleCategory ?? form.simpleCategory }); }}>{availableRiskCodes.map(r => <option key={r.id} value={r.id}>{r.code} - {r.nameTh}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">หมวด SIMPLE จาก NRLS code</span><input className="h-10 w-full rounded-md border bg-slate-50 px-3 text-slate-700" value={selected?.simpleCategory ?? form.simpleCategory} readOnly /></label>
     <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label></div>
@@ -171,8 +172,8 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const severityOptions = severityOptionsFor(incident.clinicalOrGeneral);
-  const [form, setForm] = useState({ severity: incident.severity, riskCodeId: incident.riskCodeId, simpleCategory: incident.simpleCategory, isSentinel: incident.isSentinel, needRmSupport: incident.needRmSupport, requireRca: (clinicalHighSeverity as readonly string[]).includes(incident.severity) });
-  const mustRca = (clinicalHighSeverity as readonly string[]).includes(form.severity);
+  const [form, setForm] = useState({ severity: incident.severity, riskCodeId: incident.riskCodeId, simpleCategory: incident.simpleCategory, isSentinel: incident.isSentinel, needRmSupport: incident.needRmSupport, requireRca: isHighSeverityForType(incident.severity, incident.clinicalOrGeneral) });
+  const mustRca = isHighSeverityForType(form.severity, incident.clinicalOrGeneral);
   const availableRiskCodes = riskCodes.filter(r => r.clinicalOrGeneral === incident.clinicalOrGeneral);
   const selected = availableRiskCodes.find(r => r.id === form.riskCodeId);
 
@@ -206,8 +207,8 @@ export function TriageClassificationForm({ incident, riskCodes, backHref }: { in
 
   return <div className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 md:grid-cols-2">
     <div className="md:col-span-2"><div className="text-lg font-semibold">ตรวจคัดกรองและจัดประเภท</div><p className="text-sm text-slate-600">เมื่อส่งแล้วเคสจะออกจากคิว Triage และไปต่อหน้า Review RCA ถ้าต้องทำ RCA</p></div>
-    <label className="space-y-1 text-sm"><span className="font-medium">ระดับความรุนแรง</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value, requireRca: (clinicalHighSeverity as readonly string[]).includes(e.target.value) || form.requireRca, isSentinel: ["G", "H", "I"].includes(e.target.value) || form.isSentinel })}>{severityOptions.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-    <label className="space-y-1 text-sm"><span className="font-medium">ต้องทำ RCA หรือไม่</span><select className="h-10 w-full rounded-md border bg-white px-3" value={mustRca ? "yes" : form.requireRca ? "yes" : "no"} disabled={mustRca} onChange={e => setForm({ ...form, requireRca: e.target.value === "yes" })}><option value="yes">ต้องทำ RCA</option><option value="no">ไม่ต้องทำ RCA</option></select>{mustRca ? <p className="text-xs text-red-700">ระดับ E-I บังคับทำ RCA ทุก incident</p> : null}</label>
+    <label className="space-y-1 text-sm"><span className="font-medium">ระดับความรุนแรง</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value, requireRca: isHighSeverityForType(e.target.value, incident.clinicalOrGeneral) || form.requireRca, isSentinel: ["G", "H", "I"].includes(e.target.value) || form.isSentinel })}>{severityOptions.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
+    <label className="space-y-1 text-sm"><span className="font-medium">ต้องทำ RCA หรือไม่</span><select className="h-10 w-full rounded-md border bg-white px-3" value={mustRca ? "yes" : form.requireRca ? "yes" : "no"} disabled={mustRca} onChange={e => setForm({ ...form, requireRca: e.target.value === "yes" })}><option value="yes">ต้องทำ RCA</option><option value="no">ไม่ต้องทำ RCA</option></select>{mustRca ? <p className="text-xs text-red-700">ระดับ Clinical E–I และ General 3–5 ต้องทำ RCA</p> : null}</label>
     <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">NRLS code</span><select className="h-10 w-full rounded-md border bg-white px-3" value={form.riskCodeId} onChange={e => { const risk = availableRiskCodes.find(r => r.id === e.target.value); setForm({ ...form, riskCodeId: e.target.value, simpleCategory: risk?.simpleCategory ?? form.simpleCategory }); }}>{availableRiskCodes.map(r => <option key={r.id} value={r.id}>{r.code} - {r.nameTh}</option>)}</select></label>
     <label className="space-y-1 text-sm"><span className="font-medium">หมวด SIMPLE จาก NRLS code</span><input className="h-10 w-full rounded-md border bg-slate-50 px-3 text-slate-700" value={selected?.simpleCategory ?? form.simpleCategory} readOnly /></label>
     <div className="flex flex-wrap items-center gap-4 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={form.isSentinel} onChange={e => setForm({ ...form, isSentinel: e.target.checked })} /> Sentinel</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.needRmSupport} onChange={e => setForm({ ...form, needRmSupport: e.target.checked })} /> ต้องการ RM support</label></div>

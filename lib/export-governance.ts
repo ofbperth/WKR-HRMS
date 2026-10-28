@@ -116,6 +116,7 @@ export async function validateExportDownload(input: {
   if (grant.userId !== input.user.id || grant.role !== input.role || grant.kind !== input.kind || grant.tokenJti !== input.tokenJti) {
     throw new Error("EXPORT_SCOPE_FORBIDDEN");
   }
+  if (input.user.role === "UnitManager" && (!input.user.unitId || grant.unitId !== input.user.unitId)) throw new Error("EXPORT_SCOPE_FORBIDDEN");
   if (new Date(grant.expiresAt).getTime() < Date.now()) {
     throw new Error("INVALID_OR_EXPIRED_SIGNED_URL");
   }

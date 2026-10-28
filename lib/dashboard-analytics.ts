@@ -5,6 +5,7 @@ import { getDashboardFilterLookups, getLookupData } from "@/lib/incident-query";
 import { bangkokDateRangeFilter, bangkokFiscalYearRange, bangkokLast12MonthsRange, bangkokMonthKey, bangkokThisMonthRange } from "@/lib/reporting-date";
 import { clinicalHighSeverity, generalHighSeverity, severityWeights } from "@/lib/severity";
 import { INCIDENT_STATUS_VALUES, SEVERITY_VALUES } from "@/lib/types";
+import { readAnalyticsRows } from "@/lib/analytics-pagination";
 
 export type AnalyticsFilters = {
   startDate?: string;
@@ -18,7 +19,7 @@ export type AnalyticsFilters = {
 };
 
 const highSeverity = [...clinicalHighSeverity, ...generalHighSeverity] as readonly string[];
-export const dashboardAnalyticsCacheVersion = "dashboard-analytics-rca-pie-v2";
+export const dashboardAnalyticsCacheVersion = "dashboard-analytics-complete-scoped-v3";
 
 export const safetyGoals = [
   { id: "safe-surgery", title: "การผ่าตัดผิดคน ผิดข้าง ผิดตำแหน่ง ผิดหัตถการ", codes: ["CPS101", "CPS102", "CPS103"] },
@@ -48,10 +49,10 @@ export function buildIncidentWhere(filters: AnalyticsFilters = {}) {
   const and: any[] = [];
   const activeFilter = activeIncidentFilter();
   if (activeFilter) and.push(activeFilter);
-  and.push({ status: { not: "Rejected" } });
+  and.push({ status: filters.includeClosed === "true" ? { not: "Rejected" } : { notIn: ["Rejected", "Closed"] } });
   const occurredAt = bangkokDateRangeFilter(filters.startDate, filters.endDate);
   if (occurredAt) and.push({ occurredAt });
-  if (filters.scopeUnitId) and.push({ incidentUnitId: filters.scopeUnitId });
+  if (filters.scopeUnitId !== undefined) and.push({ incidentUnitId: filters.scopeUnitId || "__NO_UNIT__" });
   else if (filters.unitId) and.push({ incidentUnitId: filters.unitId });
   if (filters.clinicalOrGeneral) and.push({ clinicalOrGeneral: filters.clinicalOrGeneral });
   const simpleCategories = Array.isArray(filters.simpleCategory)
@@ -297,10 +298,10 @@ export async function getDashboardAnalytics(filters: AnalyticsFilters = {}) {
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ isSentinel: true }, { severity: { in: ["G", "H", "I", "5"] } }] }) }),
     () => prisma.incident.count({ where: withExtra(where, { status: "RCARequired", rca: null }) }),
     () => prisma.incident.count({ where: withExtra(where, { OR: [{ status: "RCASubmitted" }, { rca: { status: "Submitted" } }] }) }),
-    () => prisma.incident.findMany({ where: withExtra(where, { occurredAt: { gte: last12Months.start, lte: last12Months.end } }), select: { occurredAt: true, severity: true, isSentinel: true }, orderBy: { occurredAt: "desc" }, take: 1200 }),
+    () => readAnalyticsRows((pagination) => prisma.incident.findMany({ where: withExtra(where, { occurredAt: { gte: last12Months.start, lte: last12Months.end } }), select: { id: true, occurredAt: true, severity: true, isSentinel: true }, ...pagination })),
     () => prisma.incident.findMany({ where: withExtra(where, { isSentinel: true }), select: { id: true, incidentNo: true, occurredAt: true, incidentUnit: { select: { name: true } }, severity: true, riskCode: { select: { code: true } }, title: true, status: true }, orderBy: { occurredAt: "desc" }, take: 5 }),
-    () => prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 1000 }),
-    () => prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { incident: { select: { incidentUnitId: true, severity: true } } }, take: 1000 }),
+    () => readAnalyticsRows((pagination) => prisma.rCA.findMany({ where: { incident: where, status: { not: "Approved" } }, select: { id: true, incident: { select: { incidentUnitId: true, severity: true } } }, ...pagination })),
+    () => readAnalyticsRows((pagination) => prisma.actionPlan.findMany({ where: { incident: where, status: { not: "Verified" }, dueDate: { lt: now } }, select: { id: true, incident: { select: { incidentUnitId: true, severity: true } } }, ...pagination })),
   ]) as any;
 
   const categoryNames = new Map(lookup.simpleCategories.map((category) => [category, category]));
@@ -407,7 +408,7 @@ export async function getHeatmapAnalytics(filters: AnalyticsFilters = {}) {
 }
 
 export async function getSafetyGoalAnalytics(filters: AnalyticsFilters = {}) {
-  const where = buildIncidentWhere({ ...filters, includeClosed: "true" });
+  const where = buildIncidentWhere(filters);
   const { lookup } = await commonLookups();
   const riskByCode = new Map(lookup.riskCodes.map((risk) => [risk.code, risk.id]));
   const riskIdsByGoal = new Map(safetyGoals.map((goal) => [goal.id, goal.codes.map((code) => riskByCode.get(code)).filter(Boolean) as string[]]));
